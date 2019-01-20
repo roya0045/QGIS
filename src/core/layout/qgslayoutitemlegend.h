@@ -512,4 +512,3 @@ class CORE_EXPORT QgsLayoutItemLegend : public QgsLayoutItem
 };
 
 #endif // QGSLAYOUTITEMLEGEND_H
-
