@@ -26,6 +26,8 @@
 #include "qgis_core.h"
 #include "qgis_sip.h"
 
+#include "qgsexpression.h"
+
 #include "qgsrasterdataprovider.h" // for QgsImageFetcher dtor visibility
 
 class QgsLayerTreeLayer;
@@ -247,6 +249,13 @@ class CORE_EXPORT QgsSymbolLegendNode : public QgsLayerTreeModelLegendNode
      * \since QGIS 3.2
      */
     void setTextOnSymbolTextFormat( const QgsTextFormat &format ) { mTextOnSymbolTextFormat = format; }
+
+    /**
+     * Create an expression context containing symbol elements
+     *
+     * \since: 3.8
+     */
+    QgsExpressionContext createExpressionContext() const;
 
   public slots:
 

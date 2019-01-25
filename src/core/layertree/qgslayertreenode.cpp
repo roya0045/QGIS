@@ -259,3 +259,14 @@ bool QgsLayerTreeNode::takeChild( QgsLayerTreeNode *node )
 
   return mChildren.size() < n;
 }
+
+void QgsLayerTreeNode::setExpression( const QString &expression )
+{
+  mExpression = expression;
+}
+
+QString QgsLayerTreeNode::expression() const
+{
+  return mExpression;
+}
+
