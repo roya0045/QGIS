@@ -1,4 +1,7 @@
 ADD_SUBDIRECTORY(../../external/libdxfrw dwg/libdxfrw)
+IF(NOT WIN32)
+SUBDIRS(${CMAKE_SOURCE_DIR}/external/qt-unix-signals)
+ENDIF(NOT WIN32)
 
 SET(QGIS_APP_SRCS
   ${CMAKE_SOURCE_DIR}/external/nmea/gmath.c
@@ -241,6 +244,7 @@ SET(QGIS_APP_SRCS
   mesh/qgsmeshrendereractivedatasetwidget.cpp
   mesh/qgsmeshdatasetgrouptreeview.cpp
   mesh/qgsmeshcalculatordialog.cpp
+  mesh/qgsmeshtimeformatdialog.cpp
 )
 
 SET (QGIS_APP_MOC_HDRS
@@ -467,6 +471,7 @@ SET (QGIS_APP_MOC_HDRS
   mesh/qgsmeshrendereractivedatasetwidget.h
   mesh/qgsmeshdatasetgrouptreeview.h
   mesh/qgsmeshcalculatordialog.h
+  mesh/qgsmeshtimeformatdialog.h
 )
 
 
@@ -575,10 +580,6 @@ IF (POSTGRES_FOUND)
     ADD_DEFINITIONS(-DHAVE_PGCONFIG=1)
   ENDIF(HAVE_PGCONFIG)
 ENDIF (POSTGRES_FOUND)
-
-IF (PROJ_HAS_INFO)
-  ADD_DEFINITIONS(-DPROJ_HAS_INFO)
-ENDIF (PROJ_HAS_INFO)
 
 # Test data dir for QgsAppScreenShots
 ADD_DEFINITIONS(-DTEST_DATA_DIR="${TEST_DATA_DIR}")
@@ -729,6 +730,7 @@ INCLUDE_DIRECTORIES(SYSTEM
   ${QWT_INCLUDE_DIR}
   ${QT_QTUITOOLS_INCLUDE_DIR}
   ${QSCINTILLA_INCLUDE_DIR}
+  ${CMAKE_SOURCE_DIR}/external/qt-unix-signals
 )
 INCLUDE_DIRECTORIES(
   ../analysis/processing
@@ -882,6 +884,10 @@ IF(WIN32)
 ENDIF(WIN32)
 
 TARGET_LINK_LIBRARIES(${QGIS_APP_NAME} qgis_native)
+
+IF (NOT WIN32)
+TARGET_LINK_LIBRARIES(${QGIS_APP_NAME} QTSignal)
+ENDIF (NOT WIN32)
 
 IF (APPLE)
   SET_TARGET_PROPERTIES(${QGIS_APP_NAME} PROPERTIES

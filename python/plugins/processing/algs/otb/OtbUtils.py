@@ -31,101 +31,189 @@ __copyright__ = '(C) 2012, Victor Olaya'
 __revision__ = '$Format:%H$'
 
 import os
+import sys
 import re
 import subprocess
 
 from processing.core.ProcessingConfig import ProcessingConfig
 from qgis.core import (Qgis, QgsApplication, QgsMessageLog)
 from qgis.PyQt.QtCore import QCoreApplication
-from processing.algs.otb.OtbSettings import OtbSettings
 
 
-def cliPath():
-    cli_ext = '.bat' if os.name == 'nt' else ''
-    return os.path.normpath(os.path.join(QgsApplication.qgisSettingsDirPath(),
-                                         'processing', 'qgis_otb_cli' + cli_ext))
+class OtbUtils:
+    # Checkbox to enable/disable otb provider (bool).
+    ACTIVATE = "OTB_ACTIVATE"
 
+    # Path to otb installation folder (string, directory).
+    FOLDER = "OTB_FOLDER"
 
-def version():
-    return ProcessingConfig.getSetting(OtbSettings.VERSION) or '0.0.0'
+    # Path to otb application folder. multiple paths are supported (string, directory).
+    APP_FOLDER = "OTB_APP_FOLDER"
 
+    # A string to hold current version number. Useful for bug reporting.
+    VERSION = "OTB_VERSION"
 
-def loggerLevel():
-    return ProcessingConfig.getSetting(OtbSettings.LOGGER_LEVEL) or 'INFO'
+    # Default directory were DEM tiles are stored. It should only contain ```.hgt`` or or georeferenced ``.tif`` files. Empty if not set (no directory set).
+    SRTM_FOLDER = "OTB_SRTM_FOLDER"
 
+    # Default path to the geoid file that will be used to retrieve height of DEM above ellipsoid. Empty if not set (no geoid set).
+    GEOID_FILE = "OTB_GEOID_FILE"
 
-def maxRAMHint():
-    return ProcessingConfig.getSetting(OtbSettings.MAX_RAM_HINT) or ''
+    # Default maximum memory that OTB should use for processing, in MB. If not set, default value is 128 MB.
+    # This is set through environment variable ``OTB_MAX_RAM_HINT``
+    MAX_RAM_HINT = 'OTB_MAX_RAM_HINT'
 
+    # ``OTB_LOGGER_LEVEL``: Default level of logging for OTB. Should be one of ``DEBUG``, ``INFO``, ``WARNING``, ``CRITICAL`` or ``FATAL``, by increasing order of priority. Only messages with a higher priority than the level of logging will be displayed. If not set, default level is ``INFO``.
+    LOGGER_LEVEL = 'OTB_LOGGER_LEVEL'
 
-def otbFolder():
-    if ProcessingConfig.getSetting(OtbSettings.FOLDER):
-        return os.path.normpath(os.sep.join(re.split(r'\\|/', ProcessingConfig.getSetting(OtbSettings.FOLDER))))
-    else:
-        return None
+    @staticmethod
+    def settingNames():
+        return [
+            OtbUtils.ACTIVATE,
+            OtbUtils.FOLDER,
+            OtbUtils.SRTM_FOLDER,
+            OtbUtils.GEOID_FILE,
+            OtbUtils.LOGGER_LEVEL,
+            OtbUtils.MAX_RAM_HINT
+        ]
 
+    @staticmethod
+    def version():
+        return ProcessingConfig.getSetting(OtbUtils.VERSION) or '0.0.0'
 
-def appFolder():
-    app_folder = ProcessingConfig.getSetting(OtbSettings.APP_FOLDER)
-    if app_folder:
-        return os.pathsep.join(app_folder.split(';'))
-    else:
-        return None
+    @staticmethod
+    def loggerLevel():
+        return ProcessingConfig.getSetting(OtbUtils.LOGGER_LEVEL) or 'INFO'
 
+    @staticmethod
+    def maxRAMHint():
+        return ProcessingConfig.getSetting(OtbUtils.MAX_RAM_HINT) or ''
 
-def srtmFolder():
-    return ProcessingConfig.getSetting(OtbSettings.SRTM_FOLDER) or ''
+    @staticmethod
+    def otbFolder():
+        if ProcessingConfig.getSetting(OtbUtils.FOLDER):
+            return os.path.normpath(os.sep.join(re.split(r'\\|/', ProcessingConfig.getSetting(OtbUtils.FOLDER))))
+        else:
+            return None
 
+    @staticmethod
+    def appFolder():
+        app_folder = ProcessingConfig.getSetting(OtbUtils.APP_FOLDER)
+        if app_folder:
+            return os.pathsep.join(app_folder.split(';'))
+        else:
+            return None
 
-def geoidFile():
-    return ProcessingConfig.getSetting(OtbSettings.GEOID_FILE) or ''
+    @staticmethod
+    def srtmFolder():
+        return ProcessingConfig.getSetting(OtbUtils.SRTM_FOLDER) or ''
 
+    @staticmethod
+    def geoidFile():
+        return ProcessingConfig.getSetting(OtbUtils.GEOID_FILE) or ''
 
-def executeOtb(command, feedback, addToLog=True):
-    loglines = []
-    with subprocess.Popen(
-            [command],
-            shell=True,
-            stdout=subprocess.PIPE,
-            stdin=subprocess.DEVNULL,
-            stderr=subprocess.STDOUT,
-            universal_newlines=True
-    ) as proc:
-        try:
+    @staticmethod
+    def getExecutableInPath(path, exe):
+        ext = '.exe' if os.name == 'nt' else ''
+        return os.path.join(path, 'bin', exe + ext)
+
+    @staticmethod
+    def getAuxiliaryDataDirectories():
+        gdal_data_dir = None
+        gtiff_csv_dir = None
+        otb_folder = OtbUtils.otbFolder()
+        if os.name == 'nt':
+            gdal_data_dir = os.path.join(otb_folder, 'share', 'data')
+            gtiff_csv_dir = os.path.join(otb_folder, 'share', 'epsg_csv')
+        else:
+            env_profile = os.path.join(otb_folder, 'otbenv.profile')
+            try:
+                if os.path.exists(env_profile):
+                    with open(env_profile) as f:
+                        lines = f.readlines()
+                        lines = [x.strip() for x in lines]
+                        for line in lines:
+                            if not line or line.startswith('#'):
+                                continue
+                            if 'GDAL_DATA=' in line:
+                                gdal_data_dir = line.split("GDAL_DATA=")[1]
+                            if 'GEOTIFF_CSV='in line:
+                                gtiff_csv_dir = line.split("GEOTIFF_CSV=")[1]
+            except BaseException as exc:
+                errmsg = "Cannot find gdal and geotiff data directory." + str(exc)
+                QgsMessageLog.logMessage(errmsg, OtbUtils.tr('Processing'), Qgis.Info)
+                pass
+
+        return gdal_data_dir, gtiff_csv_dir
+
+    @staticmethod
+    def executeOtb(commands, feedback, addToLog=True):
+        otb_env = {
+            'LC_NUMERIC': 'C',
+            'GDAL_DRIVER_PATH': 'disable'
+        }
+        gdal_data_dir, gtiff_csv_dir = OtbUtils.getAuxiliaryDataDirectories()
+        if gdal_data_dir and os.path.exists(gdal_data_dir):
+            otb_env['GDAL_DATA'] = gdal_data_dir
+        if gtiff_csv_dir and os.path.exists(gtiff_csv_dir):
+            otb_env['GEOTIFF_CSV'] = gtiff_csv_dir
+
+        otb_env['OTB_LOGGER_LEVEL'] = OtbUtils.loggerLevel()
+        max_ram_hint = OtbUtils.maxRAMHint()
+        if max_ram_hint and int(max_ram_hint) > 256:
+            otb_env['OTB_MAX_RAM_HINT'] = max_ram_hint
+
+        kw = {}
+        kw['env'] = otb_env
+        if os.name == 'nt' and sys.version_info >= (3, 6):
+            kw['encoding'] = "cp{}".format(OtbUtils.getWindowsCodePage())
+
+        QgsMessageLog.logMessage("{}".format(kw), OtbUtils.tr('Processing'), Qgis.Info)
+        QgsMessageLog.logMessage("cmd={}".format(commands), OtbUtils.tr('Processing'), Qgis.Info)
+        with subprocess.Popen(
+                commands,
+                shell=True,
+                stdout=subprocess.PIPE,
+                stdin=subprocess.DEVNULL,
+                stderr=subprocess.STDOUT,
+                universal_newlines=True,
+                **kw
+        ) as proc:
+
             for line in iter(proc.stdout.readline, ''):
                 line = line.strip()
                 #'* ]' and '  ]' says its some progress update
-                #print('line[-3:]',line[-3:])
-                if line[-3:] == "* ]" or line[-3:] == "  ]":
+                if '% [' in line:
                     part = line.split(':')[1]
                     percent = part.split('%')[0]
                     try:
                         if int(percent) >= 100:
-                            loglines.append(line)
+                            feedback.pushConsoleInfo(line)
                         feedback.setProgress(int(percent))
                     except:
                         pass
                 else:
-                    loglines.append(line)
-        except BaseException as e:
-            loglines.append(str(e))
-            pass
+                    if feedback is None:
+                        QgsMessageLog.logMessage(line, OtbUtils.tr('Processing'), Qgis.Info)
+                    else:
+                        if any([l in line for l in ['(WARNING)', 'WARNING:']]):
+                            feedback.reportError(line, False)
+                        elif any([l in line for l in ['(FATAL)', 'ERROR:', 'ERROR']]):
+                            feedback.reportError(line, True)
+                        else:
+                            feedback.pushConsoleInfo(line.strip())
 
-        for logline in loglines:
-            if feedback is None:
-                QgsMessageLog.logMessage(logline, 'Processing', Qgis.Info)
-            else:
-                feedback.pushConsoleInfo(logline)
+    @staticmethod
+    def getWindowsCodePage():
+        """
+        Determines MS-Windows CMD.exe shell codepage.
+        Used into GRASS exec script under MS-Windows.
+        """
+        from ctypes import cdll
+        return str(cdll.kernel32.GetACP())
 
-        # for logline in loglines:
-        #     if 'INFO' in logline or 'FATAL' in logline:
-        #         if feedback is None:
-        #             QgsMessageLog.logMessage(logline, 'Processing', Qgis.Info)
-        #         else:
-        #             feedback.pushConsoleInfo(logline)
-
-
-def tr(string, context=''):
-    if context == '':
-        context = 'OtbUtils'
-    return QCoreApplication.translate(context, string)
+    @staticmethod
+    def tr(string, context=''):
+        if context == '':
+            context = 'OtbUtils'
+        return QCoreApplication.translate(context, string)

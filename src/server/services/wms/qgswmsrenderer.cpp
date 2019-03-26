@@ -514,7 +514,7 @@ namespace QgsWms
         exporter.exportToSvg( tempOutputFile.fileName(), exportSettings );
       }
     }
-    else if ( format == QgsWmsParameters::PNG )
+    else if ( format == QgsWmsParameters::PNG || format == QgsWmsParameters::JPG )
     {
       // Settings for the layout exporter
       QgsLayoutExporter::ImageExportSettings exportSettings;
@@ -653,13 +653,14 @@ namespace QgsWms
 
       if ( !map->keepLayerSet() )
       {
-        if ( cMapParams.mLayers.isEmpty() )
+        if ( cMapParams.mLayers.isEmpty() && cMapParams.mExternalLayers.isEmpty() )
         {
           map->setLayers( mapSettings.layers() );
         }
         else
         {
           QList<QgsMapLayer *> layerSet = stylizedLayers( cMapParams.mLayers );
+          layerSet << externalLayers( cMapParams.mExternalLayers );
           layerSet << highlightLayers( cMapParams.mHighlightLayers );
           std::reverse( layerSet.begin(), layerSet.end() );
           map->setLayers( layerSet );
@@ -856,6 +857,9 @@ namespace QgsWms
       setLayerAccessControlFilter( layer );
     }
 
+    // add external layers
+    layers = layers << externalLayers( mWmsParameters.externalLayersParameters() );
+
     // add highlight layers above others
     layers = layers << highlightLayers( mWmsParameters.highlightLayersParameters() );
 
@@ -888,7 +892,7 @@ namespace QgsWms
     return image.release();
   }
 
-  QgsDxfExport QgsRenderer::getDxf( const QMap<QString, QString> &options )
+  QgsDxfExport QgsRenderer::getDxf()
   {
     QgsDxfExport dxf;
 
@@ -915,24 +919,17 @@ namespace QgsWms
       layers = stylizedLayers( params );
     }
 
-    // layer attributes options
-    QStringList layerAttributes;
-    QMap<QString, QString>::const_iterator layerAttributesIt = options.find( QStringLiteral( "LAYERATTRIBUTES" ) );
-    if ( layerAttributesIt != options.constEnd() )
-    {
-      layerAttributes = options.value( QStringLiteral( "LAYERATTRIBUTES" ) ).split( ',' );
-    }
-
     // only wfs layers are allowed to be published
     QStringList wfsLayerIds = QgsServerProjectUtils::wfsLayerIds( *mProject );
 
     // get dxf layers
+    const QStringList attributes = mWmsParameters.dxfLayerAttributes();
     QList< QgsDxfExport::DxfLayer > dxfLayers;
     int layerIdx = -1;
     for ( QgsMapLayer *layer : layers )
     {
       layerIdx++;
-      if ( layer->type() != QgsMapLayer::VectorLayer )
+      if ( layer->type() != QgsMapLayerType::VectorLayer )
         continue;
       if ( !wfsLayerIds.contains( layer->id() ) )
         continue;
@@ -958,9 +955,9 @@ namespace QgsWms
 
       // get the layer attribute used in dxf
       int layerAttribute = -1;
-      if ( layerAttributes.size() > layerIdx )
+      if ( attributes.size() > layerIdx )
       {
-        layerAttribute = vlayer->fields().indexFromName( layerAttributes.at( layerIdx ) );
+        layerAttribute = vlayer->fields().indexFromName( attributes[ layerIdx ] );
       }
 
       dxfLayers.append( QgsDxfExport::DxfLayer( vlayer, layerAttribute ) );
@@ -968,39 +965,11 @@ namespace QgsWms
 
     // add layers to dxf
     dxf.addLayers( dxfLayers );
-
-    dxf.setLayerTitleAsName( options.contains( QStringLiteral( "USE_TITLE_AS_LAYERNAME" ) ) );
-
-    //MODE
-    QMap<QString, QString>::const_iterator modeIt = options.find( QStringLiteral( "MODE" ) );
-
-    QgsDxfExport::SymbologyExport se;
-    if ( modeIt == options.constEnd() )
+    dxf.setLayerTitleAsName( mWmsParameters.dxfUseLayerTitleAsName() );
+    dxf.setSymbologyExport( mWmsParameters.dxfMode() );
+    if ( mWmsParameters.dxfFormatOptions().contains( QgsWmsParameters::DxfFormatOption::SCALE ) )
     {
-      se = QgsDxfExport::NoSymbology;
-    }
-    else
-    {
-      if ( modeIt->compare( QStringLiteral( "SymbolLayerSymbology" ), Qt::CaseInsensitive ) == 0 )
-      {
-        se = QgsDxfExport::SymbolLayerSymbology;
-      }
-      else if ( modeIt->compare( QStringLiteral( "FeatureSymbology" ), Qt::CaseInsensitive ) == 0 )
-      {
-        se = QgsDxfExport::FeatureSymbology;
-      }
-      else
-      {
-        se = QgsDxfExport::NoSymbology;
-      }
-    }
-    dxf.setSymbologyExport( se );
-
-    //SCALE
-    QMap<QString, QString>::const_iterator scaleIt = options.find( QStringLiteral( "SCALE" ) );
-    if ( scaleIt != options.constEnd() )
-    {
-      dxf.setSymbologyScale( scaleIt->toDouble() );
+      dxf.setSymbologyScale( mWmsParameters.dxfScale() );
     }
 
     return dxf;
@@ -1028,7 +997,7 @@ namespace QgsWms
     if ( queryLayers.isEmpty() )
     {
       QString msg = QObject::tr( "QUERY_LAYERS parameter is required for GetFeatureInfo" );
-      throw QgsBadRequestException( QStringLiteral( "LayerNotQueryable" ), msg );
+      throw QgsBadRequestException( QStringLiteral( "LayerNotDefined" ), msg );
     }
 
     // The I/J parameters are Mandatory if they are not replaced by X/Y or FILTER or FILTER_GEOM
@@ -1089,8 +1058,16 @@ namespace QgsWms
     QgsMapSettings mapSettings;
     std::unique_ptr<QImage> outputImage( createImage( imageWidth, imageHeight ) );
 
+    // The CRS parameter is considered as mandatory in configureMapSettings
+    // but in the case of filter parameter, CRS parameter has not to be mandatory
+    bool mandatoryCrsParam = true;
+    if ( filtersDefined && !ijDefined && !xyDefined && mWmsParameters.crs().isEmpty() )
+    {
+      mandatoryCrsParam = false;
+    }
+
     // configure map settings (background, DPI, ...)
-    configureMapSettings( outputImage.get(), mapSettings );
+    configureMapSettings( outputImage.get(), mapSettings, mandatoryCrsParam );
 
     QgsMessageLog::logMessage( "mapSettings.destinationCrs(): " +  mapSettings.destinationCrs().authid() );
     QgsMessageLog::logMessage( "mapSettings.extent(): " +  mapSettings.extent().toString() );
@@ -1227,7 +1204,7 @@ namespace QgsWms
     return image.release();
   }
 
-  void QgsRenderer::configureMapSettings( const QPaintDevice *paintDevice, QgsMapSettings &mapSettings ) const
+  void QgsRenderer::configureMapSettings( const QPaintDevice *paintDevice, QgsMapSettings &mapSettings, bool mandatoryCrsParam ) const
   {
     if ( !paintDevice )
     {
@@ -1249,6 +1226,10 @@ namespace QgsWms
     {
       crs = QString( "EPSG:4326" );
       mapExtent.invert();
+    }
+    else if ( crs.isEmpty() && !mandatoryCrsParam )
+    {
+      crs = QString( "EPSG:4326" );
     }
 
     QgsCoordinateReferenceSystem outputCRS;
@@ -1451,7 +1432,7 @@ namespace QgsWms
             }
           }
 
-          if ( layer->type() == QgsMapLayer::VectorLayer )
+          if ( layer->type() == QgsMapLayerType::VectorLayer )
           {
             QgsVectorLayer *vectorLayer = qobject_cast<QgsVectorLayer *>( layer );
             if ( vectorLayer )
@@ -2307,7 +2288,7 @@ namespace QgsWms
       const QDomElement layerElem = layerList.at( i ).toElement();
       const QString layerName = layerElem.attribute( QStringLiteral( "name" ) );
 
-      QgsMapLayer *layer;
+      QgsMapLayer *layer = nullptr;
       for ( QgsMapLayer *l : layers )
       {
         if ( layerNickname( *l ).compare( layerName ) == 0 )
@@ -2316,10 +2297,10 @@ namespace QgsWms
         }
       }
 
-      if ( ! layer )
+      if ( !layer )
         continue;
 
-      if ( layer->type() == QgsMapLayer::VectorLayer )
+      if ( layer->type() == QgsMapLayerType::VectorLayer )
       {
         QgsVectorLayer *vl = qobject_cast<QgsVectorLayer *>( layer );
 
@@ -2914,6 +2895,25 @@ namespace QgsWms
     return highlightLayers;
   }
 
+  QList<QgsMapLayer *> QgsRenderer::externalLayers( const QList<QgsWmsParametersExternalLayer> &params )
+  {
+    QList<QgsMapLayer *> layers;
+
+    for ( const QgsWmsParametersExternalLayer &param : params )
+    {
+      std::unique_ptr<QgsMapLayer> layer = qgis::make_unique< QgsRasterLayer >( param.mUri, param.mName, QStringLiteral( "wms" ) );
+
+      if ( layer->isValid() )
+      {
+        // to delete later
+        mTemporaryLayers.append( layer.release() );
+        layers << mTemporaryLayers.last();
+      }
+    }
+
+    return layers;
+  }
+
   QList<QgsMapLayer *> QgsRenderer::sldStylizedLayers( const QString &sld ) const
   {
     QList<QgsMapLayer *> layers;
@@ -2976,19 +2976,7 @@ namespace QgsWms
     {
       QString nickname = param.mNickname;
       QString style = param.mStyle;
-      if ( nickname.startsWith( "EXTERNAL_WMS:" ) )
-      {
-        QString externalLayerId = nickname;
-        externalLayerId.remove( 0, 13 );
-        QgsMapLayer *externalWMSLayer = createExternalWMSLayer( externalLayerId );
-        if ( externalWMSLayer )
-        {
-          layers.append( externalWMSLayer );
-          mNicknameLayers[nickname] = externalWMSLayer; //might be used later in GetPrint request
-          mTemporaryLayers.append( externalWMSLayer );
-        }
-      }
-      else if ( mNicknameLayers.contains( nickname ) && !mRestrictedLayers.contains( nickname ) )
+      if ( mNicknameLayers.contains( nickname ) && !mRestrictedLayers.contains( nickname ) )
       {
         if ( !style.isEmpty() )
         {
@@ -3030,19 +3018,6 @@ namespace QgsWms
     }
 
     return layers;
-  }
-
-  QgsMapLayer *QgsRenderer::createExternalWMSLayer( const QString &externalLayerId ) const
-  {
-    QString wmsUri = mWmsParameters.externalWMSUri( externalLayerId.toUpper() );
-    QgsMapLayer *wmsLayer = new QgsRasterLayer( wmsUri, externalLayerId, QStringLiteral( "wms" ) );
-    if ( !wmsLayer->isValid() )
-    {
-      delete wmsLayer;
-      return nullptr;
-    }
-
-    return wmsLayer;
   }
 
   void QgsRenderer::removeTemporaryLayers()
@@ -3097,14 +3072,14 @@ namespace QgsWms
     {
       switch ( layer->type() )
       {
-        case QgsMapLayer::LayerType::VectorLayer:
+        case QgsMapLayerType::VectorLayer:
         {
           QgsVectorLayer *vl = qobject_cast<QgsVectorLayer *>( layer );
           vl->setOpacity( opacity / 255. );
           break;
         }
 
-        case QgsMapLayer::LayerType::RasterLayer:
+        case QgsMapLayerType::RasterLayer:
         {
           QgsRasterLayer *rl = qobject_cast<QgsRasterLayer *>( layer );
           QgsRasterRenderer *rasterRenderer = rl->renderer();
@@ -3112,8 +3087,8 @@ namespace QgsWms
           break;
         }
 
-        case QgsMapLayer::MeshLayer:
-        case QgsMapLayer::PluginLayer:
+        case QgsMapLayerType::MeshLayer:
+        case QgsMapLayerType::PluginLayer:
           break;
       }
     }
@@ -3121,7 +3096,7 @@ namespace QgsWms
 
   void QgsRenderer::setLayerFilter( QgsMapLayer *layer, const QList<QgsWmsParametersFilter> &filters )
   {
-    if ( layer->type() == QgsMapLayer::VectorLayer )
+    if ( layer->type() == QgsMapLayerType::VectorLayer )
     {
       QgsVectorLayer *filteredLayer = qobject_cast<QgsVectorLayer *>( layer );
       for ( const QgsWmsParametersFilter &filter : filters )
@@ -3176,7 +3151,7 @@ namespace QgsWms
 
   void QgsRenderer::setLayerSelection( QgsMapLayer *layer, const QStringList &fids ) const
   {
-    if ( layer->type() == QgsMapLayer::VectorLayer )
+    if ( layer->type() == QgsMapLayerType::VectorLayer )
     {
       QgsFeatureIds selectedIds;
 
@@ -3320,7 +3295,7 @@ namespace QgsWms
       if ( !ml->title().isEmpty() )
         lt->setName( ml->title() );
 
-      if ( ml->type() != QgsMapLayer::VectorLayer || !showFeatureCount )
+      if ( ml->type() != QgsMapLayerType::VectorLayer || !showFeatureCount )
         continue;
 
       QgsVectorLayer *vl = qobject_cast<QgsVectorLayer *>( ml );

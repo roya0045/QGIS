@@ -120,6 +120,7 @@ SET(QGIS_GUI_SRCS
   editorwidgets/qgsexternalresourcewidgetfactory.cpp
   editorwidgets/qgshiddenwidgetwrapper.cpp
   editorwidgets/qgshiddenwidgetfactory.cpp
+  editorwidgets/qgshtmlwidgetwrapper.cpp
   editorwidgets/qgskeyvaluewidgetfactory.cpp
   editorwidgets/qgskeyvaluewidgetwrapper.cpp
   editorwidgets/qgslistwidgetfactory.cpp
@@ -165,6 +166,7 @@ SET(QGIS_GUI_SRCS
   layertree/qgslayertreeviewindicator.cpp
   layertree/qgslayertreeviewitemdelegate.cpp
 
+  layout/qgslayoutcombobox.cpp
   layout/qgslayoutcustomdrophandler.cpp
   layout/qgslayoutitemguiregistry.cpp
   layout/qgslayoutitemcombobox.cpp
@@ -201,6 +203,7 @@ SET(QGIS_GUI_SRCS
   processing/qgsprocessingguiregistry.cpp
   processing/qgsprocessingmatrixparameterdialog.cpp
   processing/qgsprocessingmodelerparameterwidget.cpp
+  processing/qgsprocessingmultipleselectiondialog.cpp
   processing/qgsprocessingrecentalgorithmlog.cpp
   processing/qgsprocessingtoolboxmodel.cpp
   processing/qgsprocessingtoolboxtreeview.cpp
@@ -679,6 +682,7 @@ SET(QGIS_GUI_MOC_HDRS
   editorwidgets/qgsexternalresourceconfigdlg.h
   editorwidgets/qgsexternalresourcewidgetwrapper.h
   editorwidgets/qgshiddenwidgetwrapper.h
+  editorwidgets/qgshtmlwidgetwrapper.h
   editorwidgets/qgskeyvaluewidgetwrapper.h
   editorwidgets/qgslistwidgetwrapper.h
   editorwidgets/qgsmultiedittoolbutton.h
@@ -714,6 +718,7 @@ SET(QGIS_GUI_MOC_HDRS
   layertree/qgslayertreeviewindicator.h
   layertree/qgslayertreeviewitemdelegate.h
 
+  layout/qgslayoutcombobox.h
   layout/qgslayoutcustomdrophandler.h
   layout/qgslayoutdesignerinterface.h
   layout/qgslayoutitemcombobox.h
@@ -744,6 +749,7 @@ SET(QGIS_GUI_MOC_HDRS
   processing/qgsprocessingconfigurationwidgets.h
   processing/qgsprocessingmatrixparameterdialog.h
   processing/qgsprocessingmodelerparameterwidget.h
+  processing/qgsprocessingmultipleselectiondialog.h
   processing/qgsprocessingrecentalgorithmlog.h
   processing/qgsprocessingtoolboxmodel.h
   processing/qgsprocessingtoolboxtreeview.h

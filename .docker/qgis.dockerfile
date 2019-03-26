@@ -16,7 +16,9 @@ ENV LANG=C.UTF-8
 
 COPY . /usr/src/QGIS
 
-ENV CCACHE_DIR=/usr/src/QGIS/.ccache
+# If this directory is changed, also adapt script.sh which copies the directory
+RUN mkdir -p /usr/src/.ccache_image_build
+ENV CCACHE_DIR=/usr/src/.ccache_image_build
 RUN ccache -M 1G
 RUN ccache -s
 

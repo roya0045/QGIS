@@ -143,7 +143,7 @@ QgsVectorLayer::QgsVectorLayer( const QString &vectorLayerPath,
                                 const QString &baseName,
                                 const QString &providerKey,
                                 const LayerOptions &options )
-  : QgsMapLayer( VectorLayer, baseName, vectorLayerPath )
+  : QgsMapLayer( QgsMapLayerType::VectorLayer, baseName, vectorLayerPath )
   , mAuxiliaryLayer( nullptr )
   , mAuxiliaryLayerKey( QString() )
   , mReadExtentFromXml( options.readExtentFromXml )
@@ -588,16 +588,7 @@ void QgsVectorLayer::setDiagramRenderer( QgsDiagramRenderer *r )
 
 QgsWkbTypes::GeometryType QgsVectorLayer::geometryType() const
 {
-  if ( mValid && mDataProvider )
-  {
-    return QgsWkbTypes::geometryType( mDataProvider->wkbType() );
-  }
-  else
-  {
-    QgsDebugMsgLevel( QStringLiteral( "invalid layer or pointer to mDataProvider is null" ), 3 );
-  }
-  QgsDebugMsgLevel( QStringLiteral( "Vector layer with unknown geometry type." ), 3 );
-  return QgsWkbTypes::UnknownGeometry;
+  return QgsWkbTypes::geometryType( mWkbType );
 }
 
 QgsWkbTypes::Type QgsVectorLayer::wkbType() const
@@ -778,7 +769,7 @@ QgsRectangle QgsVectorLayer::extent() const
     mLazyExtent = false;
   }
 
-  if ( !mValidExtent && mLazyExtent && mDataProvider )
+  if ( !mValidExtent && mLazyExtent && mDataProvider && mDataProvider->isValid() )
   {
     // get the extent
     QgsRectangle mbr = mDataProvider->extent();
@@ -1601,6 +1592,7 @@ bool QgsVectorLayer::setDataProvider( QString const &provider, const QgsDataProv
   if ( !mValid )
   {
     QgsDebugMsgLevel( QStringLiteral( "Invalid provider plugin %1" ).arg( QString( mDataSource.toUtf8() ) ), 2 );
+    return false;
   }
 
   if ( mDataProvider->capabilities() & QgsVectorDataProvider::ReadLayerMetadata )

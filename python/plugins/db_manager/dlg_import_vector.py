@@ -29,7 +29,7 @@ from qgis.PyQt.QtWidgets import QDialog, QFileDialog, QMessageBox
 
 from qgis.core import (QgsDataSourceUri,
                        QgsVectorLayer,
-                       QgsMapLayer,
+                       QgsMapLayerType,
                        QgsProviderRegistry,
                        QgsCoordinateReferenceSystem,
                        QgsVectorLayerExporter,
@@ -132,7 +132,7 @@ class DlgImportVector(QDialog, Ui_Dialog):
         for nodeLayer in QgsProject.instance().layerTreeRoot().findLayers():
             layer = nodeLayer.layer()
             # TODO: add import raster support!
-            if layer.type() == QgsMapLayer.VectorLayer:
+            if layer.type() == QgsMapLayerType.VectorLayer:
                 self.cboInputLayer.addItem(layer.name(), layer.id())
 
     def deleteInputLayer(self):
@@ -177,7 +177,7 @@ class DlgImportVector(QDialog, Ui_Dialog):
 
             layerName = QFileInfo(filename).completeBaseName()
             layer = QgsVectorLayer(filename, layerName, "ogr")
-            if not layer.isValid() or layer.type() != QgsMapLayer.VectorLayer:
+            if not layer.isValid() or layer.type() != QgsMapLayerType.VectorLayer:
                 layer.deleteLater()
                 return False
 
@@ -376,7 +376,7 @@ class DlgImportVector(QDialog, Ui_Dialog):
         supportCom = self.db.supportsComment()
         if self.chkCom.isEnabled() and self.chkCom.isChecked() and supportCom:
             # using connector executing COMMENT ON TABLE query (with editCome.text() value)
-            com = self.editCome.text()
+            com = self.editCom.text()
             self.db.connector.commentTable(schema, table, com)
 
         self.db.connection().reconnect()

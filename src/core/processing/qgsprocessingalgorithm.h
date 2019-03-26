@@ -75,6 +75,7 @@ class CORE_EXPORT QgsProcessingAlgorithm
       FlagNoThreading = 1 << 6, //!< Algorithm is not thread safe and cannot be run in a background thread, e.g. for algorithms which manipulate the current project, layer selections, or with external dependencies which are not thread-safe.
       FlagDisplayNameIsLiteral = 1 << 7, //!< Algorithm's display name is a static literal string, and should not be translated or automatically formatted. For use with algorithms named after commands, e.g. GRASS 'v.in.ogr'.
       FlagSupportsInPlaceEdits = 1 << 8, //!< Algorithm supports in-place editing
+      FlagKnownIssues = 1 << 9, //!< Algorithm has known issues
       FlagDeprecated = FlagHideFromToolbox | FlagHideFromModeler, //!< Algorithm is deprecated
     };
     Q_DECLARE_FLAGS( Flags, Flag )
@@ -778,6 +779,26 @@ class CORE_EXPORT QgsProcessingAlgorithm
      * Evaluates the parameter with matching \a name to a list of fields.
      */
     QStringList parameterAsFields( const QVariantMap &parameters, const QString &name, QgsProcessingContext &context ) const;
+
+    /**
+     * Evaluates the parameter with matching \a name to a print layout.
+     *
+     * \warning This method is not safe to run in a background thread, so it must either be used within a prepareAlgorithm
+     * implementation (which runs in the main thread), or the algorithm must return the FlagNoThreading flag.
+     *
+     * \since QGIS 3.8
+     */
+    QgsPrintLayout *parameterAsLayout( const QVariantMap &parameters, const QString &name, QgsProcessingContext &context );
+
+    /**
+     * Evaluates the parameter with matching \a name to a print layout item, taken from the specified \a layout.
+     *
+     * \warning This method is not safe to run in a background thread, so it must either be used within a prepareAlgorithm
+     * implementation (which runs in the main thread), or the algorithm must return the FlagNoThreading flag.
+     *
+     * \since QGIS 3.8
+     */
+    QgsLayoutItem *parameterAsLayoutItem( const QVariantMap &parameters, const QString &name, QgsProcessingContext &context, QgsPrintLayout *layout );
 
     /**
      * Returns a user-friendly string to use as an error when a source parameter could

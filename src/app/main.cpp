@@ -38,6 +38,10 @@
 #include <cstdlib>
 #include <cstdarg>
 
+#if !defined(Q_OS_WIN)
+#include "sigwatch.h"
+#endif
+
 #ifdef WIN32
 // Open files in binary mode
 #include <fcntl.h> /*  _O_BINARY */
@@ -1386,7 +1390,7 @@ int main( int argc, char *argv[] )
     //replace backslashes with forward slashes
     pythonfile.replace( '\\', '/' );
 #endif
-    QgsPythonRunner::run( QStringLiteral( "exec(open('%1').read())" ).arg( pythonfile ) );
+    QgsPythonRunner::run( QStringLiteral( "with open('%1','r') as f: exec(f.read())" ).arg( pythonfile ) );
   }
 
   /////////////////////////////////`////////////////////////////////////
@@ -1519,6 +1523,24 @@ int main( int argc, char *argv[] )
   // fix for Qt Ministro hiding app's menubar in favor of native Android menus
   qgis->menuBar()->setNativeMenuBar( false );
   qgis->menuBar()->setVisible( true );
+#endif
+
+#if !defined(Q_OS_WIN)
+  UnixSignalWatcher sigwatch;
+  sigwatch.watchForSignal( SIGINT );
+
+  QObject::connect( &sigwatch, &UnixSignalWatcher::unixSignal, &myApp, [&myApp ]( int signal )
+  {
+    switch ( signal )
+    {
+      case SIGINT:
+        myApp.exit( 1 );
+        break;
+
+      default:
+        break;
+    }
+  } );
 #endif
 
   int retval = myApp.exec();

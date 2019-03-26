@@ -38,6 +38,8 @@ class QgsProcessingFeatureSource;
 class QgsProcessingOutputDefinition;
 class QgsProcessingFeedback;
 class QgsProcessingProvider;
+class QgsPrintLayout;
+class QgsLayoutItem;
 
 /**
  * \class QgsProcessingFeatureSourceDefinition
@@ -226,6 +228,8 @@ class CORE_EXPORT QgsProcessingParameterDefinition
       sipType = sipType_QgsProcessingParameterNumber;
     else if ( sipCpp->type() == QgsProcessingParameterDistance::typeName() )
       sipType = sipType_QgsProcessingParameterDistance;
+    else if ( sipCpp->type() == QgsProcessingParameterScale::typeName() )
+      sipType = sipType_QgsProcessingParameterScale;
     else if ( sipCpp->type() == QgsProcessingParameterRange::typeName() )
       sipType = sipType_QgsProcessingParameterRange;
     else if ( sipCpp->type() == QgsProcessingParameterRasterLayer::typeName() )
@@ -258,6 +262,10 @@ class CORE_EXPORT QgsProcessingParameterDefinition
       sipType = sipType_QgsProcessingParameterFolderDestination;
     else if ( sipCpp->type() == QgsProcessingParameterBand::typeName() )
       sipType = sipType_QgsProcessingParameterBand;
+    else if ( sipCpp->type() == QgsProcessingParameterLayout::typeName() )
+      sipType = sipType_QgsProcessingParameterLayout;
+    else if ( sipCpp->type() == QgsProcessingParameterLayoutItem::typeName() )
+      sipType = sipType_QgsProcessingParameterLayoutItem;
     else
       sipType = nullptr;
     SIP_END
@@ -929,6 +937,14 @@ class CORE_EXPORT QgsProcessingParameters
     static QgsCoordinateReferenceSystem parameterAsPointCrs( const QgsProcessingParameterDefinition *definition, const QVariantMap &parameters, QgsProcessingContext &context );
 
     /**
+     * Returns the coordinate reference system associated with an point parameter value.
+     *
+     * \see parameterAsPoint()
+     * \since QGIS 3.8
+     */
+    static QgsCoordinateReferenceSystem parameterAsPointCrs( const QgsProcessingParameterDefinition *definition, const QVariant &value, QgsProcessingContext &context );
+
+    /**
      * Evaluates the parameter with matching \a definition to a file/folder name.
      */
     static QString parameterAsFile( const QgsProcessingParameterDefinition *definition, const QVariantMap &parameters, QgsProcessingContext &context );
@@ -984,6 +1000,47 @@ class CORE_EXPORT QgsProcessingParameters
      * \since QGIS 3.4
      */
     static QStringList parameterAsFields( const QgsProcessingParameterDefinition *definition, const QVariant &value, QgsProcessingContext &context );
+
+    /**
+     * Evaluates the parameter with matching \a definition to a print layout.
+     *
+     * \warning This method is not safe to run in a background thread, so it must either be used within a prepareAlgorithm
+     * implementation (which runs in the main thread), or the algorithm must return the FlagNoThreading flag.
+     *
+     * \since QGIS 3.8
+     */
+    static QgsPrintLayout *parameterAsLayout( const QgsProcessingParameterDefinition *definition, const QVariantMap &parameters, QgsProcessingContext &context );
+
+    /**
+     * Evaluates the parameter with matching \a definition and \a value to a print layout.
+     *
+     * \warning This method is not safe to run in a background thread, so it must either be used within a prepareAlgorithm
+     * implementation (which runs in the main thread), or the algorithm must return the FlagNoThreading flag.
+     *
+     * \since QGIS 3.8
+     */
+    static QgsPrintLayout *parameterAsLayout( const QgsProcessingParameterDefinition *definition, const QVariant &value, QgsProcessingContext &context );
+
+    /**
+     * Evaluates the parameter with matching \a definition to a print layout item, taken from the specified \a layout.
+     *
+     * \warning This method is not safe to run in a background thread, so it must either be used within a prepareAlgorithm
+     * implementation (which runs in the main thread), or the algorithm must return the FlagNoThreading flag.
+     *
+     * \since QGIS 3.8
+     */
+    static QgsLayoutItem *parameterAsLayoutItem( const QgsProcessingParameterDefinition *definition, const QVariantMap &parameters, QgsProcessingContext &context, QgsPrintLayout *layout );
+
+    /**
+     * Evaluates the parameter with matching \a definition and \a value to a print layout, taken from the specified \a layout.
+     *
+     * \warning This method is not safe to run in a background thread, so it must either be used within a prepareAlgorithm
+     * implementation (which runs in the main thread), or the algorithm must return the FlagNoThreading flag.
+     *
+     * \since QGIS 3.8
+     */
+    static QgsLayoutItem *parameterAsLayoutItem( const QgsProcessingParameterDefinition *definition, const QVariant &value, QgsProcessingContext &context, QgsPrintLayout *layout );
+
 
     /**
      * Creates a new QgsProcessingParameterDefinition using the configuration from a
@@ -1582,6 +1639,44 @@ class CORE_EXPORT QgsProcessingParameterDistance : public QgsProcessingParameter
 };
 
 /**
+ * \class QgsProcessingParameterScale
+ * \ingroup core
+ * A double numeric parameter for map scale values.
+ *
+ * QgsProcessingParameterScale should be evaluated by calling QgsProcessingAlgorithm::parameterAsDouble(),
+ * which will return a numeric value representing the scale denominator.
+ *
+ * \since QGIS 3.8
+ */
+class CORE_EXPORT QgsProcessingParameterScale : public QgsProcessingParameterNumber
+{
+  public:
+
+    /**
+     * Constructor for QgsProcessingParameterScale.
+     */
+    explicit QgsProcessingParameterScale( const QString &name, const QString &description = QString(),
+                                          const QVariant &defaultValue = QVariant(),
+                                          bool optional = false );
+
+    /**
+     * Returns the type name for the parameter class.
+     */
+    static QString typeName() { return QStringLiteral( "scale" ); }
+
+    QgsProcessingParameterScale *clone() const override SIP_FACTORY;
+
+    QString type() const override;
+    QString asPythonString( QgsProcessing::PythonOutputType outputType = QgsProcessing::PythonQgsProcessingAlgorithmSubclass ) const override;
+
+    /**
+     * Creates a new parameter using the definition from a script code.
+     */
+    static QgsProcessingParameterScale *fromScriptCode( const QString &name, const QString &description, bool isOptional, const QString &definition ) SIP_FACTORY;
+
+};
+
+/**
  * \class QgsProcessingParameterRange
  * \ingroup core
  * A numeric range parameter for processing algorithms.
@@ -1791,7 +1886,7 @@ class CORE_EXPORT QgsProcessingParameterString : public QgsProcessingParameterDe
 /**
  * \class QgsProcessingParameterAuthConfig
  * \ingroup core
- * A string parameter for authentication configuration configuration ID values.
+ * A string parameter for authentication configuration ID values.
  *
  * This parameter allows for users to select from available authentication configurations,
  * or create new authentication configurations as required.
@@ -2580,6 +2675,120 @@ class CORE_EXPORT QgsProcessingParameterBand : public QgsProcessingParameterDefi
 
     QString mParentLayerParameterName;
     bool mAllowMultiple = false;
+};
+
+/**
+ * \class QgsProcessingParameterLayout
+ * \ingroup core
+ * A print layout parameter, allowing users to select a print layout.
+ *
+ * QgsProcessingParameterLayout should be evaluated by calling QgsProcessingAlgorithm::parameterAsLayout().
+ * This will return the matching layout from the context's current project. Alternatively, calling
+ * QgsProcessingAlgorithm::parameterAsString() will return the name of the target print layout.
+ *
+ * \since QGIS 3.8
+ */
+class CORE_EXPORT QgsProcessingParameterLayout : public QgsProcessingParameterDefinition
+{
+  public:
+
+    /**
+     * Constructor for QgsProcessingParameterLayout.
+     */
+    QgsProcessingParameterLayout( const QString &name, const QString &description = QString(), const QVariant &defaultValue = QVariant(),
+                                  bool optional = false );
+
+    /**
+     * Returns the type name for the parameter class.
+     */
+    static QString typeName() { return QStringLiteral( "layout" ); }
+    QgsProcessingParameterDefinition *clone() const override SIP_FACTORY;
+    QString type() const override { return typeName(); }
+    QString valueAsPythonString( const QVariant &value, QgsProcessingContext &context ) const override;
+    QString asScriptCode() const override;
+    QString asPythonString( QgsProcessing::PythonOutputType outputType = QgsProcessing::PythonQgsProcessingAlgorithmSubclass ) const override;
+
+    /**
+     * Creates a new parameter using the definition from a script code.
+     */
+    static QgsProcessingParameterLayout *fromScriptCode( const QString &name, const QString &description, bool isOptional, const QString &definition ) SIP_FACTORY;
+
+};
+
+/**
+ * \class QgsProcessingParameterLayoutItem
+ * \ingroup core
+ * A print layout item parameter, allowing users to select a particular item from a print layout.
+ *
+ * QgsProcessingParameterLayoutItem should be evaluated by calling QgsProcessingAlgorithm::parameterAsLayoutItem().
+ * Internally, QgsProcessingParameterLayoutItems are string parameters, storing references to items either by
+ * their UUID (QgsLayoutItem::uuid()) or ID (QgsLayoutItem::id()).
+ *
+ * \since QGIS 3.8
+ */
+class CORE_EXPORT QgsProcessingParameterLayoutItem : public QgsProcessingParameterDefinition
+{
+  public:
+
+    /**
+     * Constructor for QgsProcessingParameterLayoutItem.
+     */
+    QgsProcessingParameterLayoutItem( const QString &name, const QString &description = QString(), const QVariant &defaultValue = QVariant(),
+                                      const QString &parentLayoutParameterName = QString(),
+                                      int itemType = -1,
+                                      bool optional = false );
+
+    /**
+     * Returns the type name for the parameter class.
+     */
+    static QString typeName() { return QStringLiteral( "layoutitem" ); }
+    QgsProcessingParameterDefinition *clone() const override SIP_FACTORY;
+    QString type() const override { return typeName(); }
+    QString valueAsPythonString( const QVariant &value, QgsProcessingContext &context ) const override;
+    QString asScriptCode() const override;
+    QString asPythonString( QgsProcessing::PythonOutputType outputType = QgsProcessing::PythonQgsProcessingAlgorithmSubclass ) const override;
+    QVariantMap toVariantMap() const override;
+    bool fromVariantMap( const QVariantMap &map ) override;
+    QStringList dependsOnOtherParameters() const override;
+
+    /**
+     * Creates a new parameter using the definition from a script code.
+     */
+    static QgsProcessingParameterLayoutItem *fromScriptCode( const QString &name, const QString &description, bool isOptional, const QString &definition ) SIP_FACTORY;
+
+    /**
+     * Returns the name of the parent layout parameter, or an empty string if this is not set.
+     * \see setParentLayoutParameterName()
+     */
+    QString parentLayoutParameterName() const;
+
+    /**
+     * Sets the \a name of the parent layout parameter. Use an empty string if this is not required.
+     * \see parentLayoutParameterName()
+     */
+    void setParentLayoutParameterName( const QString &name );
+
+    /**
+     * Returns the acceptable item type, or -1 if any item type is allowed.
+     *
+     * These values correspond to the registered item types from QgsLayoutItemRegistry.
+     *
+     * \see setItemType()
+     */
+    int itemType() const;
+
+    /**
+     * Sets the acceptable item \a type, or -1 if any item type is allowed.
+     *
+     * These values correspond to the registered item types from QgsLayoutItemRegistry.
+     *
+     * \see itemType()
+     */
+    void setItemType( int type );
+
+  private:
+    QString mParentLayoutParameterName;
+    int mItemType = -1;
 };
 
 // clazy:excludeall=qstring-allocations

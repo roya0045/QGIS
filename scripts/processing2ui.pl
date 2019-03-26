@@ -39,7 +39,7 @@ for my $f (<python/plugins/processing/algs/otb/description/*.xml>) {
 	my $xml = XMLin($f, ForceArray=>1);
 
 	foreach my $k (qw/longname group description/) {
-		$strings{"OTBAlgorithm"}{$xml->{$k}->[0]} = 1;
+		$strings{"OTBAlgorithm"}{$xml->{$k}->[0]} = $f;
 	}
 }
 
@@ -48,32 +48,32 @@ for my $f (<python/plugins/processing/algs/grass*/description/*.txt>) {
 	my $name = scalar(<I>);
 	my $desc = scalar(<I>);
 	my $group = scalar(<I>);
+
+	while( my($class, $name, $description, $rest) = split /\|/, scalar(<I>) ) {
+		next unless defined $description;
+		$description =~ s/\s+$//;
+		$strings{"GrassAlgorithm"}{$description} = $f;
+	}
+
 	close I;
 
 	chop $desc;
 	chop $group;
 
-	$strings{"GrassAlgorithm"}{$desc} = 1;
-	$strings{"GrassAlgorithm"}{$group} = 1;
-}
-
-for my $f (<python/plugins/processing/algs/taudem/description/*/*.txt>) {
-	open I, $f;
-	my $desc = scalar(<I>);
-	my $name = scalar(<I>);
-	my $group = scalar(<I>);
-	close I;
-
-	chop $desc;
-	chop $group;
-
-	$strings{"TAUDEMAlgorithm"}{$desc} = 1;
-	$strings{"TAUDEMAlgorithm"}{$group} = 1;
+	$strings{"GrassAlgorithm"}{$desc} = $f;
+	$strings{"GrassAlgorithm"}{$group} = $f;
 }
 
 for my $f (<python/plugins/processing/algs/saga/description/*/*.txt>) {
 	open I, $f;
 	my $desc = scalar(<I>);
+
+	while( my($class, $name, $description, $rest) = split /\|/, scalar(<I>) ) {
+		next unless defined $description;
+		$description =~ s/\s+$//;
+		$strings{"SAGAAlgorithm"}{$description} = 1
+	}
+
 	close I;
 
 	chop $desc;
@@ -86,7 +86,7 @@ for my $f (<python/plugins/processing/algs/help/*.yaml>) {
 	$base = uc $base;
 	my $yaml = LoadFile($f);
 	for my $k (keys %$yaml) {
-		$strings{"${base}Algorithm"}{$yaml->{$k}} = 1;
+		$strings{"${base}Algorithm"}{$yaml->{$k}} = $f;
 	}
 }
 
@@ -96,7 +96,7 @@ for my $f ( ("python/plugins/processing/gui/algnames.txt") ) {
 		chop;
 		s/^.*,//;
 		foreach my $v (split "/", $_) {
-			$strings{"AlgorithmClassification"}{$v} = 1;
+			$strings{"AlgorithmClassification"}{$v} = $f;
 		}
 	}
 	close I;
@@ -120,7 +120,11 @@ EOF
 
 	foreach my $v (keys %{ $strings{$k} } ) {
 		next if $v eq "";
-		print F "  <property><string>" . xmlescape($v) . "</string></property>\n";
+		my $c = $strings{$k}{$v};
+		$c =~ s#^.*/##;
+		$c =~ s#\.[^.]+$##;
+
+		print F "  <property><string extracomment=\"$c\">" . xmlescape($v) . "</string></property>\n";
 	}
 
 	print F <<EOF;

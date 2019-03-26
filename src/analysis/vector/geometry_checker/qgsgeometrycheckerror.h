@@ -179,6 +179,21 @@ class ANALYSIS_EXPORT QgsGeometryCheckError
      */
     virtual bool handleChanges( const QgsGeometryCheck::Changes &changes ) SIP_SKIP;
 
+    /**
+     * Returns a list of involved features.
+     * By default returns an empty map.
+     * The map keys are layer ids, the map value is a set of feature ids.
+     *
+     * \since QGIS 3.8
+     */
+    virtual QMap<QString, QgsFeatureIds > involvedFeatures() const SIP_SKIP;
+
+    /**
+     * Returns an icon that should be shown for this kind of error.
+     *
+     * \since QGIS 3.8
+     */
+    virtual QIcon icon() const;
   protected:
 
     /**

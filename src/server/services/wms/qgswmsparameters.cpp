@@ -19,6 +19,8 @@
 #include "qgsdatasourceuri.h"
 #include "qgsmessagelog.h"
 
+const QString EXTERNAL_LAYER_PREFIX = QStringLiteral( "EXTERNAL_WMS:" );
+
 namespace QgsWms
 {
   //
@@ -502,6 +504,10 @@ namespace QgsWms
     const QgsWmsParameter pAtlasPk( QgsWmsParameter::ATLAS_PK,
                                     QVariant::StringList );
     save( pAtlasPk );
+
+    const QgsWmsParameter pFormatOpts( QgsWmsParameter::FORMAT_OPTIONS,
+                                       QVariant::String );
+    save( pFormatOpts );
   }
 
   QgsWmsParameters::QgsWmsParameters( const QgsServerParameters &parameters )
@@ -1408,6 +1414,10 @@ namespace QgsWms
     for ( int i = 0; i < layers.size(); i++ )
     {
       QString layer = layers[i];
+
+      if ( isExternalLayer( layer ) )
+        continue;
+
       QgsWmsParametersLayer param;
       param.mNickname = layer;
 
@@ -1490,6 +1500,21 @@ namespace QgsWms
     }
 
     return params;
+  }
+
+  QList<QgsWmsParametersExternalLayer> QgsWmsParameters::externalLayersParameters() const
+  {
+    QList<QgsWmsParametersExternalLayer> externalLayers;
+
+    QStringList layers = allLayersNickname();
+    QStringList::const_iterator rit = std::remove_if( layers.begin(), layers.end(), QgsWmsParameters::isExternalLayer );
+
+    for ( QStringList::const_iterator it = layers.begin(); it != rit; ++it )
+    {
+      externalLayers << externalLayerParameter( *it );
+    }
+
+    return externalLayers;
   }
 
   QString QgsWmsParameters::backgroundColor() const
@@ -1577,12 +1602,29 @@ namespace QgsWms
     }
 
     //layers
-    QStringList layers;
+    QStringList allLayers;
     wmsParam = idParameter( QgsWmsParameter::LAYERS, mapId );
     if ( wmsParam.isValid() )
     {
-      layers = wmsParam.toStringList();
+      allLayers = wmsParam.toStringList();
     }
+
+    // external layers
+    QStringList layers;
+    QList<QgsWmsParametersExternalLayer> eParams;
+
+    for ( const auto &layer : qgis::as_const( allLayers ) )
+    {
+      if ( isExternalLayer( layer ) )
+      {
+        eParams << externalLayerParameter( layer );
+      }
+      else
+      {
+        layers << layer;
+      }
+    }
+    param.mExternalLayers = eParams;
 
     QStringList styles;
     wmsParam = idParameter( QgsWmsParameter::STYLES, mapId );
@@ -1762,5 +1804,119 @@ namespace QgsWms
     }
 
     return p;
+  }
+
+  QgsWmsParametersExternalLayer QgsWmsParameters::externalLayerParameter( const QString &name ) const
+  {
+    QgsWmsParametersExternalLayer param;
+
+    param.mName = name;
+    param.mName.remove( 0, EXTERNAL_LAYER_PREFIX.size() );
+    param.mUri = externalWMSUri( param.mName );
+
+    return param;
+  }
+
+  bool QgsWmsParameters::isExternalLayer( const QString &name )
+  {
+    return name.startsWith( EXTERNAL_LAYER_PREFIX );
+  }
+
+  QStringList QgsWmsParameters::dxfLayerAttributes() const
+  {
+    QStringList attributes;
+    const QMap<DxfFormatOption, QString> options = dxfFormatOptions();
+
+    if ( options.contains( DxfFormatOption::LAYERATTRIBUTES ) )
+    {
+      attributes = options[ DxfFormatOption::LAYERATTRIBUTES ].split( ',' );
+    }
+
+    return attributes;
+  }
+
+  bool QgsWmsParameters::dxfUseLayerTitleAsName() const
+  {
+    bool use = false;
+    const QMap<DxfFormatOption, QString> options = dxfFormatOptions();
+
+    if ( options.contains( DxfFormatOption::USE_TITLE_AS_LAYERNAME ) )
+    {
+      use = QVariant( options[ DxfFormatOption::USE_TITLE_AS_LAYERNAME ] ).toBool();
+    }
+
+    return use;
+  }
+
+  double QgsWmsParameters::dxfScale() const
+  {
+    const QMap<DxfFormatOption, QString> options = dxfFormatOptions();
+
+    double scale = -1;
+    if ( options.contains( DxfFormatOption::SCALE ) )
+    {
+      scale = options[ DxfFormatOption::SCALE ].toDouble();
+    }
+
+    return scale;
+  }
+
+  QgsDxfExport::SymbologyExport QgsWmsParameters::dxfMode() const
+  {
+    const QMap<DxfFormatOption, QString> options = dxfFormatOptions();
+
+    QgsDxfExport::SymbologyExport symbol = QgsDxfExport::NoSymbology;
+
+    if ( ! options.contains( DxfFormatOption::MODE ) )
+    {
+      return symbol;
+    }
+
+    const QString mode = options[ DxfFormatOption::MODE ];
+    if ( mode.compare( QLatin1String( "SymbolLayerSymbology" ), Qt::CaseInsensitive ) == 0 )
+    {
+      symbol = QgsDxfExport::SymbolLayerSymbology;
+    }
+    else if ( mode.compare( QLatin1String( "FeatureSymbology" ), Qt::CaseInsensitive ) == 0 )
+    {
+      symbol = QgsDxfExport::FeatureSymbology;
+    }
+
+    return symbol;
+  }
+
+  QString QgsWmsParameters::dxfCodec() const
+  {
+    QString codec = QStringLiteral( "ISO-8859-1" );
+
+    if ( dxfFormatOptions().contains( DxfFormatOption::CODEC ) )
+    {
+      codec = dxfFormatOptions()[ DxfFormatOption::CODEC ];
+    }
+
+    return codec;
+  }
+
+  QMap<QgsWmsParameters::DxfFormatOption, QString> QgsWmsParameters::dxfFormatOptions() const
+  {
+    QMap<QgsWmsParameters::DxfFormatOption, QString> options;
+
+    const QMetaEnum metaEnum( QMetaEnum::fromType<QgsWmsParameters::DxfFormatOption>() );
+    const QStringList opts = mWmsParameters[ QgsWmsParameter::FORMAT_OPTIONS ].toStringList( ';' );
+
+    for ( auto it = opts.constBegin(); it != opts.constEnd(); ++it )
+    {
+      const int equalIdx = it->indexOf( ':' );
+      if ( equalIdx > 0 && equalIdx < ( it->length() - 1 ) )
+      {
+        const QString name = it->left( equalIdx ).toUpper();
+        const QgsWmsParameters::DxfFormatOption option =
+          ( QgsWmsParameters::DxfFormatOption ) metaEnum.keyToValue( name.toStdString().c_str() );
+        const QString value = it->right( it->length() - equalIdx - 1 );
+        options.insert( option, value );
+      }
+    }
+
+    return options;
   }
 }

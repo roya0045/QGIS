@@ -53,7 +53,7 @@ from qgis.core import (Qgis,
 
 from processing.core.parameters import getParameterFromString
 from processing.algs.otb.OtbChoiceWidget import OtbParameterChoice
-from processing.algs.otb import OtbUtils
+from processing.algs.otb.OtbUtils import OtbUtils
 
 
 class OtbAlgorithm(QgsProcessingAlgorithm):
@@ -135,7 +135,7 @@ class OtbAlgorithm(QgsProcessingAlgorithm):
                         options = params[2].split(';')
                         param = OtbParameterChoice(params[0], params[1], options, params[3], params[4])
                     else:
-                        param = getParameterFromString(line)
+                        param = getParameterFromString(line, 'OtbAlgorithm')
 
                     #if parameter is None, then move to next line and continue
                     if param is None:
@@ -200,12 +200,12 @@ class OtbAlgorithm(QgsProcessingAlgorithm):
         return valid_params
 
     def processAlgorithm(self, parameters, context, feedback):
-        otb_cli_file = OtbUtils.cliPath()
-        command = '"{}" {} {}'.format(otb_cli_file, self.name(), OtbUtils.appFolder())
+        app_launcher_path = OtbUtils.getExecutableInPath(OtbUtils.otbFolder(), 'otbApplicationLauncherCommandLine')
+        command = '"{}" {} {}'.format(app_launcher_path, self.name(), OtbUtils.appFolder())
         outputPixelType = None
         for k, v in parameters.items():
             # if value is None for a parameter we don't have any businees with this key
-            if v is None:
+            if not v or v is None:
                 continue
             # for 'outputpixeltype' parameter we find the pixeltype string from self.pixelTypes
             if k == 'outputpixeltype':
@@ -258,16 +258,12 @@ class OtbAlgorithm(QgsProcessingAlgorithm):
 
         for out in self.destinationParameterDefinitions():
             filePath = self.parameterAsOutputLayer(parameters, out.name(), context)
-            output_files[out.name()] = filePath
-            if outputPixelType is not None:
-                command += ' -{} "{}" "{}"'.format(out.name(), filePath, outputPixelType)
-            else:
-                command += ' -{} "{}"'.format(out.name(), filePath)
-
-        QgsMessageLog.logMessage(self.tr('cmd={}'.format(command)), self.tr('Processing'), Qgis.Info)
-        if not os.path.exists(otb_cli_file) or not os.path.isfile(otb_cli_file):
-            import errno
-            raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), otb_cli_file)
+            if filePath:
+                output_files[out.name()] = filePath
+                if outputPixelType is not None:
+                    command += ' -{} "{}" "{}"'.format(out.name(), filePath, outputPixelType)
+                else:
+                    command += ' -{} "{}"'.format(out.name(), filePath)
 
         OtbUtils.executeOtb(command, feedback)
 

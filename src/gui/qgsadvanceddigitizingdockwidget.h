@@ -65,12 +65,13 @@ class GUI_EXPORT QgsAdvancedDigitizingDockWidget : public QgsDockWidget, private
     /**
      * Additional constraints which can be enabled
      */
-    enum AdditionalConstraint
+    enum class AdditionalConstraint SIP_MONKEYPATCH_SCOPEENUM : int
     {
       NoConstraint,  //!< No additional constraint
       Perpendicular, //!< Perpendicular
       Parallel       //!< Parallel
     };
+
 
     /**
      * \ingroup gui
@@ -316,7 +317,7 @@ class GUI_EXPORT QgsAdvancedDigitizingDockWidget : public QgsDockWidget, private
     /**
      * Is it snapped to a vertex
      */
-    inline bool snappedToVertex() const { return mSnappedToVertex; }
+    inline bool snappedToVertex() const { return ( mSnapMatch.isValid() && mSnapMatch.hasVertex() ); }
 
     /**
      * Snapped to a segment
@@ -484,7 +485,6 @@ class GUI_EXPORT QgsAdvancedDigitizingDockWidget : public QgsDockWidget, private
     // point list and current snap point / segment
     QList<QgsPointXY> mCadPointList;
     QList<QgsPointXY> mSnappedSegment;
-    bool mSnappedToVertex = false;
 
     bool mSessionActive = false;
 

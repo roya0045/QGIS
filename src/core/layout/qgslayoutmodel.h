@@ -352,6 +352,26 @@ class CORE_EXPORT QgsLayoutProxyModel: public QSortFilterProxyModel
      */
     QgsLayoutItem *itemFromSourceIndex( const QModelIndex &sourceIndex ) const;
 
+    /**
+     * Returns the associated layout.
+     * \since QGIS 3.8
+     */
+    QgsLayout *layout() { return mLayout; }
+
+    /**
+     * Sets whether an optional empty layout item is present in the model.
+     * \see allowEmptyItem()
+     * \since QGIS 3.8
+     */
+    void setAllowEmptyItem( bool allowEmpty );
+
+    /**
+     * Returns TRUE if the model includes the empty item choice.
+     * \see setAllowEmptyItem()
+     * \since QGIS 3.8
+     */
+    bool allowEmptyItem() const;
+
   protected:
     bool filterAcceptsRow( int sourceRow, const QModelIndex &sourceParent ) const override;
     bool lessThan( const QModelIndex &left, const QModelIndex &right ) const override;
@@ -360,6 +380,7 @@ class CORE_EXPORT QgsLayoutProxyModel: public QSortFilterProxyModel
     QgsLayout *mLayout = nullptr;
     QgsLayoutItemRegistry::ItemType mItemTypeFilter;
     QList< QgsLayoutItem * > mExceptedList;
+    bool mAllowEmpty = false;
 
 };
 

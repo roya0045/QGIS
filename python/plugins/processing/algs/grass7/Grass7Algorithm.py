@@ -36,7 +36,7 @@ from qgis.PyQt.QtCore import QCoreApplication, QUrl
 from qgis.core import (Qgis,
                        QgsRasterLayer,
                        QgsApplication,
-                       QgsMapLayer,
+                       QgsMapLayerType,
                        QgsProcessingUtils,
                        QgsProcessing,
                        QgsMessageLog,
@@ -68,7 +68,7 @@ from osgeo import ogr
 
 from processing.core.ProcessingConfig import ProcessingConfig
 
-from processing.core.parameters import (getParameterFromString)
+from processing.core.parameters import getParameterFromString
 
 from .Grass7Utils import Grass7Utils
 
@@ -203,6 +203,7 @@ class Grass7Algorithm(QgsProcessingAlgorithm):
                 self._name = self.grass7Name
             else:
                 self._name = line[:line.find(' ')].lower()
+            self._short_description = QCoreApplication.translate("GrassAlgorithm", line)
             self._display_name = self._name
             # Read the grass group
             line = lines.readline().strip('\n').strip()
@@ -219,7 +220,7 @@ class Grass7Algorithm(QgsProcessingAlgorithm):
                     line = line.strip('\n').strip()
                     if line.startswith('Hardcoded'):
                         self.hardcodedStrings.append(line[len('Hardcoded|'):])
-                    parameter = getParameterFromString(line)
+                    parameter = getParameterFromString(line, "GrassAlgorithm")
                     if parameter is not None:
                         self.params.append(parameter)
                         if isinstance(parameter, (QgsProcessingParameterVectorLayer, QgsProcessingParameterFeatureSource)):
@@ -478,10 +479,10 @@ class Grass7Algorithm(QgsProcessingAlgorithm):
                 for idx, layer in enumerate(layers):
                     layerName = '{}_{}'.format(paramName, idx)
                     # Add a raster layer
-                    if layer.type() == QgsMapLayer.RasterLayer:
+                    if layer.type() == QgsMapLayerType.RasterLayer:
                         self.loadRasterLayer(layerName, layer)
                     # Add a vector layer
-                    elif layer.type() == QgsMapLayer.VectorLayer:
+                    elif layer.type() == QgsMapLayerType.VectorLayer:
                         self.loadVectorLayer(layerName, layer, external=None, feedback=feedback)
 
         self.postInputs()

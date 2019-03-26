@@ -79,7 +79,7 @@ class QgsExpressionContext;
 class CORE_EXPORT QgsLabelPosition
 {
   public:
-    QgsLabelPosition( int id, double r, const QVector< QgsPointXY > &corners, const QgsRectangle &rect, double w, double h, const QString &layer, const QString &labeltext, const QFont &labelfont, bool upside_down, bool diagram = false, bool pinned = false, const QString &providerId = QString() )
+    QgsLabelPosition( QgsFeatureId id, double r, const QVector< QgsPointXY > &corners, const QgsRectangle &rect, double w, double h, const QString &layer, const QString &labeltext, const QFont &labelfont, bool upside_down, bool diagram = false, bool pinned = false, const QString &providerId = QString() )
       : featureId( id )
       , rotation( r )
       , cornerPoints( corners )
@@ -98,7 +98,7 @@ class CORE_EXPORT QgsLabelPosition
     //! Constructor for QgsLabelPosition
     QgsLabelPosition() = default;
 
-    int featureId = -1;
+    QgsFeatureId featureId = FID_NULL;
     double rotation = 0;
     QVector< QgsPointXY > cornerPoints;
     QgsRectangle labelRect;
@@ -369,6 +369,20 @@ class CORE_EXPORT QgsPalLayerSettings
       Show = 15,
       AlwaysShow = 20
     };
+
+
+    /**
+     * Prepare for registration of features.
+     * The \a context, \a mapSettings and \a fields parameters give more
+     * information about the rendering environment.
+     * If target \a crs is not specified, the targetCrs from \a mapSettings
+     * will be taken.
+     * The parameter \a attributeNames should be updated to contain all the field
+     * names which the labeling requires for the rendering.
+     *
+     * \since QGIS 3.8
+     */
+    bool prepare( const QgsRenderContext &context, QSet<QString> &attributeNames SIP_INOUT, const QgsFields &fields, const QgsMapSettings &mapSettings, const QgsCoordinateReferenceSystem &crs );
 
     /**
      * Returns the labeling property definitions.
@@ -754,6 +768,15 @@ class CORE_EXPORT QgsPalLayerSettings
     //! Z-Index of label, where labels with a higher z-index are rendered on top of labels with a lower z-index
     double zIndex;
 
+    //! The geometry generator expression. Null if disabled.
+    QString geometryGenerator;
+
+    //! The type of the result geometry of the geometry generator.
+    QgsWkbTypes::GeometryType geometryGeneratorType = QgsWkbTypes::GeometryType::PointGeometry;
+
+    //! Defines if the geometry generator is enabled or not. If disabled, the standard geometry will be taken.
+    bool geometryGeneratorEnabled = false;
+
     /**
      * Calculates the space required to render the provided \a text in map units.
      * Results will be written to \a labelX and \a labelY.
@@ -917,6 +940,8 @@ class CORE_EXPORT QgsPalLayerSettings
     QFontDatabase mFontDB;
 
     QgsTextFormat mFormat;
+
+    QgsExpression mGeometryGeneratorExpression;
 
     static const QVector< PredefinedPointPosition > DEFAULT_PLACEMENT_ORDER;
 
