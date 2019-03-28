@@ -41,6 +41,7 @@ class QgsAccessControl;
 class QgsDxfExport;
 class QgsLayerTreeModel;
 class QgsLayerTree;
+class QgsServerInterface;
 
 class QImage;
 class QPaintDevice;
@@ -70,7 +71,7 @@ namespace QgsWms
       ~QgsRenderer();
 
       /**
-       * Returns the map legend as an image (or a null pointer in case of error). The caller takes ownership
+       * Returns the map legend as an image (or NULLPTR in case of error). The caller takes ownership
       of the image object*/
       QImage *getLegendGraphics();
 
@@ -78,7 +79,7 @@ namespace QgsWms
       typedef QHash<QgsVectorLayer *, SymbolSet> HitTest;
 
       /**
-       * Returns the map as an image (or a null pointer in case of error). The caller takes ownership
+       * Returns the map as an image (or NULLPTR in case of error). The caller takes ownership
       of the image object). If an instance to existing hit test structure is passed, instead of rendering
       it will fill the structure with symbols that would be used for rendering */
       QImage *getMap( HitTest *hitTest = nullptr );
@@ -90,22 +91,27 @@ namespace QgsWms
 
       /**
        * Returns the map as DXF data
-       \param options: extracted from the FORMAT_OPTIONS parameter
-       \returns the map as DXF data
-       \since QGIS 3.0*/
-      QgsDxfExport getDxf( const QMap<QString, QString> &options );
+       * \returns the map as DXF data
+       * \since QGIS 3.0
+      */
+      QgsDxfExport getDxf();
 
       /**
        * Returns printed page as binary
-        \param formatString out: format of the print output (e.g. pdf, svg, png, ...)
         \returns printed page as binary or 0 in case of error*/
-      QByteArray getPrint( const QString &formatString );
+      QByteArray getPrint();
 
       /**
        * Creates an xml document that describes the result of the getFeatureInfo request.
        * May throw an exception
        */
       QByteArray getFeatureInfo( const QString &version = "1.3.0" );
+
+      //! Returns the image quality to use for getMap request
+      int imageQuality() const;
+
+      //! Returns the precision to use for GetFeatureInfo request
+      int wmsPrecision() const;
 
     private:
 
@@ -114,6 +120,9 @@ namespace QgsWms
 
       // Build and returns highlight layers
       QList<QgsMapLayer *> highlightLayers( QList<QgsWmsParametersHighlightLayer> params );
+
+      // Build and returns external layers
+      QList<QgsMapLayer *> externalLayers( const QList<QgsWmsParametersExternalLayer> &params );
 
       // Init a map with nickname for layers' project
       void initNicknameLayers();
@@ -187,9 +196,10 @@ namespace QgsWms
        * Configures map settings according to WMS parameters.
        * \param paintDevice The device that is used for painting (for dpi)
        * \param mapSettings Map settings to use for rendering
+       * \param mandatoryCrsParam does the CRS parameter has to be considered mandatory
        * may throw an exception
        */
-      void configureMapSettings( const QPaintDevice *paintDevice, QgsMapSettings &mapSettings ) const;
+      void configureMapSettings( const QPaintDevice *paintDevice, QgsMapSettings &mapSettings, bool mandatoryCrsParam = true ) const;
 
       QDomDocument featureInfoDocument( QList<QgsMapLayer *> &layers, const QgsMapSettings &mapSettings,
                                         const QImage *outputImage, const QString &version ) const;
@@ -207,7 +217,7 @@ namespace QgsWms
        * \param version WMS version
        * \param featureBBox The bounding box of the selected features in output CRS
        * \param filterGeom Geometry for filtering selected features
-       * \returns true in case of success
+       * \returns TRUE in case of success
        */
       bool featureInfoFromVectorLayer( QgsVectorLayer *layer,
                                        const QgsPointXY *infoPoint,
@@ -254,6 +264,9 @@ namespace QgsWms
       //! Converts a feature info xml document to Text
       QByteArray convertFeatureInfoToText( const QDomDocument &doc ) const;
 
+      //! Converts a feature info xml document to json
+      QByteArray convertFeatureInfoToJson( const QList<QgsMapLayer *> &layers, const QDomDocument &doc ) const;
+
       QDomElement createFeatureGML(
         QgsFeature *feat,
         QgsVectorLayer *layer,
@@ -279,12 +292,23 @@ namespace QgsWms
        * */
       bool configurePrintLayout( QgsPrintLayout *c, const QgsMapSettings &mapSettings, bool atlasPrint = false );
 
-      //! Creates external WMS layer. Caller takes ownership
-      QgsMapLayer *createExternalWMSLayer( const QString &externalLayerId ) const;
-
       void removeTemporaryLayers();
 
-    private:
+      void handlePrintErrors( const QgsLayout *layout ) const;
+
+      /**
+       * Returns QgsWmsParameter SRCWIDTH if it's a GetLegendGraphics request and otherwise HEIGHT parameter
+       * \returns height parameter
+       * \since QGIS 3.8
+       */
+      int height() const;
+
+      /**
+       * Returns QgsWmsParameter SRCWIDTH parameter if it's a GetLegendGraphics request and otherwise WIDTH parameter
+       * \returns width parameter
+       * \since QGIS 3.8
+       */
+      int width() const;
 
       const QgsWmsParameters &mWmsParameters;
 
@@ -300,15 +324,6 @@ namespace QgsWms
       QMap<QString, QgsMapLayer *> mNicknameLayers;
       QMap<QString, QList<QgsMapLayer *> > mLayerGroups;
       QList<QgsMapLayer *> mTemporaryLayers;
-
-    public:
-
-      //! Returns the image quality to use for getMap request
-      int getImageQuality() const;
-
-      //! Returns the precision to use for GetFeatureInfo request
-      int getWMSPrecision() const;
-
   };
 
 } // namespace QgsWms

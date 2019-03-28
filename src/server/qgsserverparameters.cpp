@@ -61,9 +61,14 @@ QColor QgsServerParameterDefinition::toColor( bool &ok ) const
   return color;
 }
 
-QString QgsServerParameterDefinition::toString() const
+QString QgsServerParameterDefinition::toString( const bool defaultValue ) const
 {
-  return mValue.toString();
+  QString value = mValue.toString();
+
+  if ( value.isEmpty() && defaultValue )
+    value = mDefaultValue.toString();
+
+  return value;
 }
 
 QStringList QgsServerParameterDefinition::toStringList( const char delimiter ) const
@@ -397,6 +402,7 @@ QgsServerParameters::QgsServerParameters()
 QgsServerParameters::QgsServerParameters( const QUrlQuery &query )
   : QgsServerParameters()
 {
+  mUrlQuery = query;
   load( query );
 }
 
@@ -414,11 +420,16 @@ void QgsServerParameters::add( const QString &key, const QString &value )
 
 QUrlQuery QgsServerParameters::urlQuery() const
 {
-  QUrlQuery query;
+  QUrlQuery query = mUrlQuery;
 
-  for ( auto param : toMap().toStdMap() )
+  if ( query.isEmpty() )
   {
-    query.addQueryItem( param.first, param.second );
+    query.clear();
+
+    for ( auto param : toMap().toStdMap() )
+    {
+      query.addQueryItem( param.first, param.second );
+    }
   }
 
   return query;
@@ -533,7 +544,7 @@ void QgsServerParameters::load( const QUrlQuery &query )
         mParameters[name].raiseError();
       }
     }
-    else if ( item.first.compare( QLatin1String( "VERSION" ) ) == 0 )
+    else if ( item.first.compare( QLatin1String( "VERSION" ),  Qt::CaseInsensitive ) == 0 )
     {
       const QgsServerParameter::Name name = QgsServerParameter::VERSION_SERVICE;
       mParameters[name].mValue = item.second;

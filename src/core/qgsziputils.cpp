@@ -37,32 +37,27 @@ bool QgsZipUtils::unzip( const QString &zipFilename, const QString &dir, QString
 
   if ( !QFileInfo::exists( zipFilename ) )
   {
-    QString err = QObject::tr( "Error zip file does not exist: '%1'" ).arg( zipFilename );
-    QgsMessageLog::logMessage( err, QStringLiteral( "QgsZipUtils" ) );
+    QgsMessageLog::logMessage( QObject::tr( "Error zip file does not exist: '%1'" ).arg( zipFilename ) );
     return false;
   }
   else if ( zipFilename.isEmpty() )
   {
-    QString err = QObject::tr( "Error zip filename is empty" );
-    QgsMessageLog::logMessage( err, QStringLiteral( "QgsZipUtils" ) );
+    QgsMessageLog::logMessage( QObject::tr( "Error zip filename is empty" ) );
     return false;
   }
   else if ( !QDir( dir ).exists( dir ) )
   {
-    QString err = QObject::tr( "Error output dir does not exist: '%1'" ).arg( dir );
-    QgsMessageLog::logMessage( err, QStringLiteral( "QgsZipUtils" ) );
+    QgsMessageLog::logMessage( QObject::tr( "Error output dir does not exist: '%1'" ).arg( dir ) );
     return false;
   }
   else if ( !QFileInfo( dir ).isDir() )
   {
-    QString err = QObject::tr( "Error output dir is not a directory: '%1'" ).arg( dir );
-    QgsMessageLog::logMessage( err, QStringLiteral( "QgsZipUtils" ) );
+    QgsMessageLog::logMessage( QObject::tr( "Error output dir is not a directory: '%1'" ).arg( dir ) );
     return false;
   }
   else if ( !QFileInfo( dir ).isWritable() )
   {
-    QString err = QObject::tr( "Error output dir is not writable: '%1'" ).arg( dir );
-    QgsMessageLog::logMessage( err, QStringLiteral( "QgsZipUtils" ) );
+    QgsMessageLog::logMessage( QObject::tr( "Error output dir is not writable: '%1'" ).arg( dir ) );
     return false;
   }
 
@@ -92,18 +87,26 @@ bool QgsZipUtils::unzip( const QString &zipFilename, const QString &dir, QString
           if ( !newFile.absoluteDir().exists() )
           {
             if ( !QDir( dir ).mkpath( newFile.absolutePath() ) )
-              QgsMessageLog::logMessage( QString( "Failed to create a subdirectory %1/%2" ).arg( dir ).arg( fileName ) );
+              QgsMessageLog::logMessage( QObject::tr( "Failed to create a subdirectory %1/%2" ).arg( dir ).arg( fileName ) );
           }
           std::ofstream( newFile.absoluteFilePath().toStdString() ).write( buf, len );
 
+          QFile outFile( newFile.absoluteFilePath() );
+          if ( !outFile.open( QIODevice::WriteOnly | QIODevice::Truncate ) )
+          {
+            QgsMessageLog::logMessage( QObject::tr( "Could not write to %1" ).arg( newFile.absoluteFilePath() ) );
+          }
+          else
+          {
+            outFile.write( buf, len );
+          }
           zip_fclose( file );
           files.append( newFile.absoluteFilePath() );
         }
         else
         {
           zip_fclose( file );
-          QString err = QObject::tr( "Error reading file: '%1'" ).arg( zip_strerror( z ) );
-          QgsMessageLog::logMessage( err, QStringLiteral( "QgsZipUtils" ) );
+          QgsMessageLog::logMessage( QObject::tr( "Error reading file: '%1'" ).arg( zip_strerror( z ) ) );
           return false;
         }
       }
@@ -111,8 +114,7 @@ bool QgsZipUtils::unzip( const QString &zipFilename, const QString &dir, QString
     else
     {
       zip_close( z );
-      QString err = QObject::tr( "Error getting files: '%1'" ).arg( zip_strerror( z ) );
-      QgsMessageLog::logMessage( err, QStringLiteral( "QgsZipUtils" ) );
+      QgsMessageLog::logMessage( QObject::tr( "Error getting files: '%1'" ).arg( zip_strerror( z ) ) );
       return false;
     }
 
@@ -120,8 +122,7 @@ bool QgsZipUtils::unzip( const QString &zipFilename, const QString &dir, QString
   }
   else
   {
-    QString err = QObject::tr( "Error opening zip archive: '%1'" ).arg( z ? zip_strerror( z ) : zipFilename );
-    QgsMessageLog::logMessage( err, QStringLiteral( "QgsZipUtils" ) );
+    QgsMessageLog::logMessage( QObject::tr( "Error opening zip archive: '%1' (Error code: %2)" ).arg( z ? zip_strerror( z ) : zipFilename, rc ) );
     return false;
   }
 
@@ -132,8 +133,7 @@ bool QgsZipUtils::zip( const QString &zipFilename, const QStringList &files )
 {
   if ( zipFilename.isEmpty() )
   {
-    QString err = QObject::tr( "Error zip filename is empty" );
-    QgsMessageLog::logMessage( err, QStringLiteral( "QgsZipUtils" ) );
+    QgsMessageLog::logMessage( QObject::tr( "Error zip filename is empty" ) );
     return false;
   }
 
@@ -147,8 +147,7 @@ bool QgsZipUtils::zip( const QString &zipFilename, const QStringList &files )
       QFileInfo fileInfo( file );
       if ( !fileInfo.exists() )
       {
-        QString err = QObject::tr( "Error input file does not exist: '%1'" ).arg( file );
-        QgsMessageLog::logMessage( err, QStringLiteral( "QgsZipUtils" ) );
+        QgsMessageLog::logMessage( QObject::tr( "Error input file does not exist: '%1'" ).arg( file ) );
         zip_close( z );
         return false;
       }
@@ -163,16 +162,14 @@ bool QgsZipUtils::zip( const QString &zipFilename, const QStringList &files )
 #endif
         if ( rc == -1 )
         {
-          QString err = QObject::tr( "Error adding file: '%1'" ).arg( zip_strerror( z ) );
-          QgsMessageLog::logMessage( err, QStringLiteral( "QgsZipUtils" ) );
+          QgsMessageLog::logMessage( QObject::tr( "Error adding file '%1': %2" ).arg( file, zip_strerror( z ) ) );
           zip_close( z );
           return false;
         }
       }
       else
       {
-        QString err = QObject::tr( "Error creating data source: '%1'" ).arg( zip_strerror( z ) );
-        QgsMessageLog::logMessage( err, QStringLiteral( "QgsZipUtils" ) );
+        QgsMessageLog::logMessage( QObject::tr( "Error creating data source '%1': %2" ).arg( file, zip_strerror( z ) ) );
         zip_close( z );
         return false;
       }
@@ -182,8 +179,7 @@ bool QgsZipUtils::zip( const QString &zipFilename, const QStringList &files )
   }
   else
   {
-    QString err = QObject::tr( "Error creating zip archive: '%1'" ).arg( zip_strerror( z ) );
-    QgsMessageLog::logMessage( err, QStringLiteral( "QgsZipUtils" ) );
+    QgsMessageLog::logMessage( QObject::tr( "Error creating zip archive '%1': %2" ).arg( zipFilename, zip_strerror( z ) ) );
     return false;
   }
 

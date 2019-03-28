@@ -108,16 +108,25 @@ QList<QgsMapToolIdentify::IdentifyResult> QgsIdentifyMenu::exec( const QList<Qgs
     ++count;
     it.next();
     QgsMapLayer *layer = it.key();
-    if ( layer->type() == QgsMapLayer::RasterLayer )
+    switch ( layer->type() )
     {
-      addRasterLayer( layer );
-    }
-    else if ( layer->type() == QgsMapLayer::VectorLayer )
-    {
-      QgsVectorLayer *vl = qobject_cast<QgsVectorLayer *>( layer );
-      if ( !vl )
-        continue;
-      addVectorLayer( vl, it.value(), singleLayer );
+      case QgsMapLayerType::RasterLayer:
+      {
+        addRasterLayer( layer );
+        break;
+      }
+      case QgsMapLayerType::VectorLayer:
+      {
+        QgsVectorLayer *vl = qobject_cast<QgsVectorLayer *>( layer );
+        if ( !vl )
+          continue;
+        addVectorLayer( vl, it.value(), singleLayer );
+        break;
+      }
+
+      case QgsMapLayerType::PluginLayer:
+      case QgsMapLayerType::MeshLayer:
+        break;
     }
   }
 

@@ -124,10 +124,7 @@ MDAL::cfdataset_info_map MDAL::DriverCF::parseDatasetGroupInfo()
   }
   while ( true );
 
-  if ( dsinfo_map.size() == 0 )
-  {
-    throw MDAL_Status::Err_InvalidData;
-  }
+  if ( dsinfo_map.size() == 0 ) throw MDAL_Status::Err_InvalidData;
 
   return dsinfo_map;
 }
@@ -385,16 +382,6 @@ void MDAL::CFDimensions::setDimension( MDAL::CFDimensions::Type type,
 {
   mNcId[ncid] = type;
   mCount[type] = count;
-}
-
-size_t MDAL::CFDimensions::faceCount() const
-{
-  return size( Face2D ) + size( Line1D );
-}
-
-size_t MDAL::CFDimensions::vertexCount() const
-{
-  return size( Vertex1D ) + size( Vertex2D );
 }
 
 bool MDAL::CFDimensions::isDatasetType( MDAL::CFDimensions::Type type ) const

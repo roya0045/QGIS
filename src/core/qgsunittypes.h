@@ -87,8 +87,8 @@ class CORE_EXPORT QgsUnitTypes
       AreaAcres, //!< Acres
       AreaSquareNauticalMiles, //!< Square nautical miles
       AreaSquareDegrees, //!< Square degrees, for planar geographic CRS area measurements
-      AreaSquareCentimeters, //! Square centimeters
-      AreaSquareMillimeters, //! Square millimeters
+      AreaSquareCentimeters, //!< Square centimeters
+      AreaSquareMillimeters, //!< Square millimeters
       AreaUnknownUnit, //!< Unknown areal unit
     };
     Q_ENUM( AreaUnit )
@@ -113,8 +113,8 @@ class CORE_EXPORT QgsUnitTypes
       RenderMapUnits, //!< Map units
       RenderPixels, //!< Pixels
       RenderPercentage, //!< Percentage of another measurement (e.g., canvas size, feature size)
-      RenderPoints, //! points (e.g., for font sizes)
-      RenderInches, //! Inches
+      RenderPoints, //!< Points (e.g., for font sizes)
+      RenderInches, //!< Inches
       RenderUnknownUnit, //!< Mixed or unknown units
       RenderMetersInMapUnits, //!< Meters value as Map units
     };
@@ -200,7 +200,7 @@ class CORE_EXPORT QgsUnitTypes
     /**
      * Decodes a distance unit from a string.
      * \param string string to decode
-     * \param ok optional boolean, will be set to true if string was converted successfully
+     * \param ok optional boolean, will be set to TRUE if string was converted successfully
      * \returns decoded units
      * \see encodeUnit()
      */
@@ -225,7 +225,7 @@ class CORE_EXPORT QgsUnitTypes
     /**
      * Converts a translated string to a distance unit.
      * \param string string representing a distance unit
-     * \param ok optional boolean, will be set to true if string was converted successfully
+     * \param ok optional boolean, will be set to TRUE if string was converted successfully
      * \returns the distance unit
      * \see toString()
      */
@@ -257,7 +257,7 @@ class CORE_EXPORT QgsUnitTypes
     /**
      * Decodes an areal unit from a string.
      * \param string string to decode
-     * \param ok optional boolean, will be set to true if string was converted successfully
+     * \param ok optional boolean, will be set to TRUE if string was converted successfully
      * \returns decoded units
      * \see encodeUnit()
     */
@@ -282,7 +282,7 @@ class CORE_EXPORT QgsUnitTypes
     /**
      * Converts a translated string to an areal unit.
      * \param string string representing an areal unit
-     * \param ok optional boolean, will be set to true if string was converted successfully
+     * \param ok optional boolean, will be set to TRUE if string was converted successfully
      * \returns the area unit
      * \see toString()
      */
@@ -316,7 +316,7 @@ class CORE_EXPORT QgsUnitTypes
     /**
      * Decodes an angular unit from a string.
      * \param string string to decode
-     * \param ok optional boolean, will be set to true if string was converted successfully
+     * \param ok optional boolean, will be set to TRUE if string was converted successfully
      * \returns decoded units
      * \see encodeUnit()
     */
@@ -373,7 +373,7 @@ class CORE_EXPORT QgsUnitTypes
      * \param distance distance to format
      * \param decimals number of decimal places to show
      * \param unit unit of distance
-     * \param keepBaseUnit set to false to allow conversion of large distances to more suitable units, e.g., meters to
+     * \param keepBaseUnit set to FALSE to allow conversion of large distances to more suitable units, e.g., meters to
      * kilometers
      * \returns formatted distance string
      * \see formatArea()
@@ -386,7 +386,7 @@ class CORE_EXPORT QgsUnitTypes
      * \param area area to format
      * \param decimals number of decimal places to show
      * \param unit unit of area
-     * \param keepBaseUnit set to false to allow conversion of large areas to more suitable units, e.g., square meters to
+     * \param keepBaseUnit set to FALSE to allow conversion of large areas to more suitable units, e.g., square meters to
      * square kilometers
      * \returns formatted area string
      * \see formatDistance()
@@ -407,7 +407,7 @@ class CORE_EXPORT QgsUnitTypes
     /**
      * Decodes a render unit from a string.
      * \param string string to decode
-     * \param ok optional boolean, will be set to true if string was converted successfully
+     * \param ok optional boolean, will be set to TRUE if string was converted successfully
      * \returns decoded units
      * \see encodeUnit()
      */
@@ -434,7 +434,7 @@ class CORE_EXPORT QgsUnitTypes
     /**
      * Decodes a layout unit from a string.
      * \param string string to decode
-     * \param ok optional boolean, will be set to true if string was converted successfully
+     * \param ok optional boolean, will be set to TRUE if string was converted successfully
      * \returns decoded units
      * \see encodeUnit()
      * \since QGIS 3.0

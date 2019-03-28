@@ -27,6 +27,8 @@
 #include "qgsapplication.h"
 #include "qgsmaplayerlistutils.h"
 #include "qgsvectorlayer.h"
+#include "qgscoordinatereferencesystem.h"
+#include "qgsexpressioncontextutils.h"
 
 class TestQgsMapSettings: public QObject
 {
@@ -258,12 +260,15 @@ void TestQgsMapSettings::testIsLayerVisible()
   QCOMPARE( r.toBool(), false );
 
   QgsProject::instance()->removeMapLayer( vlA );
+  e.prepare( &context );
   r = e.evaluate( &context );
   QCOMPARE( r.toBool(), false ); // layer is deleted
+  e2.prepare( &context );
   r = e2.evaluate( &context );
   QCOMPARE( r.toBool(), true ); // layer still exists
 
   QgsProject::instance()->removeMapLayer( vlB );
+  e2.prepare( &context );
   r = e2.evaluate( &context );
   QCOMPARE( r.toBool(), false ); // layer is deleted
 

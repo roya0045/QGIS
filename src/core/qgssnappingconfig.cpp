@@ -324,7 +324,7 @@ void QgsSnappingConfig::readProject( const QDomDocument &doc )
       QgsTolerance::UnitType units = ( QgsTolerance::UnitType )settingElement.attribute( QStringLiteral( "units" ) ).toInt();
 
       QgsMapLayer *ml = mProject->mapLayer( layerId );
-      if ( !ml || ml->type() != QgsMapLayer::VectorLayer )
+      if ( !ml || ml->type() != QgsMapLayerType::VectorLayer )
         continue;
 
       QgsVectorLayer *vl = qobject_cast<QgsVectorLayer *>( ml );

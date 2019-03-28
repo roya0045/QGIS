@@ -143,8 +143,14 @@ std::unique_ptr<MDAL::Mesh> MDAL::DriverSWW::load( const std::string &resultsFil
     nodesPtr->y = static_cast<double>( py[i] + yLLcorner );
   }
 
-  std::vector<float> times( nTimesteps );
-  nc_get_var_float( ncid, timeid, times.data() );
+MDAL::Faces MDAL::DriverSWW::readFaces( const NetCDFFile &ncFile ) const
+{
+  // get dimensions
+  int nVolumesId, nVerticesId;
+  size_t nVolumes, nVertices;
+  ncFile.getDimension( "number_of_volumes", &nVolumes, &nVolumesId );
+  ncFile.getDimension( "number_of_vertices", &nVertices, &nVerticesId );
+  if ( nVertices != 3 ) throw MDAL_Status::Err_UnknownFormat;
 
   int zDims = 0;
   if ( nc_inq_varid( ncid, "z", &zid ) == NC_NOERR &&

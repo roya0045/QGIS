@@ -32,6 +32,8 @@
 #include "qgsstyle.h"
 #include "qgsfieldformatter.h"
 #include "qgsfieldformatterregistry.h"
+#include "qgsapplication.h"
+#include "qgsexpressioncontextutils.h"
 
 #include <QDomDocument>
 #include <QDomElement>
@@ -532,7 +534,7 @@ QString QgsCategorizedSymbolRenderer::filter( const QgsFields &fields )
 
   for ( const QgsRendererCategory &cat : qgis::as_const( mCategories ) )
   {
-    if ( cat.value() == "" )
+    if ( cat.value() == "" || cat.value().isNull() )
     {
       hasDefault = true;
       defaultActive = cat.renderState();

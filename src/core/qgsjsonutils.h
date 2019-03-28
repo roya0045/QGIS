@@ -64,7 +64,7 @@ class CORE_EXPORT QgsJsonExporter
 
     /**
      * Sets whether to include geometry in the JSON exports.
-     * \param includeGeometry set to false to prevent geometry inclusion
+     * \param includeGeometry set to FALSE to prevent geometry inclusion
      * \see includeGeometry()
      */
     void setIncludeGeometry( bool includeGeometry ) { mIncludeGeometry = includeGeometry; }
@@ -77,7 +77,7 @@ class CORE_EXPORT QgsJsonExporter
 
     /**
      * Sets whether to include attributes in the JSON exports.
-     * \param includeAttributes set to false to prevent attribute inclusion
+     * \param includeAttributes set to FALSE to prevent attribute inclusion
      * \see includeAttributes()
      */
     void setIncludeAttributes( bool includeAttributes ) { mIncludeAttributes = includeAttributes; }
@@ -90,7 +90,7 @@ class CORE_EXPORT QgsJsonExporter
 
     /**
      * Sets whether to include attributes of features linked via references in the JSON exports.
-     * \param includeRelated set to true to include attributes for any related child features
+     * \param includeRelated set to TRUE to include attributes for any related child features
      * within the exported properties element.
      * \note associated vector layer must be set with setVectorLayer()
      * \see includeRelated()
@@ -102,6 +102,20 @@ class CORE_EXPORT QgsJsonExporter
      * \see setIncludeRelated()
      */
     bool includeRelated() const { return mIncludeRelatedAttributes; }
+
+    /**
+     * Sets whether to print original names of attributes or aliases if
+     * defined.
+     * \since QGIS 3.6
+     */
+    void setAttributeDisplayName( bool displayName ) { mAttributeDisplayName = displayName; };
+
+    /**
+     * Returns whether original names of attributes or aliases are printed.
+     * \since QGIS 3.6
+     */
+
+    bool attributeDisplayName() const { return mAttributeDisplayName; }
 
     /**
      * Sets the associated vector layer (required for related attribute export). This will automatically
@@ -223,6 +237,7 @@ class CORE_EXPORT QgsJsonExporter
 
     QgsCoordinateTransform mTransform;
 
+    bool mAttributeDisplayName = false;
 };
 
 /**

@@ -12,7 +12,11 @@
 # py files located under /usr/share/qgis/python/plugins
 %global __python %{__python3}
 
+%if 0%{?fedora} >= 30
+%define grass grass76
+%else
 %define grass grass74
+%endif
 
 %if %{_timestamp} > 0
 # Epoch is set only when building packages from master
@@ -105,7 +109,6 @@ BuildRequires:  qt5-qtlocation-devel
 BuildRequires:  qt5-qtsvg-devel
 BuildRequires:  qt5-qttools-static
 BuildRequires:  qt5-qtwebkit-devel
-BuildRequires:  qt5-qtxmlpatterns-devel
 BuildRequires:  qtkeychain-qt5-devel
 BuildRequires:  qt5-qtserialport-devel
 BuildRequires:  qt5-qt3d-devel
@@ -250,6 +253,8 @@ rm -f %{buildroot}%{_datadir}/%{name}/doc/INSTALL*
 
 %find_lang %{name} --with-qt
 
+# TODO: Remove all %%post, %%posttrans and %%postun after F28 EoL
+# Ref: https://fedoraproject.org/wiki/Changes/RemoveObsoleteScriptlets
 %post
 /sbin/ldconfig
 touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :

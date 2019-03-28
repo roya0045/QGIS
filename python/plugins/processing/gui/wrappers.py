@@ -45,6 +45,8 @@ from qgis.core import (
     QgsSettings,
     QgsProject,
     QgsMapLayer,
+    QgsMapLayerType,
+    QgsVectorLayer,
     QgsProcessing,
     QgsProcessingUtils,
     QgsProcessingParameterDefinition,
@@ -79,7 +81,8 @@ from qgis.core import (
     QgsProcessingModelChildParameterSource,
     QgsProcessingModelAlgorithm,
     QgsRasterDataProvider,
-    NULL)
+    NULL,
+    Qgis)
 
 from qgis.PyQt.QtWidgets import (
     QCheckBox,
@@ -736,7 +739,7 @@ class MultipleLayerWidgetWrapper(WidgetWrapper):
     def value(self):
         if self.dialogType == DIALOG_STANDARD:
             if self.parameterDefinition().layerType() == QgsProcessing.TypeFile:
-                return self.parameterDefinition().setValue(self.widget.selectedoptions)
+                return self.widget.selectedoptions
             else:
                 if self.parameterDefinition().layerType() == QgsProcessing.TypeRaster:
                     options = QgsProcessingUtils.compatibleRasterLayers(QgsProject.instance(), False)
@@ -1088,6 +1091,7 @@ class FeatureSourceWidgetWrapper(WidgetWrapper):
     NOT_SELECTED = '[Not selected]'
 
     def createWidget(self):
+        self.fileBasedLayers = {}
         if self.dialogType == DIALOG_STANDARD:
             widget = QWidget()
             layout = QHBoxLayout()
@@ -1130,7 +1134,7 @@ class FeatureSourceWidgetWrapper(WidgetWrapper):
                 filters = QgsMapLayerProxyModel.VectorLayer
 
             try:
-                if iface.activeLayer().type() == QgsMapLayer.VectorLayer:
+                if iface.activeLayer().type() == QgsMapLayerType.VectorLayer:
                     self.combo.setLayer(iface.activeLayer())
                     self.use_selection_checkbox.setEnabled(iface.activeLayer().selectedFeatureCount() > 0)
 
@@ -1181,7 +1185,7 @@ class FeatureSourceWidgetWrapper(WidgetWrapper):
             return widget
 
     def layerChanged(self, layer):
-        if layer is None or layer.type() != QgsMapLayer.VectorLayer or layer.selectedFeatureCount() == 0:
+        if layer is None or layer.type() != QgsMapLayerType.VectorLayer or layer.selectedFeatureCount() == 0:
             self.use_selection_checkbox.setChecked(False)
             self.use_selection_checkbox.setEnabled(False)
         else:
@@ -1430,6 +1434,7 @@ class VectorLayerWidgetWrapper(WidgetWrapper):
     NOT_SELECTED = '[Not selected]'
 
     def createWidget(self):
+        self.fileBasedLayers = {}
         if self.dialogType == DIALOG_STANDARD:
             widget = QWidget()
             layout = QHBoxLayout()
@@ -1466,7 +1471,7 @@ class VectorLayerWidgetWrapper(WidgetWrapper):
 
             self.combo.setExcludedProviders(['grass'])
             try:
-                if iface.activeLayer().type() == QgsMapLayer.VectorLayer:
+                if iface.activeLayer().type() == QgsMapLayerType.VectorLayer:
                     self.combo.setLayer(iface.activeLayer())
             except:
                 pass
@@ -1615,14 +1620,29 @@ class TableFieldWidgetWrapper(WidgetWrapper):
                 break
 
     def parentValueChanged(self, wrapper):
-        self.setLayer(wrapper.parameterValue())
+        value = wrapper.parameterValue()
+        if value in wrapper.fileBasedLayers:
+            self.setLayer(wrapper.fileBasedLayers[value])
+        else:
+            self.setLayer(value)
+            wrapper.fileBasedLayers[value] = self._layer
 
     def setLayer(self, layer):
         if isinstance(layer, QgsProcessingFeatureSourceDefinition):
             layer, ok = layer.source.valueAsString(self.context.expressionContext())
         if isinstance(layer, str):
-            layer = QgsProcessingUtils.mapLayerFromString(layer, self.context)
+            if not layer:  # empty string
+                layer = None
+            else:
+                layer = QgsProcessingUtils.mapLayerFromString(layer, self.context)
+                if not isinstance(layer, QgsVectorLayer) or not layer.isValid():
+                    self.dialog.messageBar().clearWidgets()
+                    self.dialog.messageBar().pushMessage("", self.tr("Could not load selected layer/table. Dependent field could not be populated"),
+                                                         level=Qgis.Warning, duration=5)
+                    return
+
         self._layer = layer
+
         self.refreshItems()
 
     def refreshItems(self):
@@ -1832,6 +1852,7 @@ class WidgetWrapperFactory:
                                               QgsProcessingGui.Standard)
                 wrapper = QgsGui.processingGuiRegistry().createParameterWidgetWrapper(param, dialog_type)
             if wrapper is not None:
+                wrapper.setDialog(dialog)
                 return wrapper
 
             # fallback to Python registry

@@ -12,6 +12,8 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
+
+#include <QApplication>
 #include <QDesktopWidget>
 #include <QString>
 
@@ -92,11 +94,22 @@ bool QgsQuickUtils::fileExists( const QString &path )
   return ( check_file.exists() && check_file.isFile() );
 }
 
-QString QgsQuickUtils::getFileName( const QString &path )
+QString QgsQuickUtils::getRelativePath( const QString &path, const QString &prefixPath )
 {
-  QFileInfo fileInfo( path );
-  QString filename( fileInfo.fileName() );
-  return filename;
+  QString resultPath = path;
+  QString prefixPathWithSlash;
+  if ( !prefixPath.endsWith( "/" ) )
+    prefixPathWithSlash = QStringLiteral( "%1/" ).arg( prefixPath );
+  else
+    prefixPathWithSlash = prefixPath;
+
+  if ( resultPath.startsWith( prefixPathWithSlash ) )
+    return resultPath.replace( prefixPathWithSlash, QString() );
+  QString filePrefixPath = QStringLiteral( "file://%1" ).arg( prefixPathWithSlash );
+  if ( resultPath.startsWith( filePrefixPath ) )
+    return resultPath.replace( filePrefixPath, QString() );
+
+  return QString();
 }
 
 void QgsQuickUtils::logMessage( const QString &message, const QString &tag, Qgis::MessageLevel level )
@@ -157,6 +170,12 @@ QString QgsQuickUtils::formatDistance( double distance,
   return QStringLiteral( "%1 %2" )
          .arg( QString::number( destDistance, 'f', decimals ) )
          .arg( QgsUnitTypes::toAbbreviatedString( destUnits ) );
+}
+
+bool QgsQuickUtils::removeFile( const QString &filePath )
+{
+  QFile file( filePath );
+  return file.remove( filePath );
 }
 
 
