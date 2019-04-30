@@ -704,6 +704,13 @@ class CORE_EXPORT QgsFeatureRequest
      */
     QgsFeatureRequest &setRequestMayBeNested( bool requestMayBeNested );
 
+    /**
+     * Returns true if the request contains a list of feature Ids to filter.
+     * 
+     * \since QGIS 3.8
+     */
+    bool hasCachedFids() const { return mCachedFids };
+
   protected:
     FilterType mFilter = FilterNone;
     QgsRectangle mFilterRect;
@@ -723,6 +730,7 @@ class CORE_EXPORT QgsFeatureRequest
     QgsCoordinateTransformContext mTransformContext;
     int mTimeout = -1;
     int mRequestMayBeNested = false;
+    bool mCachedFids = false;
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS( QgsFeatureRequest::Flags )

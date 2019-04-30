@@ -37,6 +37,7 @@ QgsFeatureRequest::QgsFeatureRequest( QgsFeatureId fid )
 QgsFeatureRequest::QgsFeatureRequest( const QgsFeatureIds &fids )
   : mFilter( FilterFids )
   , mFilterFids( fids )
+  , mCachedFids( true )
   , mFlags( nullptr )
 {
 
@@ -87,6 +88,7 @@ QgsFeatureRequest &QgsFeatureRequest::operator=( const QgsFeatureRequest &rh )
   mTransformErrorCallback = rh.mTransformErrorCallback;
   mTimeout = rh.mTimeout;
   mRequestMayBeNested = rh.mRequestMayBeNested;
+  mCachedFids = rh.mCachedFids;
   return *this;
 }
 
@@ -107,6 +109,7 @@ QgsFeatureRequest &QgsFeatureRequest::setFilterFids( const QgsFeatureIds &fids )
 {
   mFilter = FilterFids;
   mFilterFids = fids;
+  mCachedFids = true;
   return *this;
 }
 
