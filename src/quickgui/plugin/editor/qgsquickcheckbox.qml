@@ -25,6 +25,12 @@ import QgsQuick 0.1 as QgsQuick
 Item {
   signal valueChanged( var value, bool isNull )
 
+  /**
+   * Handling missing config value for un/checked state for boolean field
+   */
+  property var checkedState: getConfigValue(config['CheckedState'], true)
+  property var uncheckedState: getConfigValue(config['UncheckedState'], false)
+
   id: fieldItem
   enabled: !readOnly
   height: childrenRect.height
@@ -33,40 +39,46 @@ Item {
     left: parent.left
   }
 
+  function getConfigValue(configValue, defaultValue) {
+     if (typeof value === "boolean" && !configValue) {
+         return defaultValue
+     } else return configValue
+  }
+
   CheckBox {
     property var currentValue: value
-    height: customStyle.height
+    height: customStyle.fields.height
     id: checkBox
     leftPadding: 0
-    checked: value == config['CheckedState']
+    checked: value === fieldItem.checkedState
 
     indicator: Rectangle {
-                implicitWidth: customStyle.height
-                implicitHeight: customStyle.height
-                radius: customStyle.cornerRadius
-                border.color: checkBox.activeFocus ? customStyle.fontColor : "grey"
+                implicitWidth: customStyle.fields.height
+                implicitHeight: customStyle.fields.height
+                radius: customStyle.fields.cornerRadius
+                border.color: checkBox.activeFocus ? customStyle.fields.fontColor : "grey"
                 border.width: 1
                 Rectangle {
                     visible: checkBox.checked
-                    color: customStyle.fontColor
-                    radius: customStyle.cornerRadius
+                    color: customStyle.fields.fontColor
+                    radius: customStyle.fields.cornerRadius
                     anchors.margins: 4
                     anchors.fill: parent
                 }
 
                 MouseArea {
                     anchors.fill: parent
-                    onClicked: checkBox.currentValue = !checkBox.currentValue
+                    onClicked: checkBox.checked = !checkBox.checked
                 }
         }
     onCheckedChanged: {
-      valueChanged( checked ? config['CheckedState'] : config['UncheckedState'], false )
+      valueChanged( checked ? fieldItem.checkedState : fieldItem.uncheckedState, false )
       forceActiveFocus()
     }
 
     // Workaround to get a signal when the value has changed
     onCurrentValueChanged: {
-      checked = currentValue == config['CheckedState']
+      checked = currentValue === fieldItem.checkedState
     }
   }
 }

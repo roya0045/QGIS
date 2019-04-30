@@ -43,26 +43,30 @@
 **
 ****************************************************************************/
 
+#include "characterwidget.h"
+#include "qgsapplication.h"
+
 #include <QFontDatabase>
 #include <QMouseEvent>
 #include <QPaintEvent>
 #include <QPainter>
 #include <QPen>
 #include <QPoint>
+#include <QScrollArea>
+#include <QScrollBar>
 #include <QToolTip>
-
-#include "characterwidget.h"
 
 CharacterWidget::CharacterWidget( QWidget *parent )
   : QWidget( parent )
 {
   setMouseTracking( true );
+  setFocusPolicy( Qt::StrongFocus );
 }
 
 void CharacterWidget::setFont( const QFont &font )
 {
   mDisplayFont.setFamily( font.family() );
-  mSquareSize = std::max( 24, QFontMetrics( mDisplayFont ).xHeight() * 3 );
+  mSquareSize = std::max( 34, QFontMetrics( mDisplayFont ).xHeight() * 3 );
   adjustSize();
   update();
 }
@@ -70,7 +74,7 @@ void CharacterWidget::setFont( const QFont &font )
 void CharacterWidget::setFontSize( double fontSize )
 {
   mDisplayFont.setPointSizeF( fontSize );
-  mSquareSize = std::max( 24, QFontMetrics( mDisplayFont ).xHeight() * 3 );
+  mSquareSize = std::max( 34, QFontMetrics( mDisplayFont ).xHeight() * 3 );
   adjustSize();
   update();
 }
@@ -81,7 +85,7 @@ void CharacterWidget::setFontStyle( const QString &fontStyle )
   const QFont::StyleStrategy oldStrategy = mDisplayFont.styleStrategy();
   mDisplayFont = fontDatabase.font( mDisplayFont.family(), fontStyle, mDisplayFont.pointSize() );
   mDisplayFont.setStyleStrategy( oldStrategy );
-  mSquareSize = std::max( 24, QFontMetrics( mDisplayFont ).xHeight() * 3 );
+  mSquareSize = std::max( 34, QFontMetrics( mDisplayFont ).xHeight() * 3 );
   adjustSize();
   update();
 }
@@ -108,6 +112,13 @@ void CharacterWidget::setColumns( int columns )
 void CharacterWidget::setCharacter( QChar character )
 {
   mLastKey = character.unicode();
+  QWidget *widget = parentWidget();
+  if ( widget )
+  {
+    QScrollArea *scrollArea = qobject_cast< QScrollArea *>( widget->parent() );
+    if ( scrollArea && mLastKey < 65536 )
+      scrollArea->verticalScrollBar()->setValue( mLastKey / mColumns * mSquareSize );
+  }
   update();
 }
 
@@ -116,15 +127,29 @@ QSize CharacterWidget::sizeHint() const
   return QSize( mColumns * mSquareSize, ( 65536 / mColumns ) * mSquareSize );
 }
 
+void CharacterWidget::keyPressEvent( QKeyEvent *event )
+{
+  if ( !event->text().isEmpty() )
+  {
+    QChar chr = event->text().at( 0 );
+    if ( chr.unicode() != mLastKey )
+    {
+      setCharacter( chr );
+      emit characterSelected( chr );
+    }
+  }
+}
+
 void CharacterWidget::mouseMoveEvent( QMouseEvent *event )
 {
   QPoint widgetPosition = mapFromGlobal( event->globalPos() );
   uint key = ( widgetPosition.y() / mSquareSize ) * mColumns + widgetPosition.x() / mSquareSize;
 
-  QString text = tr( "<p>Character: <span style=\"font-size: 24pt; font-family: %1\">%2</span><p>Value: 0x%3" )
+  QString text = tr( "<p>Character: <span style=\"font-size: 24pt; font-family: %1\">%2</span><p>Decimal: %3<p>Hex: 0x%4" )
                  .arg( mDisplayFont.family() )
                  .arg( QChar( key ) )
-                 .arg( key, 16 );
+                 .arg( key )
+                 .arg( QString::number( key, 16 ) );
   QToolTip::showText( event->globalPos(), text, this );
 }
 
@@ -144,7 +169,8 @@ void CharacterWidget::mousePressEvent( QMouseEvent *event )
 void CharacterWidget::paintEvent( QPaintEvent *event )
 {
   QPainter painter( this );
-  painter.fillRect( event->rect(), QBrush( Qt::white ) );
+  QPalette palette = qApp->palette();
+  painter.fillRect( event->rect(), QBrush( palette.color( QPalette::Base ) ) );
   painter.setFont( mDisplayFont );
 
   QRect redrawRect = event->rect();
@@ -153,7 +179,7 @@ void CharacterWidget::paintEvent( QPaintEvent *event )
   int beginColumn = redrawRect.left() / mSquareSize;
   int endColumn = redrawRect.right() / mSquareSize;
 
-  painter.setPen( QPen( Qt::gray ) );
+  painter.setPen( QPen( palette.color( QPalette::Mid ) ) );
   for ( int row = beginRow; row <= endRow; ++row )
   {
     for ( int column = beginColumn; column <= endColumn; ++column )
@@ -163,18 +189,16 @@ void CharacterWidget::paintEvent( QPaintEvent *event )
   }
 
   QFontMetrics fontMetrics( mDisplayFont );
-  painter.setPen( QPen( Qt::black ) );
   for ( int row = beginRow; row <= endRow; ++row )
   {
-
     for ( int column = beginColumn; column <= endColumn; ++column )
     {
-
       int key = row * mColumns + column;
       painter.setClipRect( column * mSquareSize, row * mSquareSize, mSquareSize, mSquareSize );
+      painter.setPen( QPen( palette.color( key == mLastKey ? QPalette::HighlightedText : QPalette::WindowText ) ) );
 
       if ( key == mLastKey )
-        painter.fillRect( column * mSquareSize + 1, row * mSquareSize + 1, mSquareSize, mSquareSize, QBrush( Qt::red ) );
+        painter.fillRect( column * mSquareSize + 1, row * mSquareSize + 1, mSquareSize, mSquareSize, QBrush( palette.color( QPalette::Highlight ) ) );
 
       painter.drawText( column * mSquareSize + ( mSquareSize / 2 ) - fontMetrics.width( QChar( key ) ) / 2,
                         row * mSquareSize + 4 + fontMetrics.ascent(),
