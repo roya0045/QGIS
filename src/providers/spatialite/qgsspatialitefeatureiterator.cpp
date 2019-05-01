@@ -100,6 +100,8 @@ QgsSpatiaLiteFeatureIterator::QgsSpatiaLiteFeatureIterator( QgsSpatiaLiteFeature
   //IMPORTANT - this MUST be the last clause added!
   else if ( request.filterType() == QgsFeatureRequest::FilterExpression )
   {
+    if ( request.iterateOnFids() )
+      whereClauses.append( whereClauseFids() );
     // ensure that all attributes required for expression filter are being fetched
     if ( mRequest.flags() & QgsFeatureRequest::SubsetOfAttributes && request.filterType() == QgsFeatureRequest::FilterExpression )
     {

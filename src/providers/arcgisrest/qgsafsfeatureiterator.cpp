@@ -62,7 +62,7 @@ QgsAfsFeatureIterator::QgsAfsFeatureIterator( QgsAfsFeatureSource *source, bool 
   }
 
   QgsFeatureIds requestIds;
-  if ( mRequest.filterType() == QgsFeatureRequest::FilterFids )
+  if ( mRequest.filterType() == QgsFeatureRequest::FilterFids ||  mRequest.iterateOnFids() )
   {
     requestIds = mRequest.filterFids();
   }

@@ -37,7 +37,6 @@ QgsFeatureRequest::QgsFeatureRequest( QgsFeatureId fid )
 QgsFeatureRequest::QgsFeatureRequest( const QgsFeatureIds &fids )
   : mFilter( FilterFids )
   , mFilterFids( fids )
-  , mCachedFids( true )
   , mFlags( nullptr )
 {
 
@@ -88,7 +87,7 @@ QgsFeatureRequest &QgsFeatureRequest::operator=( const QgsFeatureRequest &rh )
   mTransformErrorCallback = rh.mTransformErrorCallback;
   mTimeout = rh.mTimeout;
   mRequestMayBeNested = rh.mRequestMayBeNested;
-  mCachedFids = rh.mCachedFids;
+  mFidsIterator = rh.mFidsIterator;
   return *this;
 }
 
@@ -109,7 +108,6 @@ QgsFeatureRequest &QgsFeatureRequest::setFilterFids( const QgsFeatureIds &fids )
 {
   mFilter = FilterFids;
   mFilterFids = fids;
-  mCachedFids = true;
   return *this;
 }
 
@@ -331,6 +329,18 @@ QgsFeatureRequest &QgsFeatureRequest::setRequestMayBeNested( bool requestMayBeNe
   mRequestMayBeNested = requestMayBeNested;
   return *this;
 }
+
+  void QgsFeatureRequest::iterateFidsOnly( bool useFids )
+  { 
+    mFidsIterator = useFids;
+  }
+
+  const bool QgsFeatureRequest::iterateOnFids()
+  {
+    if ( mFidsIterator && !mFilterFids.isEmpty() )
+      return true;
+    return false;
+  }
 
 
 #include "qgsfeatureiterator.h"
