@@ -1001,9 +1001,9 @@ QgsFeatureRequest QgsWFSFeatureIterator::buildRequestCache( int genCounter )
   }
   else
   {
-    if( mRequest.iterateOnFids() )
+    if ( mRequest.iterateOnFids() )
     {
-          requestCache.setFilterFids( mShared->dbIdsFromQgisIds( mRequest.filterFids() ) );
+      requestCache.setFilterFids( mShared->dbIdsFromQgisIds( mRequest.filterFids() ) );
     }
     if ( mRequest.filterType() == QgsFeatureRequest::FilterExpression )
     {

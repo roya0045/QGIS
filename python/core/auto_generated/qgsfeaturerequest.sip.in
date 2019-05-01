@@ -738,20 +738,21 @@ expression function.
 .. versionadded:: 3.4
 %End
 
-    void iterateFidsOnly( const bool useFids );
+    void iterateFidsOnly( bool useFids );
 %Docstring
-False = Default iterator behaviour, will ignore provided Fids and will iterate over every features if not filtering by fids.
+False = Default iterator behavior, will ignore provided Fids and will iterate over every features if not filtering by fids.
 True = Enable using the provided fids as a base in the iterator instead of the full list of features.
 
 .. versionadded:: 3.8
 %End
 
-    const bool iterateOnFids();
+    bool iterateOnFids() const;
 %Docstring
 Returns true if Fid iteration was enabled.
 
 .. versionadded:: 3.8
 %End
+
   protected:
 };
 

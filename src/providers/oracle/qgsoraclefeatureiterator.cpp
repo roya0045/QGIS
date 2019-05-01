@@ -165,7 +165,7 @@ QgsOracleFeatureIterator::QgsOracleFeatureIterator( QgsOracleFeatureSource *sour
 
   }
 
-  if( mRequest.filterType() == QgsFeatureRequest::filterExpression ||  mRequest.iterateOnFids() )
+  if ( mRequest.filterType() == QgsFeatureRequest::filterExpression ||  mRequest.iterateOnFids() )
   {
     QString fidsWhereClause = QgsOracleUtils::whereClause( mRequest.filterFids(), mSource->mFields, mSource->mPrimaryKeyType, mSource->mPrimaryKeyAttrs, mSource->mShared, args );
     whereClause = QgsOracleUtils::andWhereClauses( whereClause, fidsWhereClause );

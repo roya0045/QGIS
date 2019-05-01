@@ -167,7 +167,7 @@ void QgsMssqlFeatureIterator::BuildStatement( const QgsFeatureRequest &request )
     filterAdded = true;
   }
   else if ( ( request.filterType() == QgsFeatureRequest::FilterFids && !mSource->mFidColName.isEmpty()
-            && !mRequest.filterFids().isEmpty() ) || mRequest.iterateOnFids() )
+              && !mRequest.filterFids().isEmpty() ) || mRequest.iterateOnFids() )
   {
     QString delim;
     QString inClause = QStringLiteral( "%1 IN (" ).arg( mSource->mFidColName );

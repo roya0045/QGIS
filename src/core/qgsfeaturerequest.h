@@ -705,19 +705,19 @@ class CORE_EXPORT QgsFeatureRequest
     QgsFeatureRequest &setRequestMayBeNested( bool requestMayBeNested );
 
     /**
-     * False = Default iterator behaviour, will ignore provided Fids and will iterate over every features if not filtering by fids.
+     * False = Default iterator behavior, will ignore provided Fids and will iterate over every features if not filtering by fids.
      * True = Enable using the provided fids as a base in the iterator instead of the full list of features.
-     * 
+     *
      * \since QGIS 3.8
      */
     void iterateFidsOnly( bool useFids );
 
     /**
      * Returns true if Fid iteration was enabled.
-     * 
+     *
      * \since QGIS 3.8
      */
-    const bool iterateOnFids();
+    bool iterateOnFids() const;
 
   protected:
     FilterType mFilter = FilterNone;

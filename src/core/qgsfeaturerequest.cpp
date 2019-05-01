@@ -330,17 +330,17 @@ QgsFeatureRequest &QgsFeatureRequest::setRequestMayBeNested( bool requestMayBeNe
   return *this;
 }
 
-  void QgsFeatureRequest::iterateFidsOnly( bool useFids )
-  { 
-    mFidsIterator = useFids;
-  }
+void QgsFeatureRequest::iterateFidsOnly( bool useFids )
+{
+  mFidsIterator = useFids;
+}
 
-  const bool QgsFeatureRequest::iterateOnFids()
-  {
-    if ( mFidsIterator && !mFilterFids.isEmpty() )
-      return true;
-    return false;
-  }
+bool QgsFeatureRequest::iterateOnFids() const
+{
+  if ( mFidsIterator && !mFilterFids.isEmpty() )
+    return true;
+  return false;
+}
 
 
 #include "qgsfeatureiterator.h"
