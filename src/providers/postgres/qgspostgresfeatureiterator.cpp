@@ -104,7 +104,7 @@ QgsPostgresFeatureIterator::QgsPostgresFeatureIterator( QgsPostgresFeatureSource
   {
     if ( request.iterateOnFids() )
     {
-      String fidsWhereClause = QgsPostgresUtils::whereClause( mRequest.filterFids(), mSource->mFields, mConn, mSource->mPrimaryKeyType, mSource->mPrimaryKeyAttrs, mSource->mShared );
+      QString fidsWhereClause = QgsPostgresUtils::whereClause( mRequest.filterFids(), mSource->mFields, mConn, mSource->mPrimaryKeyType, mSource->mPrimaryKeyAttrs, mSource->mShared );
       whereClause = QgsPostgresUtils::andWhereClauses( whereClause, fidsWhereClause );
     }
     // ensure that all attributes required for expression filter are being fetched
