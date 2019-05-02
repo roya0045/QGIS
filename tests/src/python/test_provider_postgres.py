@@ -44,7 +44,8 @@ from qgis.core import (
     QgsCoordinateReferenceSystem,
     QgsProject,
     QgsWkbTypes,
-    QgsGeometry
+    QgsGeometry,
+    QgsAggregateCalculator
 )
 from qgis.gui import QgsGui, QgsAttributeForm
 from qgis.PyQt.QtCore import QDate, QTime, QDateTime, QVariant, QDir, QObject
@@ -1248,6 +1249,22 @@ class TestPyQgsPostgresProvider(unittest.TestCase, ProviderTestCase):
         self.assertEqual(vl.featureCount(), 4000)
         print("--- %s seconds ---" % (time.time() - start_time))
 
+    def test_iterator(self):
+        vl = self.getSource()
+        field = "pk"
+        qexc = vl.createExpressionContext()
+        DefaultFR = QgsFeatureRequest()
+        StackedFR = QgsFeatureRequest()
+        DefaultFR.setFilterFids([1,])
+        StackedFR.setFilterFids([1,])
+        DefaultFR.setFilterExpression( 1 )
+        StackedFR.setFilterExpression( 1 )
+
+        StackedFR.iterateFidsOnly( True )
+
+        total1 = vl.aggregate(QgsAggregateCalculator.Sum, field, context = qexc,request = DefaultFR)
+        total2 = vl.aggregateQgsAggregateCalculator.Sum, field, context = qexc,request = StackedFR)
+        self.assertNotEqual(total1, total2)
 
 class TestPyQgsPostgresProviderCompoundKey(unittest.TestCase, ProviderTestCase):
 

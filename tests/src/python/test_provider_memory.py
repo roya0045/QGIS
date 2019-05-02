@@ -28,7 +28,8 @@ from qgis.core import (
     QgsMemoryProviderUtils,
     QgsCoordinateReferenceSystem,
     QgsRectangle,
-    QgsTestUtils
+    QgsTestUtils,
+    QgsAggregateCalculator
 )
 
 from qgis.testing import (
@@ -619,6 +620,23 @@ class TestPyQgsMemoryProvider(unittest.TestCase, ProviderTestCase):
         self.assertTrue(dp.addFeature(f))
 
         self.assertEqual([f.attributes() for f in dp.getFeatures()], [[1, True, NULL], [2, False, NULL], [3, NULL, NULL], [2, NULL, True]])
+
+    def test_iterator(self):
+        vl = self.createLayer()
+        field = "pk"
+        qexc = vl.createExpressionContext()
+        DefaultFR = QgsFeatureRequest()
+        StackedFR = QgsFeatureRequest()
+        DefaultFR.setFilterFids([1,])
+        StackedFR.setFilterFids([1,])
+        DefaultFR.setFilterExpression( 1 )
+        StackedFR.setFilterExpression( 1 )
+
+        StackedFR.iterateFidsOnly( True )
+
+        total1 = vl.aggregate(QgsAggregateCalculator.Sum, field, context = qexc,request = DefaultFR)
+        total2 = vl.aggregateQgsAggregateCalculator.Sum, field, context = qexc,request = StackedFR)
+        self.assertNotEqual(total1, total2)
 
 
 class TestPyQgsMemoryProviderIndexed(unittest.TestCase, ProviderTestCase):

@@ -25,7 +25,8 @@ from qgis.core import (QgsVectorLayer,
                        QgsVirtualLayerDefinitionUtils,
                        QgsWkbTypes,
                        QgsProject,
-                       QgsVectorLayerJoinInfo
+                       QgsVectorLayerJoinInfo,
+                       QgsAggregateCalculator
                        )
 
 from qgis.testing import start_app, unittest
@@ -1011,6 +1012,22 @@ class TestQgsVirtualLayerProvider(unittest.TestCase, ProviderTestCase):
 
         QgsProject.instance().removeMapLayer(ml)
 
+    def test_iterator(self):
+        vl = self.createLayer()
+        field = "pk"
+        qexc = vl.createExpressionContext()
+        DefaultFR = QgsFeatureRequest()
+        StackedFR = QgsFeatureRequest()
+        DefaultFR.setFilterFids([1,])
+        StackedFR.setFilterFids([1,])
+        DefaultFR.setFilterExpression( 1 )
+        StackedFR.setFilterExpression( 1 )
+
+        StackedFR.iterateFidsOnly( True )
+
+        total1 = vl.aggregate(QgsAggregateCalculator.Sum, field, context = qexc,request = DefaultFR)
+        total2 = vl.aggregateQgsAggregateCalculator.Sum, field, context = qexc,request = StackedFR)
+        self.assertNotEqual(total1, total2)
 
 if __name__ == '__main__':
     unittest.main()

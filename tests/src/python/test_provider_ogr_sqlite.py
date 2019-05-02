@@ -26,7 +26,8 @@ from qgis.core import (QgsVectorLayer,
                        QgsFieldConstraints,
                        QgsPointXY,
                        NULL,
-                       QgsRectangle)
+                       QgsRectangle,
+                       QgsAggregateCalculator)
 from qgis.testing import start_app, unittest
 from qgis.PyQt.QtCore import QDate, QTime, QDateTime, QVariant, QByteArray
 
@@ -455,6 +456,56 @@ class TestPyQgsOGRProviderSqlite(unittest.TestCase):
         self.assertEqual(vl1.uniqueValues(0), {1, 2})
         self.assertEqual(vl1.uniqueValues(1), {'one', 'two'})
 
+    def test_iterator(self):
+        tmpfile = os.path.join(self.basetestpath, 'testIteration.sqlite')
+        ds = ogr.GetDriverByName('SQLite').CreateDataSource(tmpfile)
+        lyr = ds.CreateLayer('test', geom_type=ogr.wkbPoint, options=['FID=fid'])
+        lyr.CreateField(ogr.FieldDefn('type', ogr.OFTInteger))
+        lyr.CreateField(ogr.FieldDefn('value', ogr.OFTInteger))
+        f = ogr.Feature(lyr.GetLayerDefn())
+        f.SetFID(0)
+        f.SetField(0, 1)
+        f.SetField(1, 11)
+        f.SetGeometry(ogr.CreateGeometryFromWkt('Point (0 0)'))
+        lyr.CreateFeature(f)
+        f = ogr.Feature(lyr.GetLayerDefn())
+        f.SetFID(1)
+        f.SetField(0, 1)
+        f.SetField(1, 12)
+        f.SetGeometry(ogr.CreateGeometryFromWkt('Point (1 1)'))
+        lyr.CreateFeature(f)
+        f = ogr.Feature(lyr.GetLayerDefn())
+        f.SetFID(2)
+        f.SetField(0, 1)
+        f.SetField(1, 13)
+        f.SetGeometry(ogr.CreateGeometryFromWkt('Point (2 2)'))
+        lyr.CreateFeature(f)
+        f = ogr.Feature(lyr.GetLayerDefn())
+        f.SetFID(3)
+        f.SetField(0, 2)
+        f.SetField(1, 14)
+        f.SetGeometry(ogr.CreateGeometryFromWkt('Point (3 3)'))
+        lyr.CreateFeature(f)
+
+        f = None
+        ds = None
+
+        vl = QgsVectorLayer(tmpfile, 'test', 'ogr')
+        vl = self.createLayer()
+        field = "type"
+        qexc = vl.createExpressionContext()
+        DefaultFR = QgsFeatureRequest()
+        StackedFR = QgsFeatureRequest()
+        DefaultFR.setFilterFids([1,])
+        StackedFR.setFilterFids([1,])
+        DefaultFR.setFilterExpression( 1 )
+        StackedFR.setFilterExpression( 1 )
+
+        StackedFR.iterateFidsOnly( True )
+
+        total1 = vl.aggregate(QgsAggregateCalculator.Sum, field, context = qexc,request = DefaultFR)
+        total2 = vl.aggregateQgsAggregateCalculator.Sum, field, context = qexc,request = StackedFR)
+        self.assertNotEqual(total1, total2)
 
 if __name__ == '__main__':
     unittest.main()

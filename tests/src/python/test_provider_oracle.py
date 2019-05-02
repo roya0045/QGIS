@@ -16,7 +16,7 @@ import qgis  # NOQA
 
 import os
 
-from qgis.core import QgsSettings, QgsVectorLayer, QgsFeatureRequest, NULL
+from qgis.core import QgsSettings, QgsVectorLayer, QgsFeatureRequest, QgsAggregateCalculator, NULL
 
 from qgis.PyQt.QtCore import QDate, QTime, QDateTime, QVariant
 from qgis.PyQt.QtSql import QSqlDatabase, QSqlQuery
@@ -246,6 +246,22 @@ class TestPyQgsOracleProvider(unittest.TestCase, ProviderTestCase):
         self.assertTrue(
             compareWkt(features[12].geometry().asWkt(), 'MultiSurface (CurvePolygon (CircularString (1 3, 3 5, 4 7, 7 3, 1 3)),CurvePolygon (CircularString (11 3, 13 5, 14 7, 17 3, 11 3)))', 0.00001), features[12].geometry().asWkt())
 
+    def test_iterator(self):
+        vl = self.getSource()
+        field = "cnt"
+        qexc = vl.createExpressionContext()
+        DefaultFR = QgsFeatureRequest()
+        StackedFR = QgsFeatureRequest()
+        DefaultFR.setFilterFids([1,])
+        StackedFR.setFilterFids([1,])
+        DefaultFR.setFilterExpression( 1 )
+        StackedFR.setFilterExpression( 1 )
+
+        StackedFR.iterateFidsOnly( True )
+
+        total1 = vl.aggregate(QgsAggregateCalculator.Sum, field, context = qexc,request = DefaultFR)
+        total2 = vl.aggregateQgsAggregateCalculator.Sum, field, context = qexc,request = StackedFR)
+        self.assertNotEqual(total1, total2)
 
 if __name__ == '__main__':
     unittest.main()

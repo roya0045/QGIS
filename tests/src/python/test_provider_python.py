@@ -47,6 +47,7 @@ from qgis.core import (
     QgsTestUtils,
     QgsProviderMetadata,
     QgsProviderRegistry,
+    QgsAggregateCalculator
 )
 
 from qgis.testing import (
@@ -403,6 +404,23 @@ class TestPyQgsPythonProvider(unittest.TestCase, ProviderTestCase):
         r = QgsProviderRegistry.instance()
         metadata = QgsProviderMetadata(PyProvider.providerKey(), PyProvider.description(), PyProvider.createProvider)
         self.assertFalse(r.registerProvider(metadata))
+
+    def test_iterator(self):
+        vl = self.createLayer()
+        field = "pk"
+        qexc = vl.createExpressionContext()
+        DefaultFR = QgsFeatureRequest()
+        StackedFR = QgsFeatureRequest()
+        DefaultFR.setFilterFids([1,])
+        StackedFR.setFilterFids([1,])
+        DefaultFR.setFilterExpression( 1 )
+        StackedFR.setFilterExpression( 1 )
+
+        StackedFR.iterateFidsOnly( True )
+
+        total1 = vl.aggregate(QgsAggregateCalculator.Sum, field, context = qexc,request = DefaultFR)
+        total2 = vl.aggregateQgsAggregateCalculator.Sum, field, context = qexc,request = StackedFR)
+        self.assertNotEqual(total1, total2)
 
 
 if __name__ == '__main__':

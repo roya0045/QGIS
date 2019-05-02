@@ -27,7 +27,8 @@ from qgis.core import (QgsSettings,
                        QgsRectangle,
                        NULL,
                        QgsVectorLayerExporter,
-                       QgsCoordinateReferenceSystem)
+                       QgsCoordinateReferenceSystem,
+                       QgsAggregateCalculator)
 
 from qgis.PyQt.QtCore import QDate, QTime, QDateTime, QVariant
 from qgis.PyQt.QtSql import QSqlDatabase, QSqlQuery
@@ -467,6 +468,23 @@ class TestPyQgsMssqlProvider(unittest.TestCase, ProviderTestCase):
                             (self.dbconn), "testinvalid", "mssql")
         self.assertTrue(vl.isValid())
         self.assertEqual(vl.dataProvider().extent().toString(1), 'Empty')
+
+    def test_iterator(self):
+        vl = self.getSource()
+        field = "pk"
+        qexc = vl.createExpressionContext()
+        DefaultFR = QgsFeatureRequest()
+        StackedFR = QgsFeatureRequest()
+        DefaultFR.setFilterFids([1,])
+        StackedFR.setFilterFids([1,])
+        DefaultFR.setFilterExpression( 1 )
+        StackedFR.setFilterExpression( 1 )
+
+        StackedFR.iterateFidsOnly( True )
+
+        total1 = vl.aggregate(QgsAggregateCalculator.Sum, field, context = qexc,request = DefaultFR)
+        total2 = vl.aggregateQgsAggregateCalculator.Sum, field, context = qexc,request = StackedFR)
+        self.assertNotEqual(total1, total2)
 
 
 if __name__ == '__main__':

@@ -38,7 +38,8 @@ from qgis.core import (QgsFeature,
                        QgsProject,
                        QgsWkbTypes,
                        QgsDataProvider,
-                       QgsVectorDataProvider)
+                       QgsVectorDataProvider,
+                       QgsAggregateCalculator)
 from qgis.PyQt.QtCore import QCoreApplication, QVariant
 from qgis.testing import start_app, unittest
 from qgis.utils import spatialite_connect
@@ -1343,6 +1344,38 @@ class TestPyQgsOGRProviderGpkg(unittest.TestCase):
         self.assertTrue(vl1.isValid())
         self.assertEqual(vl1.uniqueValues(0), {1, 2})
         self.assertEqual(vl1.uniqueValues(1), {'one', 'two'})
+
+    def test_iterator(self):
+        tmpfile = os.path.join(self.basetestpath, 'testIteration.gpkg')
+        ds = ogr.GetDriverByName('GPKG').CreateDataSource(tmpfile)
+        lyr = ds.CreateLayer('lyr1', geom_type=ogr.wkbPoint)
+        f = ogr.Feature(lyr.GetLayerDefn())
+        f.SetGeometry(ogr.CreateGeometryFromWkt('POINT(0 1)'))
+        lyr.CreateFeature(f)
+        f = ogr.Feature(lyr.GetLayerDefn())
+        f.SetGeometry(ogr.CreateGeometryFromWkt('POINT(2 3)'))
+        lyr.CreateFeature(f)
+        f = ogr.Feature(lyr.GetLayerDefn())
+        f.SetGeometry(ogr.CreateGeometryFromWkt('POINT(4 5)'))
+        lyr.CreateFeature(f)
+        ds = None
+
+        vl = QgsVectorLayer(u'{}'.format(tmpfile) + "|layername=" + "lyr1", 'test', u'ogr')
+        self.assertTrue(vl.isValid())
+        field = "pk"
+        qexc = vl.createExpressionContext()
+        DefaultFR = QgsFeatureRequest()
+        StackedFR = QgsFeatureRequest()
+        DefaultFR.setFilterFids([1,])
+        StackedFR.setFilterFids([1,])
+        DefaultFR.setFilterExpression( 1 )
+        StackedFR.setFilterExpression( 1 )
+
+        StackedFR.iterateFidsOnly( True )
+
+        total1 = vl.aggregate(QgsAggregateCalculator.Sum, field, context = qexc,request = DefaultFR)
+        total2 = vl.aggregateQgsAggregateCalculator.Sum, field, context = qexc,request = StackedFR)
+        self.assertNotEqual(total1, total2)
 
 
 if __name__ == '__main__':

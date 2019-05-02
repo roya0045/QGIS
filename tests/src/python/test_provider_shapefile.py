@@ -21,7 +21,7 @@ import osgeo.gdal
 import osgeo.ogr
 import sys
 
-from qgis.core import QgsSettings, QgsFeature, QgsField, QgsGeometry, QgsVectorLayer, QgsFeatureRequest, QgsVectorDataProvider
+from qgis.core import QgsSettings, QgsFeature, QgsField, QgsGeometry, QgsVectorLayer, QgsFeatureRequest, QgsVectorDataProvider,QgsAggregateCalculator
 from qgis.PyQt.QtCore import QVariant
 from qgis.testing import start_app, unittest
 from utilities import unitTestDataPath
@@ -702,6 +702,23 @@ class TestPyQgsShapefileProvider(unittest.TestCase, ProviderTestCase):
         # This was failing in bug 17863
         self.assertEqual(_lessdigits(subSet_vl.extent().toString()), filtered_extent)
         self.assertNotEqual(_lessdigits(subSet_vl.extent().toString()), unfiltered_extent)
+
+    def test_iterator(self):
+        vl = self.getSource()
+        field = "pk"
+        qexc = vl.createExpressionContext()
+        DefaultFR = QgsFeatureRequest()
+        StackedFR = QgsFeatureRequest()
+        DefaultFR.setFilterFids([1,])
+        StackedFR.setFilterFids([1,])
+        DefaultFR.setFilterExpression( 1 )
+        StackedFR.setFilterExpression( 1 )
+
+        StackedFR.iterateFidsOnly( True )
+
+        total1 = vl.aggregate(QgsAggregateCalculator.Sum, field, context = qexc,request = DefaultFR)
+        total2 = vl.aggregateQgsAggregateCalculator.Sum, field, context = qexc,request = StackedFR)
+        self.assertNotEqual(total1, total2)
 
 
 if __name__ == '__main__':
