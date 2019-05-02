@@ -475,15 +475,15 @@ class TestPyQgsMssqlProvider(unittest.TestCase, ProviderTestCase):
         qexc = vl.createExpressionContext()
         DefaultFR = QgsFeatureRequest()
         StackedFR = QgsFeatureRequest()
-        DefaultFR.setFilterFids([1,])
-        StackedFR.setFilterFids([1,])
-        DefaultFR.setFilterExpression( 1 )
-        StackedFR.setFilterExpression( 1 )
+        DefaultFR.setFilterFids([1, ])
+        StackedFR.setFilterFids([1, ])
+        DefaultFR.setFilterExpression(1)
+        StackedFR.setFilterExpression(1)
 
-        StackedFR.iterateFidsOnly( True )
+        StackedFR.iterateFidsOnly(True)
 
-        total1 = vl.aggregate(QgsAggregateCalculator.Sum, field, context = qexc,request = DefaultFR)
-        total2 = vl.aggregateQgsAggregateCalculator.Sum, field, context = qexc,request = StackedFR)
+        total1 = vl.aggregate(QgsAggregateCalculator.Sum, field, context=qexc,request=DefaultFR)
+        total2 = vl.aggregate(QgsAggregateCalculator.Sum, field, context=qexc,request=StackedFR)
         self.assertNotEqual(total1, total2)
 
 

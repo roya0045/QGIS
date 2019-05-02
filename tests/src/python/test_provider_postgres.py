@@ -1255,15 +1255,15 @@ class TestPyQgsPostgresProvider(unittest.TestCase, ProviderTestCase):
         qexc = vl.createExpressionContext()
         DefaultFR = QgsFeatureRequest()
         StackedFR = QgsFeatureRequest()
-        DefaultFR.setFilterFids([1,])
-        StackedFR.setFilterFids([1,])
-        DefaultFR.setFilterExpression( 1 )
-        StackedFR.setFilterExpression( 1 )
+        DefaultFR.setFilterFids([1, ])
+        StackedFR.setFilterFids([1, ])
+        DefaultFR.setFilterExpression(1)
+        StackedFR.setFilterExpression(1)
 
-        StackedFR.iterateFidsOnly( True )
+        StackedFR.iterateFidsOnly(True)
 
-        total1 = vl.aggregate(QgsAggregateCalculator.Sum, field, context = qexc,request = DefaultFR)
-        total2 = vl.aggregateQgsAggregateCalculator.Sum, field, context = qexc,request = StackedFR)
+        total1 = vl.aggregate(QgsAggregateCalculator.Sum, field, context=qexc,request=DefaultFR)
+        total2 = vl.aggregate(QgsAggregateCalculator.Sum, field, context=qexc,request=StackedFR)
         self.assertNotEqual(total1, total2)
 
 class TestPyQgsPostgresProviderCompoundKey(unittest.TestCase, ProviderTestCase):
@@ -1271,13 +1271,13 @@ class TestPyQgsPostgresProviderCompoundKey(unittest.TestCase, ProviderTestCase):
     @classmethod
     def setUpClass(cls):
         """Run before all tests"""
-        cls.dbconn = 'dbname=\'qgis_test\''
+        cls.dbconn='dbname=\'qgis_test\''
         if 'QGIS_PGTEST_DB' in os.environ:
-            cls.dbconn = os.environ['QGIS_PGTEST_DB']
+            cls.dbconn=os.environ['QGIS_PGTEST_DB']
         # Create test layers
-        cls.vl = QgsVectorLayer(cls.dbconn + ' sslmode=disable key=\'"key1","key2"\' srid=4326 type=POINT table="qgis_test"."someDataCompound" (geom) sql=', 'test', 'postgres')
+        cls.vl=QgsVectorLayer(cls.dbconn + ' sslmode=disable key=\'"key1","key2"\' srid=4326 type=POINT table="qgis_test"."someDataCompound" (geom) sql=', 'test', 'postgres')
         assert cls.vl.isValid()
-        cls.source = cls.vl.dataProvider()
+        cls.source=cls.vl.dataProvider()
 
     @classmethod
     def tearDownClass(cls):
@@ -1298,7 +1298,7 @@ class TestPyQgsPostgresProviderCompoundKey(unittest.TestCase, ProviderTestCase):
 
     def testConstraints(self):
         for key in ["key1", "key2"]:
-            idx = self.vl.dataProvider().fieldNameIndex(key)
+            idx=self.vl.dataProvider().fieldNameIndex(key)
             self.assertTrue(idx >= 0)
             self.assertFalse(self.vl.dataProvider().fieldConstraints(idx) & QgsFieldConstraints.ConstraintUnique)
 
