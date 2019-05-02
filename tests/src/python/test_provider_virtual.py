@@ -1013,20 +1013,20 @@ class TestQgsVirtualLayerProvider(unittest.TestCase, ProviderTestCase):
         QgsProject.instance().removeMapLayer(ml)
 
     def test_iterator(self):
-        vl = self.createLayer()
+        vl = QgsVectorLayer(os.path.join(self.testDataDir, "france_parts.shp"), "france_parts", "ogr", QgsVectorLayer.LayerOptions(False))
         field = "pk"
         qexc = vl.createExpressionContext()
         DefaultFR = QgsFeatureRequest()
         StackedFR = QgsFeatureRequest()
         DefaultFR.setFilterFids([1, ])
         StackedFR.setFilterFids([1, ])
-        DefaultFR.setFilterExpression(1)
-        StackedFR.setFilterExpression(1)
+        DefaultFR.setFilterExpression('1')
+        StackedFR.setFilterExpression('1')
 
         StackedFR.iterateFidsOnly(True)
 
-        total1 = vl.aggregate(QgsAggregateCalculator.Sum, field, context=qexc,request=DefaultFR)
-        total2 = vl.aggregate(QgsAggregateCalculator.Sum, field, context=qexc,request=StackedFR)
+        total1 = vl.aggregate(QgsAggregateCalculator.Sum, field, context=qexc, request=DefaultFR)
+        total2 = vl.aggregate(QgsAggregateCalculator.Sum, field, context=qexc, request=StackedFR)
         self.assertNotEqual(total1, total2)
 
 if __name__ == '__main__':

@@ -839,6 +839,7 @@ class TestPyQgsAFSProvider(unittest.TestCase, ProviderTestCase):
         self.assertEqual([f.geometry().asWkt() for f in features], ['MultiPoint ((-70 66))', '', 'MultiPoint ((-68 70),(-22 21))'])
 
     def test_iterator(self):
+        endpoint = cls.basetestpath + '/fake_qgis_http_endpoint'
         vl = QgsVectorLayer("url='http://" + endpoint + "' crs='epsg:4326'", 'test', 'arcgisfeatureserver')
 
         self.assertTrue(vl.isValid())
@@ -890,13 +891,13 @@ class TestPyQgsAFSProvider(unittest.TestCase, ProviderTestCase):
         StackedFR = QgsFeatureRequest()
         DefaultFR.setFilterFids([1, ])
         StackedFR.setFilterFids([1, ])
-        DefaultFR.setFilterExpression(1)
-        StackedFR.setFilterExpression(1)
+        DefaultFR.setFilterExpression('1')
+        StackedFR.setFilterExpression('1')
 
         StackedFR.iterateFidsOnly(True)
 
-        total1 = vl.aggregate(QgsAggregateCalculator.Sum, field, context=qexc,request=DefaultFR)
-        total2 = vl.aggregate(QgsAggregateCalculator.Sum, field, context=qexc,request=StackedFR)
+        total1 = vl.aggregate(QgsAggregateCalculator.Sum, field, context=qexc, request=DefaultFR)
+        total2 = vl.aggregate(QgsAggregateCalculator.Sum, field, context=qexc, request=StackedFR)
         self.assertNotEqual(total1, total2)
 if __name__ == '__main__':
     unittest.main()
