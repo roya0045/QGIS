@@ -47,7 +47,7 @@ bool QgsAbstractFeatureIterator::nextFeature( QgsFeature &f )
       mZombie = false;
     }
   }
-  else if (mReqest.iterateOnFids() && mRequest.filterType() == QgsFeatureRequest::FilterExpression )
+  else if ( mRequest.iterateOnFids() && mRequest.filterType() == QgsFeatureRequest::FilterExpression )
   {
     if ( nextFeatureFilterFids( f ) )
       dataOk = nextFeatureFilterExpression( f );
