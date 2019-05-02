@@ -43,10 +43,13 @@ void QgsAggregateCalculator::setParameters( const AggregateParameters &parameter
 
 QVariant QgsAggregateCalculator::calculate( QgsAggregateCalculator::Aggregate aggregate,
     const QString &fieldOrExpression,
-    QgsExpressionContext *context, bool *ok ) const
+    QgsExpressionContext *context, bool *ok,
+    const QgsFeatureRequest &request ) const
 {
   if ( ok )
     *ok = false;
+
+  QgsFeatureRequest requestCopy = request;
 
   if ( !mLayer )
     return QVariant();
@@ -77,22 +80,20 @@ QVariant QgsAggregateCalculator::calculate( QgsAggregateCalculator::Aggregate ag
   else
     lst = expression->referencedColumns();
 
-  QgsFeatureRequest request = QgsFeatureRequest()
-                              .setFlags( ( expression && expression->needsGeometry() ) ?
-                                         QgsFeatureRequest::NoFlags :
-                                         QgsFeatureRequest::NoGeometry )
-                              .setSubsetOfAttributes( lst, mLayer->fields() );
+  requestCopy.setFlags( ( expression && expression->needsGeometry() ) ?
+                        QgsFeatureRequest::NoFlags :
+                        QgsFeatureRequest::NoGeometry )
+  .setSubsetOfAttributes( lst, mLayer->fields() );
   if ( !mFilterExpression.isEmpty() )
-    request.setFilterExpression( mFilterExpression );
+    requestCopy.setFilterExpression( mFilterExpression );
   if ( context )
-    request.setExpressionContext( *context );
-
+    requestCopy.setExpressionContext( *context );
   //determine result type
   QVariant::Type resultType = QVariant::Double;
   if ( attrNum == -1 )
   {
     // evaluate first feature, check result type
-    QgsFeatureRequest testRequest( request );
+    QgsFeatureRequest testRequest( requestCopy );
     testRequest.setLimit( 1 );
     QgsFeature f;
     QgsFeatureIterator fit = mLayer->getFeatures( testRequest );
@@ -114,7 +115,7 @@ QVariant QgsAggregateCalculator::calculate( QgsAggregateCalculator::Aggregate ag
     resultType = mLayer->fields().at( attrNum ).type();
   }
 
-  QgsFeatureIterator fit = mLayer->getFeatures( request );
+  QgsFeatureIterator fit = mLayer->getFeatures( requestCopy );
   return calculate( aggregate, fit, resultType, attrNum, expression.get(), mDelimiter, context, ok );
 }
 
@@ -843,3 +844,4 @@ QVariant QgsAggregateCalculator::calculateArrayAggregate( QgsFeatureIterator &fi
   }
   return array;
 }
+

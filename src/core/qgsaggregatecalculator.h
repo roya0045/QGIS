@@ -23,6 +23,8 @@
 #include "qgsdatetimestatisticalsummary.h"
 #include "qgsstringstatisticalsummary.h"
 #include <QVariant>
+#include "qgsfeatureid.h"
+#include "qgsfeaturerequest.h"
 
 
 class QgsFeatureIterator;
@@ -155,10 +157,12 @@ class CORE_EXPORT QgsAggregateCalculator
      * If an expression is used, then the context parameter must be set.
      * \param context expression context for evaluating expressions
      * \param ok if specified, will be set to TRUE if aggregate calculation was successful
+     * \param request qgsfeaturerequest with filters criteria, if not provided all features will be used
      * \returns calculated aggregate value
      */
     QVariant calculate( Aggregate aggregate, const QString &fieldOrExpression,
-                        QgsExpressionContext *context = nullptr, bool *ok = nullptr ) const;
+                        QgsExpressionContext *context = nullptr, bool *ok = nullptr,
+                        const QgsFeatureRequest &request = QgsFeatureRequest() ) const;
 
     /**
      * Converts a string to a aggregate type.
@@ -214,4 +218,3 @@ class CORE_EXPORT QgsAggregateCalculator
 };
 
 #endif //QGSAGGREGATECALCULATOR_H
-
