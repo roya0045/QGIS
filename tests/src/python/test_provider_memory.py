@@ -652,46 +652,46 @@ class TestPyQgsMemoryProviderIndexed(unittest.TestCase, ProviderTestCase):
         assert (cls.vl.isValid())
         cls.source = cls.vl.dataProvider()
 
-        f1 = QgsFeature()
+        f1=QgsFeature()
         f1.setAttributes([5, -200, NULL, 'NuLl', '5'])
         f1.setGeometry(QgsGeometry.fromWkt('Point (-71.123 78.23)'))
 
-        f2 = QgsFeature()
+        f2=QgsFeature()
         f2.setAttributes([3, 300, 'Pear', 'PEaR', '3'])
 
-        f3 = QgsFeature()
+        f3=QgsFeature()
         f3.setAttributes([1, 100, 'Orange', 'oranGe', '1'])
         f3.setGeometry(QgsGeometry.fromWkt('Point (-70.332 66.33)'))
 
-        f4 = QgsFeature()
+        f4=QgsFeature()
         f4.setAttributes([2, 200, 'Apple', 'Apple', '2'])
         f4.setGeometry(QgsGeometry.fromWkt('Point (-68.2 70.8)'))
 
-        f5 = QgsFeature()
+        f5=QgsFeature()
         f5.setAttributes([4, 400, 'Honey', 'Honey', '4'])
         f5.setGeometry(QgsGeometry.fromWkt('Point (-65.32 78.3)'))
 
         cls.source.addFeatures([f1, f2, f3, f4, f5])
 
         # poly layer
-        cls.poly_vl = QgsVectorLayer('Polygon?crs=epsg:4326&index=yes&field=pk:integer&key=pk',
+        cls.poly_vl=QgsVectorLayer('Polygon?crs=epsg:4326&index=yes&field=pk:integer&key=pk',
                                      'test', 'memory')
         assert (cls.poly_vl.isValid())
         cls.poly_provider = cls.poly_vl.dataProvider()
 
-        f1 = QgsFeature()
+        f1=QgsFeature()
         f1.setAttributes([1])
         f1.setGeometry(QgsGeometry.fromWkt('Polygon ((-69.0 81.4, -69.0 80.2, -73.7 80.2, -73.7 76.3, -74.9 76.3, -74.9 81.4, -69.0 81.4))'))
 
-        f2 = QgsFeature()
+        f2=QgsFeature()
         f2.setAttributes([2])
         f2.setGeometry(QgsGeometry.fromWkt('Polygon ((-67.6 81.2, -66.3 81.2, -66.3 76.9, -67.6 76.9, -67.6 81.2))'))
 
-        f3 = QgsFeature()
+        f3=QgsFeature()
         f3.setAttributes([3])
         f3.setGeometry(QgsGeometry.fromWkt('Polygon ((-68.4 75.8, -67.5 72.6, -68.6 73.7, -70.2 72.9, -68.4 75.8))'))
 
-        f4 = QgsFeature()
+        f4=QgsFeature()
         f4.setAttributes([4])
 
         cls.poly_provider.addFeatures([f1, f2, f3, f4])
