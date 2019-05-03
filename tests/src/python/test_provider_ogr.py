@@ -615,5 +615,6 @@ class PyQgsOGRProvider(unittest.TestCase):
         total2 = vl.aggregate(QgsAggregateCalculator.Sum, field, context=qexc, request=StackedFR)
         self.assertNotEqual(total1, total2)
 
+
 if __name__ == '__main__':
     unittest.main()

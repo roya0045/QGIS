@@ -1266,6 +1266,7 @@ class TestPyQgsPostgresProvider(unittest.TestCase, ProviderTestCase):
         total2 = vl.aggregate(QgsAggregateCalculator.Sum, field, context=qexc, request=StackedFR)
         self.assertNotEqual(total1, total2)
 
+
 class TestPyQgsPostgresProviderCompoundKey(unittest.TestCase, ProviderTestCase):
 
     @classmethod

@@ -1014,6 +1014,19 @@ class TestQgsVirtualLayerProvider(unittest.TestCase, ProviderTestCase):
 
     def test_iterator(self):
         vl = QgsVectorLayer(os.path.join(self.testDataDir, "france_parts.shp"), "france_parts", "ogr", QgsVectorLayer.LayerOptions(False))
+
+        f = ogr.Feature(lyr.GetLayerDefn())
+        f.SetGeometry(ogr.CreateGeometryFromWkt('POINT(0 1)'))
+        f.SetField('pk2', 2)
+        lyr.CreateFeature(f)
+        f = ogr.Feature(lyr.GetLayerDefn())
+        f.SetGeometry(ogr.CreateGeometryFromWkt('POINT(2 3)'))
+        f.SetField('pk2', 5)
+        lyr.CreateFeature(f)
+        f = ogr.Feature(lyr.GetLayerDefn())
+        f.SetGeometry(ogr.CreateGeometryFromWkt('POINT(4 5)'))
+        f.SetField('pk2', 3)
+        lyr.CreateFeature(f)
         field = "pk"
         qexc = vl.createExpressionContext()
         DefaultFR = QgsFeatureRequest()
@@ -1028,6 +1041,7 @@ class TestQgsVirtualLayerProvider(unittest.TestCase, ProviderTestCase):
         total1 = vl.aggregate(QgsAggregateCalculator.Sum, field, context=qexc, request=DefaultFR)
         total2 = vl.aggregate(QgsAggregateCalculator.Sum, field, context=qexc, request=StackedFR)
         self.assertNotEqual(total1, total2)
+
 
 if __name__ == '__main__':
     unittest.main()

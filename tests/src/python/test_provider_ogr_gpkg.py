@@ -1351,18 +1351,21 @@ class TestPyQgsOGRProviderGpkg(unittest.TestCase):
         lyr = ds.CreateLayer('lyr1', geom_type=ogr.wkbPoint)
         f = ogr.Feature(lyr.GetLayerDefn())
         f.SetGeometry(ogr.CreateGeometryFromWkt('POINT(0 1)'))
+        f.SetField('pk2', 2)
         lyr.CreateFeature(f)
         f = ogr.Feature(lyr.GetLayerDefn())
         f.SetGeometry(ogr.CreateGeometryFromWkt('POINT(2 3)'))
+        f.SetField('pk2', 5)
         lyr.CreateFeature(f)
         f = ogr.Feature(lyr.GetLayerDefn())
         f.SetGeometry(ogr.CreateGeometryFromWkt('POINT(4 5)'))
+        f.SetField('pk2', 3)
         lyr.CreateFeature(f)
         ds = None
 
         vl = QgsVectorLayer(u'{}'.format(tmpfile) + "|layername=" + "lyr1", 'test', u'ogr')
         self.assertTrue(vl.isValid())
-        field = "pk"
+        field = "pk2"
         qexc = vl.createExpressionContext()
         DefaultFR = QgsFeatureRequest()
         StackedFR = QgsFeatureRequest()

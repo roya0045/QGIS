@@ -503,8 +503,9 @@ class TestPyQgsOGRProviderSqlite(unittest.TestCase):
         StackedFR.iterateFidsOnly(True)
 
         total1 = vl.aggregate(QgsAggregateCalculator.Sum, field, context=qexc, request=DefaultFR)
-        total2 = vl.aggregate(QgsAggregateCalculator.Sum, field, context=qexc, request=StackedFR))
+        total2 = vl.aggregate(QgsAggregateCalculator.Sum, field, context=qexc, request=StackedFR)
         self.assertNotEqual(total1, total2)
+
 
 if __name__ == '__main__':
     unittest.main()
