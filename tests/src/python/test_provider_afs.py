@@ -886,7 +886,7 @@ class TestPyQgsAFSProvider(unittest.TestCase, ProviderTestCase):
           }
          ]
         }""".encode('UTF-8'))
-        field = "name"
+        field = "OBJECTID"
         qexc = vl.createExpressionContext()
         DefaultFR = QgsFeatureRequest()
         StackedFR = QgsFeatureRequest()
