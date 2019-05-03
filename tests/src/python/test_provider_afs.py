@@ -30,7 +30,8 @@ from qgis.core import (NULL,
                        QgsRectangle,
                        QgsCategorizedSymbolRenderer,
                        QgsProviderRegistry,
-                       QgsAggregateCalculator
+                       QgsAggregateCalculator,
+                       QgsFeatureRequest
                        )
 from qgis.testing import (start_app,
                           unittest

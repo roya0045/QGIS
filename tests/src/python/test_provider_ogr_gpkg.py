@@ -1349,6 +1349,7 @@ class TestPyQgsOGRProviderGpkg(unittest.TestCase):
         tmpfile = os.path.join(self.basetestpath, 'testIteration.gpkg')
         ds = ogr.GetDriverByName('GPKG').CreateDataSource(tmpfile)
         lyr = ds.CreateLayer('lyr1', geom_type=ogr.wkbPoint)
+        lyr.CreateField(ogr.FieldDefn('pk2', ogr.OFTInteger))
         f = ogr.Feature(lyr.GetLayerDefn())
         f.SetGeometry(ogr.CreateGeometryFromWkt('POINT(0 1)'))
         f.SetField('pk2', 2)

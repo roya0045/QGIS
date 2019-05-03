@@ -1013,21 +1013,24 @@ class TestQgsVirtualLayerProvider(unittest.TestCase, ProviderTestCase):
         QgsProject.instance().removeMapLayer(ml)
 
     def test_iterator(self):
-        vl = QgsVectorLayer(os.path.join(self.testDataDir, "france_parts.shp"), "france_parts", "ogr", QgsVectorLayer.LayerOptions(False))
+        ml = QgsVectorLayer("Point?srid=EPSG:4326&field=a:int", "mem_no_uid", "memory")
+        self.assertEqual(ml.isValid(), True)
+        QgsProject.instance().addMapLayer(ml)
 
-        f = ogr.Feature(lyr.GetLayerDefn())
-        f.SetGeometry(ogr.CreateGeometryFromWkt('POINT(0 1)'))
-        f.SetField('pk2', 2)
-        lyr.CreateFeature(f)
-        f = ogr.Feature(lyr.GetLayerDefn())
-        f.SetGeometry(ogr.CreateGeometryFromWkt('POINT(2 3)'))
-        f.SetField('pk2', 5)
-        lyr.CreateFeature(f)
-        f = ogr.Feature(lyr.GetLayerDefn())
-        f.SetGeometry(ogr.CreateGeometryFromWkt('POINT(4 5)'))
-        f.SetField('pk2', 3)
-        lyr.CreateFeature(f)
-        field = "pk"
+        # a memory layer with 10 features
+        ml.startEditing()
+        for i in range(10):
+            f = QgsFeature(ml.fields())
+            f.setGeometry(QgsGeometry.fromWkt('POINT({} 0)'.format(i)))
+            f.setAttributes([i])
+            ml.addFeatures([f])
+        ml.commitChanges()
+
+        df = QgsVirtualLayerDefinition()
+        df.setQuery('select * from mem_no_uid')
+        vl = QgsVectorLayer(df.toString(), "vl", "virtual")
+        self.assertEqual(vl.isValid(), True)
+        field = "a"
         qexc = vl.createExpressionContext()
         DefaultFR = QgsFeatureRequest()
         StackedFR = QgsFeatureRequest()
