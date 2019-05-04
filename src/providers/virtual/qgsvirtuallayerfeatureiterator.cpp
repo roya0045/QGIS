@@ -89,7 +89,7 @@ QgsVirtualLayerFeatureIterator::QgsVirtualLayerFeatureIterator( QgsVirtualLayerF
                .arg( quotedColumn( mSource->mDefinition.uid() ) )
                .arg( request.filterFid() );
       }
-      else if ( request.filterType() == QgsFeatureRequest::FilterFids )
+      else if ( request.filterType() == QgsFeatureRequest::FilterFids || request.iterateOnFids() )
       {
         QString values = quotedColumn( mSource->mDefinition.uid() ) + " IN (";
         bool first = true;
@@ -124,7 +124,7 @@ QgsVirtualLayerFeatureIterator::QgsVirtualLayerFeatureIterator( QgsVirtualLayerF
         mRectEngine.reset( QgsGeometry::createGeometryEngine( rectGeom.constGet() ) );
         mRectEngine->prepareGeometry();
       }
-      if ( mRequest.iterateOnFids() )
+      if ( request.iterateOnFids() )
       {
         QString values = quotedColumn( mSource->mDefinition.uid() ) + " IN (";
         bool first = true;

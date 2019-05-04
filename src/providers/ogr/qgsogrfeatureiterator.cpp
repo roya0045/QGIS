@@ -324,7 +324,7 @@ bool QgsOgrFeatureIterator::fetchFeature( QgsFeature &feature )
     close(); // the feature has been read or was not found: we have finished here
     return result;
   }
-  else if ( mRequest.filterType() == QgsFeatureRequest::FilterFids )
+  else if ( mRequest.filterType() == QgsFeatureRequest::FilterFids || mRequest.iterateOnFids() )
   {
     while ( mFilterFidsIt != mFilterFids.end() )
     {

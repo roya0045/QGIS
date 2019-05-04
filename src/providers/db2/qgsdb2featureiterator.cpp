@@ -189,7 +189,7 @@ void QgsDb2FeatureIterator::BuildStatement( const QgsFeatureRequest &request )
 
   mExpressionCompiled = false;
   mCompileStatus = NoCompilation;
-  if ( request.filterType() == QgsFeatureRequest::FilterExpression )
+  if ( request.filterType() == QgsFeatureRequest::FilterExpression || ( request.iterateOnFids() && request.filterExpression() ) )
   {
     QgsDebugMsg( QStringLiteral( "compileExpressions: %1" ).arg( QgsSettings().value( "qgis/compileExpressions", true ).toString() ) );
     if ( QgsSettings().value( QStringLiteral( "qgis/compileExpressions" ), true ).toBool() )

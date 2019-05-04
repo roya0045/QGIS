@@ -86,7 +86,7 @@ QgsSpatiaLiteFeatureIterator::QgsSpatiaLiteFeatureIterator( QgsSpatiaLiteFeature
       whereClauses.append( whereClause );
     }
   }
-  else if ( request.filterType() == QgsFeatureRequest::FilterFids )
+  else if ( request.filterType() == QgsFeatureRequest::FilterFids && !( request.iterateOnFids() && request.filterExpression() ))
   {
     if ( request.filterFids().isEmpty() )
     {
@@ -98,7 +98,7 @@ QgsSpatiaLiteFeatureIterator::QgsSpatiaLiteFeatureIterator( QgsSpatiaLiteFeature
     }
   }
   //IMPORTANT - this MUST be the last clause added!
-  else if ( request.filterType() == QgsFeatureRequest::FilterExpression )
+  else if ( request.filterType() == QgsFeatureRequest::FilterExpression || ( request.iterateOnFids() && request.filterExpression() ) )
   {
     if ( request.iterateOnFids() )
       whereClauses.append( whereClauseFids() );
