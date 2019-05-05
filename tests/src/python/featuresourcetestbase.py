@@ -601,8 +601,8 @@ class FeatureSourceTestCase(object):
         qexc = vl.createExpressionContext()
         DefaultFR = QgsFeatureRequest()
         StackedFR = QgsFeatureRequest()
-        DefaultFR.setFilterExpression('1')
-        StackedFR.setFilterExpression('1')
+        DefaultFR.setFilterExpression('0')
+        StackedFR.setFilterExpression('0')
         DefaultFR.setFilterFids([ids[3], ids[4]])
         StackedFR.setFilterFids([ids[3], ids[4]])
 
