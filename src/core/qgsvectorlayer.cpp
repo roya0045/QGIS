@@ -3933,7 +3933,7 @@ QVariant QgsVectorLayer::aggregate( QgsAggregateCalculator::Aggregate aggregate,
     if ( origin == QgsFields::OriginProvider )
     {
       bool providerOk = false;
-      QVariant val = mDataProvider->aggregate( aggregate, attrIndex, parameters, context, providerOk, request );
+      QVariant val = mDataProvider->aggregate( aggregate, attrIndex, parameters, context, providerOk, fids );
       if ( providerOk )
       {
         // provider handled calculation
@@ -3946,11 +3946,14 @@ QVariant QgsVectorLayer::aggregate( QgsAggregateCalculator::Aggregate aggregate,
 
   // fallback to using aggregate calculator to determine aggregate
   QgsAggregateCalculator c( this );
-  QgsFeatureRequest request = QgsFeatureRequest()
-  if( fids )
-    request.setFilterFids( &fids );
+  if ( fids )
+  {
+    bool stack = true;
+    c.setFidsFilter( fids );
+    c.stackFilters( stack );
+  }
   c.setParameters( parameters );
-  return c.calculate( aggregate, fieldOrExpression, context, ok, request );
+  return c.calculate( aggregate, fieldOrExpression, context, ok );
 }
 
 void QgsVectorLayer::setFeatureBlendMode( QPainter::CompositionMode featureBlendMode )

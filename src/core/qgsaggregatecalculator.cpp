@@ -42,14 +42,12 @@ void QgsAggregateCalculator::setParameters( const AggregateParameters &parameter
 }
 
 QVariant QgsAggregateCalculator::calculate( QgsAggregateCalculator::Aggregate aggregate,
-    const QString &fieldOrExpression,
-    QgsExpressionContext *context, bool *ok,
-    const QgsFeatureRequest &request ) const
+    const QString &fieldOrExpression, QgsExpressionContext *context, bool *ok ) const
 {
   if ( ok )
     *ok = false;
 
-  QgsFeatureRequest requestCopy = request;
+  QgsFeatureRequest request = QgsFeatureRequest();
 
   if ( !mLayer )
     return QVariant();
@@ -80,14 +78,21 @@ QVariant QgsAggregateCalculator::calculate( QgsAggregateCalculator::Aggregate ag
   else
     lst = expression->referencedColumns();
 
-  requestCopy.setFlags( ( expression && expression->needsGeometry() ) ?
-                        QgsFeatureRequest::NoFlags :
-                        QgsFeatureRequest::NoGeometry )
+  request.setFlags( ( expression && expression->needsGeometry() ) ?
+                    QgsFeatureRequest::NoFlags :
+                    QgsFeatureRequest::NoGeometry )
   .setSubsetOfAttributes( lst, mLayer->fields() );
+  if ( mFidsFilter )
+  {
+    const QgsFeatureIds fids = *mFidsFilter;
+    request.setFilterFids( fids );
+  }
   if ( !mFilterExpression.isEmpty() )
-    requestCopy.setFilterExpression( mFilterExpression );
+    request.setFilterExpression( mFilterExpression );
+  if ( mStackFilters )
+    ;// TODO
   if ( context )
-    requestCopy.setExpressionContext( *context );
+    request.setExpressionContext( *context );
   //determine result type
   QVariant::Type resultType = QVariant::Double;
   if ( attrNum == -1 )
