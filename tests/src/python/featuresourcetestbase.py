@@ -583,7 +583,6 @@ class FeatureSourceTestCase(object):
         ids = {f['pk']: f.id() for f in self.source.getFeatures()}
         vl = self.source
         field = "pk"
-        qexc = vl.createExpressionContext()
         DefaultFR = QgsFeatureRequest()
         StackedFR = QgsFeatureRequest()
         DefaultFR.setFilterFids([ids[3], ids[4]])
@@ -593,12 +592,11 @@ class FeatureSourceTestCase(object):
 
         StackedFR.iterateFidsOnly(True)
 
-        total1 = vl.aggregate(QgsAggregateCalculator.Sum, field, context=qexc, request=DefaultFR)
-        total2 = vl.aggregate(QgsAggregateCalculator.Sum, field, context=qexc, request=StackedFR)
+        total1 = set([f['pk'] for f in self.source.getFeatures(StackedFR)])
+        total2 = set([f['pk'] for f in self.source.getFeatures(DefaultFR)])
         self.assertNotEqual(total1, total2)
 
         # shouldn't matter what order this is done in
-        qexc = vl.createExpressionContext()
         DefaultFR = QgsFeatureRequest()
         StackedFR = QgsFeatureRequest()
         DefaultFR.setFilterExpression('0')
@@ -608,10 +606,9 @@ class FeatureSourceTestCase(object):
 
         StackedFR.iterateFidsOnly(True)
 
-        total1 = vl.aggregate(QgsAggregateCalculator.Sum, field, context=qexc, request=DefaultFR)
-        total2 = vl.aggregate(QgsAggregateCalculator.Sum, field, context=qexc, request=StackedFR)
+        total1 = set([f['pk'] for f in self.source.getFeatures(StackedFR)])
+        total2 = set([f['pk'] for f in self.source.getFeatures(DefaultFR)])
         self.assertNotEqual(total1, total2)
-
 
     def testGetFeaturesDestinationCrs(self):
         request = QgsFeatureRequest().setDestinationCrs(QgsCoordinateReferenceSystem('epsg:3785'), QgsProject.instance().transformContext())
