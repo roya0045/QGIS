@@ -625,17 +625,17 @@ class TestPyQgsMemoryProvider(unittest.TestCase, ProviderTestCase):
         vl = self.createLayer()
         field = "pk"
         qexc = vl.createExpressionContext()
-        DefaultFR = QgsFeatureRequest()
-        StackedFR = QgsFeatureRequest()
+        DefaultFR = QgsAggregateCalculator( vl )
+        StackedFR = QgsAggregateCalculator( vl )
         DefaultFR.setFilterFids([1, ])
         StackedFR.setFilterFids([1, ])
-        DefaultFR.setFilterExpression('1')
-        StackedFR.setFilterExpression('1')
+        DefaultFR.setFilter('1')
+        StackedFR.setFilter('1')
 
-        StackedFR.iterateFidsOnly(True)
+        StackedFR.stackFilters(True)
 
-        total1 = vl.aggregate(QgsAggregateCalculator.Sum, field, context=qexc, request=DefaultFR)
-        total2 = vl.aggregate(QgsAggregateCalculator.Sum, field, context=qexc, request=StackedFR)
+        total1 = DefaultFR.calculate(QgsAggregateCalculator.Sum, field, context=qexc)
+        total2 = StackedFR.calculate(QgsAggregateCalculator.Sum, field, context=qexc)
         self.assertNotEqual(total1, total2)
 
 
