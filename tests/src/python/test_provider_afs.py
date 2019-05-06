@@ -888,8 +888,8 @@ class TestPyQgsAFSProvider(unittest.TestCase, ProviderTestCase):
         }""".encode('UTF-8'))
         field = "OBJECTID"
         qexc = vl.createExpressionContext()
-        DefaultFR = QgsAggregateCalculator( vl )
-        StackedFR = QgsAggregateCalculator( vl )
+        DefaultFR = QgsAggregateCalculator(vl)
+        StackedFR = QgsAggregateCalculator(vl)
         DefaultFR.setFilterFids([1, ])
         StackedFR.setFilterFids([1, ])
         DefaultFR.setFilter('1')

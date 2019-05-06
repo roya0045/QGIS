@@ -1253,8 +1253,8 @@ class TestPyQgsPostgresProvider(unittest.TestCase, ProviderTestCase):
         vl = self.getSource()
         field = "pk"
         qexc = vl.createExpressionContext()
-        DefaultFR = QgsAggregateCalculator( vl )
-        StackedFR = QgsAggregateCalculator( vl )
+        DefaultFR = QgsAggregateCalculator(vl)
+        StackedFR = QgsAggregateCalculator(vl)
         DefaultFR.setFilterFids([1, ])
         StackedFR.setFilterFids([1, ])
         DefaultFR.setFilter('1')

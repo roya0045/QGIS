@@ -98,7 +98,7 @@ QVariant QgsAggregateCalculator::calculate( QgsAggregateCalculator::Aggregate ag
   if ( attrNum == -1 )
   {
     // evaluate first feature, check result type
-    QgsFeatureRequest testRequest( requestCopy );
+    QgsFeatureRequest testRequest( request );
     testRequest.setLimit( 1 );
     QgsFeature f;
     QgsFeatureIterator fit = mLayer->getFeatures( testRequest );
@@ -120,7 +120,7 @@ QVariant QgsAggregateCalculator::calculate( QgsAggregateCalculator::Aggregate ag
     resultType = mLayer->fields().at( attrNum ).type();
   }
 
-  QgsFeatureIterator fit = mLayer->getFeatures( requestCopy );
+  QgsFeatureIterator fit = mLayer->getFeatures( request );
   return calculate( aggregate, fit, resultType, attrNum, expression.get(), mDelimiter, context, ok );
 }
 

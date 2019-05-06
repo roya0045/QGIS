@@ -493,8 +493,8 @@ class TestPyQgsOGRProviderSqlite(unittest.TestCase):
         vl = QgsVectorLayer(tmpfile, 'test', 'ogr')
         field = "type"
         qexc = vl.createExpressionContext()
-        DefaultFR = QgsAggregateCalculator( vl )
-        StackedFR = QgsAggregateCalculator( vl )
+        DefaultFR = QgsAggregateCalculator(vl)
+        StackedFR = QgsAggregateCalculator(vl)
         DefaultFR.setFilterFids([1, ])
         StackedFR.setFilterFids([1, ])
         DefaultFR.setFilter('1')

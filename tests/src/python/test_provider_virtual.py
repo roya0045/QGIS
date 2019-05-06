@@ -1032,8 +1032,8 @@ class TestQgsVirtualLayerProvider(unittest.TestCase, ProviderTestCase):
         self.assertEqual(vl.isValid(), True)
         field = "a"
         qexc = vl.createExpressionContext()
-        DefaultFR = QgsAggregateCalculator( vl )
-        StackedFR = QgsAggregateCalculator( vl )
+        DefaultFR = QgsAggregateCalculator(vl)
+        StackedFR = QgsAggregateCalculator(vl)
         DefaultFR.setFilterFids([1, ])
         StackedFR.setFilterFids([1, ])
         DefaultFR.setFilter('1')
