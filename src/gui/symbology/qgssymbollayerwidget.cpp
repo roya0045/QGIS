@@ -968,23 +968,27 @@ QgsFilledMarkerSymbolLayerWidget::QgsFilledMarkerSymbolLayerWidget( QgsVectorLay
   if ( vectorLayer() )
     mSizeDDBtn->setSymbol( mAssistantPreviewSymbol );
 
-  QSize size = lstNames->iconSize();
-  double markerSize = DEFAULT_POINT_SIZE * 2;
-  const auto shapes { QgsSimpleMarkerSymbolLayerBase::availableShapes() };
+  int size = lstNames->iconSize().width();
+  size = std::max( 30, static_cast< int >( std::round( Qgis::UI_SCALE_FACTOR * fontMetrics().width( QStringLiteral( "XXX" ) ) ) ) );
+  lstNames->setGridSize( QSize( size * 1.2, size * 1.2 ) );
+  lstNames->setIconSize( QSize( size, size ) );
+
+  double markerSize = size * 0.8;
+  const auto shapes = QgsSimpleMarkerSymbolLayerBase::availableShapes();
   for ( QgsSimpleMarkerSymbolLayerBase::Shape shape : shapes )
   {
-    if ( !QgsSimpleMarkerSymbolLayerBase::shapeIsFilled( shape ) )
-      continue;
-
     QgsSimpleMarkerSymbolLayer *lyr = new QgsSimpleMarkerSymbolLayer( shape, markerSize );
+    lyr->setSizeUnit( QgsUnitTypes::RenderPixels );
     lyr->setColor( QColor( 200, 200, 200 ) );
     lyr->setStrokeColor( QColor( 0, 0, 0 ) );
-    QIcon icon = QgsSymbolLayerUtils::symbolLayerPreviewIcon( lyr, QgsUnitTypes::RenderMillimeters, size );
+    QIcon icon = QgsSymbolLayerUtils::symbolLayerPreviewIcon( lyr, QgsUnitTypes::RenderPixels, QSize( size, size ) );
     QListWidgetItem *item = new QListWidgetItem( icon, QString(), lstNames );
     item->setData( Qt::UserRole, static_cast< int >( shape ) );
     item->setToolTip( QgsSimpleMarkerSymbolLayerBase::encodeShape( shape ) );
     delete lyr;
   }
+  // show at least 3 rows
+  lstNames->setMinimumHeight( lstNames->gridSize().height() * 3.1 );
 
   connect( lstNames, &QListWidget::currentRowChanged, this, &QgsFilledMarkerSymbolLayerWidget::setShape );
   connect( spinSize, static_cast < void ( QDoubleSpinBox::* )( double ) > ( &QDoubleSpinBox::valueChanged ), this, &QgsFilledMarkerSymbolLayerWidget::setSize );
@@ -3253,6 +3257,7 @@ QgsFontMarkerSymbolLayerWidget::QgsFontMarkerSymbolLayerWidget( QgsVectorLayer *
 
   widgetChar = new CharacterWidget();
   scrollArea->setWidget( widgetChar );
+  scrollArea->setVerticalOnly( true );
 
   btnColor->setAllowOpacity( true );
   btnColor->setColorDialogTitle( tr( "Select Symbol Fill Color" ) );
@@ -3308,7 +3313,10 @@ void QgsFontMarkerSymbolLayerWidget::setSymbolLayer( QgsSymbolLayer *layer )
 
   widgetChar->blockSignals( true );
   widgetChar->setFont( layerFont );
-  widgetChar->setCharacter( mLayer->character() );
+  if ( mLayer->character().length() == 1 )
+  {
+    widgetChar->setCharacter( mLayer->character().at( 0 ) );
+  }
   widgetChar->blockSignals( false );
   whileBlocking( mCharLineEdit )->setText( mLayer->character() );
 
@@ -3394,26 +3402,26 @@ void QgsFontMarkerSymbolLayerWidget::setCharacterFromText( const QString &text )
     return;
 
   // take the last character of a string for a better experience when users cycle through several characters on their keyboard
-  QChar chr = text.at( text.length() - 1 );
+  QString character = text;
   if ( text.contains( QRegularExpression( QStringLiteral( "^0x[0-9a-fA-F]{1,4}$" ) ) ) )
   {
     bool ok = false;
     unsigned int value = text.toUInt( &ok, 0 );
     if ( ok )
-      chr = QChar( value );
-  }
-  else if ( text.contains( QRegularExpression( QStringLiteral( "^[0-9]{1,}$" ) ) ) )
-  {
-    bool ok = false;
-    unsigned int value = text.toUInt( &ok, 10 );
-    if ( ok )
-      chr = QChar( value );
+      character = QChar( value );
   }
 
-  if ( chr != mLayer->character() )
+  if ( character != mLayer->character() )
   {
-    mLayer->setCharacter( chr );
-    whileBlocking( widgetChar )->setCharacter( mLayer->character() );
+    mLayer->setCharacter( character );
+    if ( mLayer->character().length() == 1 )
+    {
+      whileBlocking( widgetChar )->setCharacter( mLayer->character().at( 0 ) );
+    }
+    else
+    {
+      widgetChar->clearCharacter();
+    }
     emit changed();
   }
 }

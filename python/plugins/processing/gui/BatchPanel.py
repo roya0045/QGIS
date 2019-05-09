@@ -79,6 +79,7 @@ from qgis.utils import iface
 
 from processing.gui.wrappers import WidgetWrapperFactory, WidgetWrapper
 from processing.gui.BatchOutputSelectionPanel import BatchOutputSelectionPanel
+from processing.gui.BatchInputSelectionPanel import BatchInputSelectionPanel
 
 from processing.tools import dataobjects
 from processing.tools.dataobjects import createContext
@@ -367,6 +368,12 @@ class BatchPanel(BASE, WIDGET):
         """
         return len(self.wrappers)
 
+    def clear(self):
+        self.tblParameters.setRowCount(1)
+        self.wrappers = []
+        self.column_to_parameter_definition = {}
+        self.parameter_to_column = {}
+
     def load(self):
         context = dataobjects.createContext()
         settings = QgsSettings()
@@ -383,7 +390,7 @@ class BatchPanel(BASE, WIDGET):
             # If the user clicked on the cancel button.
             return
 
-        self.tblParameters.setRowCount(1)
+        self.clear()
         try:
             for row, alg in enumerate(values):
                 self.addRow()
@@ -522,9 +529,17 @@ class BatchPanel(BASE, WIDGET):
             if param.flags() & QgsProcessingParameterDefinition.FlagHidden or param.isDestination():
                 continue
 
-            wrapper = WidgetWrapperFactory.create_wrapper(param, self.parent, row, column)
-            wrappers[param.name()] = wrapper
-            self.setCellWrapper(row, column, wrapper, context)
+            if isinstance(param, (QgsProcessingParameterMapLayer, QgsProcessingParameterRasterLayer,
+                                  QgsProcessingParameterVectorLayer, QgsProcessingParameterMeshLayer,
+                                  QgsProcessingParameterFile)):
+                self.tblParameters.setCellWidget(
+                    row, column, BatchInputSelectionPanel(
+                        param, row, column, self.parent))
+            else:
+                wrapper = WidgetWrapperFactory.create_wrapper(param, self.parent, row, column)
+                wrappers[param.name()] = wrapper
+                self.setCellWrapper(row, column, wrapper, context)
+
             column += 1
 
         for out in self.alg.destinationParameterDefinitions():
