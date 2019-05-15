@@ -1346,27 +1346,14 @@ class TestPyQgsOGRProviderGpkg(unittest.TestCase):
         self.assertEqual(vl1.uniqueValues(1), {'one', 'two'})
 
     def test_iterator(self):
-        tmpfile = os.path.join(self.basetestpath, 'testIteration.gpkg')
-        ds = ogr.GetDriverByName('GPKG').CreateDataSource(tmpfile)
-        lyr = ds.CreateLayer('lyr1', geom_type=ogr.wkbPoint)
-        lyr.CreateField(ogr.FieldDefn('pk2', ogr.OFTInteger))
-        f = ogr.Feature(lyr.GetLayerDefn())
-        f.SetGeometry(ogr.CreateGeometryFromWkt('POINT(0 1)'))
-        f.SetField('pk2', 2)
-        lyr.CreateFeature(f)
-        f = ogr.Feature(lyr.GetLayerDefn())
-        f.SetGeometry(ogr.CreateGeometryFromWkt('POINT(2 3)'))
-        f.SetField('pk2', 5)
-        lyr.CreateFeature(f)
-        f = ogr.Feature(lyr.GetLayerDefn())
-        f.SetGeometry(ogr.CreateGeometryFromWkt('POINT(4 5)'))
-        f.SetField('pk2', 3)
-        lyr.CreateFeature(f)
-        ds = None
+        tmpfile = os.path.join(self.basetestpath, 'test_json.gpkg')
+        testdata_path = unitTestDataPath('provider')
+        shutil.copy(os.path.join(unitTestDataPath('provider'), 'test_json.gpkg'), tmpfile)
 
-        vl = QgsVectorLayer(u'{}'.format(tmpfile) + "|layername=" + "lyr1", 'test', u'ogr')
+        vl = QgsVectorLayer('{}|layerid=0'.format(tmpfile, 'foo', 'ogr'))
         self.assertTrue(vl.isValid())
-        field = "pk2"
+
+        field = "AREA"
         qexc = vl.createExpressionContext()
         DefaultFR = QgsAggregateCalculator(vl)
         StackedFR = QgsAggregateCalculator(vl)
