@@ -87,6 +87,7 @@ QgsFeatureRequest &QgsFeatureRequest::operator=( const QgsFeatureRequest &rh )
   mTransformErrorCallback = rh.mTransformErrorCallback;
   mTimeout = rh.mTimeout;
   mRequestMayBeNested = rh.mRequestMayBeNested;
+  mFidsIterator = rh.mFidsIterator;
   return *this;
 }
 
@@ -327,6 +328,18 @@ QgsFeatureRequest &QgsFeatureRequest::setRequestMayBeNested( bool requestMayBeNe
 {
   mRequestMayBeNested = requestMayBeNested;
   return *this;
+}
+
+void QgsFeatureRequest::iterateFidsOnly( bool useFids )
+{
+  mFidsIterator = useFids;
+}
+
+bool QgsFeatureRequest::iterateOnFids() const
+{
+  if ( mFidsIterator && !mFilterFids.isEmpty() )
+    return true;
+  return false;
 }
 
 

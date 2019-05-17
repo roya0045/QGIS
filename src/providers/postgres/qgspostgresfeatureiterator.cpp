@@ -102,6 +102,11 @@ QgsPostgresFeatureIterator::QgsPostgresFeatureIterator( QgsPostgresFeatureSource
   }
   else if ( request.filterType() == QgsFeatureRequest::FilterExpression )
   {
+    if ( request.iterateOnFids() )
+    {
+      QString fidsWhereClause = QgsPostgresUtils::whereClause( mRequest.filterFids(), mSource->mFields, mConn, mSource->mPrimaryKeyType, mSource->mPrimaryKeyAttrs, mSource->mShared );
+      whereClause = QgsPostgresUtils::andWhereClauses( whereClause, fidsWhereClause );
+    }
     // ensure that all attributes required for expression filter are being fetched
     if ( mRequest.flags() & QgsFeatureRequest::SubsetOfAttributes )
     {

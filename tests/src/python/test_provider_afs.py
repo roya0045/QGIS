@@ -29,7 +29,9 @@ from qgis.core import (NULL,
                        QgsSettings,
                        QgsRectangle,
                        QgsCategorizedSymbolRenderer,
-                       QgsProviderRegistry
+                       QgsProviderRegistry,
+                       QgsAggregateCalculator,
+                       QgsFeatureRequest
                        )
 from qgis.testing import (start_app,
                           unittest
@@ -158,7 +160,7 @@ class TestPyQgsAFSProvider(unittest.TestCase, ProviderTestCase):
             "cnt": -200,
             "name": null,
             "name2":"NuLl",
-            "num_char":"5"    
+            "num_char":"5"
            },
            "geometry": {
             "x": -71.123,
@@ -172,7 +174,7 @@ class TestPyQgsAFSProvider(unittest.TestCase, ProviderTestCase):
             "cnt": 300,
             "name": "Pear",
             "name2":"PEaR",
-            "num_char":"3"   
+            "num_char":"3"
            },
            "geometry": null
           },
@@ -183,7 +185,7 @@ class TestPyQgsAFSProvider(unittest.TestCase, ProviderTestCase):
             "cnt": 100,
             "name": "Orange",
             "name2":"oranGe",
-            "num_char":"1"    
+            "num_char":"1"
            },
            "geometry": {
             "x": -70.332,
@@ -197,7 +199,7 @@ class TestPyQgsAFSProvider(unittest.TestCase, ProviderTestCase):
             "cnt": 200,
             "name": "Apple",
             "name2":"Apple",
-            "num_char":"2"    
+            "num_char":"2"
            },
            "geometry": {
             "x": -68.2,
@@ -211,7 +213,7 @@ class TestPyQgsAFSProvider(unittest.TestCase, ProviderTestCase):
             "cnt": 400,
             "name": "Honey",
             "name2":"Honey",
-            "num_char":"4"    
+            "num_char":"4"
            },
            "geometry": {
             "x": -65.32,
@@ -248,7 +250,7 @@ class TestPyQgsAFSProvider(unittest.TestCase, ProviderTestCase):
     "cnt": -200,
     "name": null,
     "name2":"NuLl",
-    "num_char":"5"    
+    "num_char":"5"
    },
    "geometry": {
     "x": -71.123,
@@ -262,7 +264,7 @@ class TestPyQgsAFSProvider(unittest.TestCase, ProviderTestCase):
     "cnt": 300,
     "name": "Pear",
     "name2":"PEaR",
-    "num_char":"3"   
+    "num_char":"3"
    },
    "geometry": null
   },
@@ -273,7 +275,7 @@ class TestPyQgsAFSProvider(unittest.TestCase, ProviderTestCase):
     "cnt": 100,
     "name": "Orange",
     "name2":"oranGe",
-    "num_char":"1"    
+    "num_char":"1"
    },
    "geometry": {
     "x": -70.332,
@@ -287,7 +289,7 @@ class TestPyQgsAFSProvider(unittest.TestCase, ProviderTestCase):
     "cnt": 200,
     "name": "Apple",
     "name2":"Apple",
-    "num_char":"2"    
+    "num_char":"2"
    },
    "geometry": {
     "x": -68.2,
@@ -301,7 +303,7 @@ class TestPyQgsAFSProvider(unittest.TestCase, ProviderTestCase):
     "cnt": 400,
     "name": "Honey",
     "name2":"Honey",
-    "num_char":"4"    
+    "num_char":"4"
    },
    "geometry": {
     "x": -65.32,
@@ -836,6 +838,68 @@ class TestPyQgsAFSProvider(unittest.TestCase, ProviderTestCase):
         features = [f for f in vl.getFeatures()]
         self.assertEqual(len(features), 3)
         self.assertEqual([f.geometry().asWkt() for f in features], ['MultiPoint ((-70 66))', '', 'MultiPoint ((-68 70),(-22 21))'])
+
+    def test_iterator(self):
+        endpoint = self.basetestpath + '/fake_qgis_http_endpoint'
+        vl = QgsVectorLayer("url='http://" + endpoint + "' crs='epsg:4326'", 'test', 'arcgisfeatureserver')
+
+        self.assertTrue(vl.isValid())
+        with open(sanitize(endpoint,
+                           '/query?f=json&objectIds=1,2,3&inSR=4326&outSR=4326&returnGeometry=true&outFields=OBJECTID&returnM=false&returnZ=false'), 'wb') as f:
+            f.write("""
+        {
+         "displayFieldName": "name",
+         "fieldAliases": {
+          "name": "name"
+         },
+         "geometryType": "esriGeometryMultipoint",
+         "spatialReference": {
+          "wkid": 4326,
+          "latestWkid": 4326
+         },
+         "fields":[{"name":"OBJECTID","type":"esriFieldTypeOID","alias":"OBJECTID","domain":null},
+        {"name":"Shape","type":"esriFieldTypeGeometry","alias":"Shape","domain":null}],
+         "features": [
+          {
+           "attributes": {
+            "OBJECTID": 1
+           },
+           "geometry": {
+            "x": -70,
+            "y": 66
+           }
+          },
+          {
+           "attributes": {
+            "OBJECTID": 2
+           },
+           "geometry": null
+          },
+          {
+           "attributes": {
+            "OBJECTID": 3
+           },
+           "geometry":
+           {"points" :[[-68,70],
+           [-22,21]]
+           }
+          }
+         ]
+        }""".encode('UTF-8'))
+        field = "OBJECTID"
+        qexc = vl.createExpressionContext()
+        DefaultFR = QgsAggregateCalculator(vl)
+        StackedFR = QgsAggregateCalculator(vl)
+        DefaultFR.setFidsFilter([1, ])
+        StackedFR.setFidsFilter([1, ])
+        DefaultFR.setFilter('1')
+        StackedFR.setFilter('1')
+
+        StackedFR.stackFilters(True)
+
+        total1 = DefaultFR.calculate(QgsAggregateCalculator.Sum, field, context=qexc)
+        total2 = StackedFR.calculate(QgsAggregateCalculator.Sum, field, context=qexc)
+        self.assertNotEqual(total1, total2)
 
 
 if __name__ == '__main__':
