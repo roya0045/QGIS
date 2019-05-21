@@ -25,7 +25,8 @@ from qgis.core import (QgsVectorLayer,
                        QgsVirtualLayerDefinitionUtils,
                        QgsWkbTypes,
                        QgsProject,
-                       QgsVectorLayerJoinInfo
+                       QgsVectorLayerJoinInfo,
+                       QgsAggregateCalculator
                        )
 
 from qgis.testing import start_app, unittest
@@ -1010,6 +1011,40 @@ class TestQgsVirtualLayerProvider(unittest.TestCase, ProviderTestCase):
         self.assertEqual(point.y(), 3)
 
         QgsProject.instance().removeMapLayer(ml)
+
+    def test_iterator(self):
+        ml = QgsVectorLayer("Point?srid=EPSG:4326&field=a:int", "mem_no_uid", "memory")
+        self.assertEqual(ml.isValid(), True)
+        QgsProject.instance().addMapLayer(ml)
+
+        # a memory layer with 10 features
+        ml.startEditing()
+        for i in range(10):
+            f = QgsFeature(ml.fields())
+            f.setGeometry(QgsGeometry.fromWkt('POINT({} 0)'.format(i)))
+            f.setAttributes([i])
+            ml.addFeatures([f])
+        ml.commitChanges()
+
+        df = QgsVirtualLayerDefinition()
+        df.setQuery('select * from mem_no_uid')
+        vl = QgsVectorLayer(df.toString(), "vl", "virtual")
+        self.assertEqual(vl.isValid(), True)
+        field = "a"
+        qexc = vl.createExpressionContext()
+        DefaultFR = QgsAggregateCalculator(vl)
+        StackedFR = QgsAggregateCalculator(vl)
+        DefaultFR.setFidsFilter([1, ])
+        StackedFR.setFidsFilter([1, ])
+        DefaultFR.setFilter('1')
+        StackedFR.setFilter('1')
+
+        StackedFR.stackFilters(True)
+
+        total1 = DefaultFR.calculate(QgsAggregateCalculator.Sum, field, context=qexc)
+        total2 = StackedFR.calculate(QgsAggregateCalculator.Sum, field, context=qexc)
+        self.assertNotEqual(total1, total2)
+        self.assertNotEqual(total1, total2)
 
 
 if __name__ == '__main__':

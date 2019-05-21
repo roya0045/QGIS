@@ -89,7 +89,7 @@ QgsVirtualLayerFeatureIterator::QgsVirtualLayerFeatureIterator( QgsVirtualLayerF
                .arg( quotedColumn( mSource->mDefinition.uid() ) )
                .arg( request.filterFid() );
       }
-      else if ( request.filterType() == QgsFeatureRequest::FilterFids )
+      else if ( request.filterType() == QgsFeatureRequest::FilterFids || request.iterateOnFids() )
       {
         QString values = quotedColumn( mSource->mDefinition.uid() ) + " IN (";
         bool first = true;
@@ -123,6 +123,23 @@ QgsVirtualLayerFeatureIterator::QgsVirtualLayerFeatureIterator( QgsVirtualLayerF
         QgsGeometry rectGeom = QgsGeometry::fromRect( mFilterRect );
         mRectEngine.reset( QgsGeometry::createGeometryEngine( rectGeom.constGet() ) );
         mRectEngine->prepareGeometry();
+      }
+      if ( request.iterateOnFids() )
+      {
+        QString values = quotedColumn( mSource->mDefinition.uid() ) + " IN (";
+        bool first = true;
+        const auto constFilterFids = request.filterFids();
+        for ( QgsFeatureId v : constFilterFids )
+        {
+          if ( !first )
+          {
+            values += QLatin1String( "," );
+          }
+          first = false;
+          values += QString::number( v );
+        }
+        values += QLatin1String( ")" );
+        wheres << values;
       }
     }
 
