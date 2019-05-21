@@ -3922,18 +3922,24 @@ QVariant QgsVectorLayer::aggregate( QgsAggregateCalculator::Aggregate aggregate,
     *ok = false;
 
   if ( !mDataProvider )
-  {
     return QVariant();
-  }
 
-  if ( context )
+  QgsFeatureIds ids;
+  bool stack = false;
+  if ( fids )
+  {
+    QgsFeatureIds ids = *fids;
+    stack = true;
+  }
+  else if ( context )
   {
     if ( context->indexOfScope( "Symbol scope" ) != -1 )
     {
-      const QgsFeatureIds ids = featureIds( context->variable( "symbol_id" ).toString() );
-      Q_UNUSED( ids );
+      QgsFeatureIds ids = featureIds( context->variable( "symbol_id" ).toString() );
+      stack = true;
     }
   }
+
 
   // test if we are calculating based on a field
   int attrIndex = mFields.lookupField( fieldOrExpression );
@@ -3945,7 +3951,7 @@ QVariant QgsVectorLayer::aggregate( QgsAggregateCalculator::Aggregate aggregate,
     if ( origin == QgsFields::OriginProvider )
     {
       bool providerOk = false;
-      QVariant val = mDataProvider->aggregate( aggregate, attrIndex, parameters, context, providerOk, fids );
+      QVariant val = mDataProvider->aggregate( aggregate, attrIndex, parameters, context, providerOk, &ids );
       if ( providerOk )
       {
         // provider handled calculation
@@ -3958,10 +3964,10 @@ QVariant QgsVectorLayer::aggregate( QgsAggregateCalculator::Aggregate aggregate,
 
   // fallback to using aggregate calculator to determine aggregate
   QgsAggregateCalculator c( this );
-  if ( fids )
+  if ( stack )
   {
     bool stack = true;
-    c.setFidsFilter( *fids );
+    c.setFidsFilter( ids );
     c.stackFilters( stack );
   }
   c.setParameters( parameters );
