@@ -3927,7 +3927,7 @@ QVariant QgsVectorLayer::aggregate( QgsAggregateCalculator::Aggregate aggregate,
   {
     if ( context->indexOfScope( "Symbol scope" ) != -1 )
     {
-      const QgsFeatureIds ids = mSymbolIdMap.value( legendKeycontext->variable( "symbol_id" ).toString(), QgsFeatureIds() );
+      const QgsFeatureIds ids = mSymbolIdMap.value( context->variable( "symbol_id" ).toString(), QgsFeatureIds() );
       stack = true;
     }
   }
