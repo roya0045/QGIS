@@ -214,6 +214,7 @@ SET(QGIS_GUI_SRCS
   qgsactionmenu.cpp
   qgsadvanceddigitizingcanvasitem.cpp
   qgsadvanceddigitizingdockwidget.cpp
+  qgsadvanceddigitizingfloater.cpp
   qgsaggregatetoolbutton.cpp
   qgsattributedialog.cpp
   qgsattributeform.cpp
@@ -401,6 +402,7 @@ SET(QGIS_GUI_MOC_HDRS
   qgisinterface.h
   qgsactionmenu.h
   qgsadvanceddigitizingdockwidget.h
+  qgsadvanceddigitizingfloater.h
   qgsaggregatetoolbutton.h
   qgsattributedialog.h
   qgsattributeform.h
@@ -467,6 +469,7 @@ SET(QGIS_GUI_MOC_HDRS
   qgsgradientcolorrampdialog.h
   qgsgradientstopeditor.h
   qgsgroupwmsdatadialog.h
+  qgsgui.h
   qgshistogramwidget.h
   qgshighlight.h
   qgsidentifymenu.h
@@ -789,7 +792,6 @@ SET(QGIS_GUI_HDRS
   qgsdetaileditemdata.h
   qgsexpressionbuilderdialog.h
   qgsgeometryrubberband.h
-  qgsgui.h
   qgsguiutils.h
   qgshelp.h
   qgshighlight.h

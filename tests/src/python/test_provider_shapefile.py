@@ -9,8 +9,6 @@ the Free Software Foundation; either version 2 of the License, or
 __author__ = 'Matthias Kuhn'
 __date__ = '2015-04-23'
 __copyright__ = 'Copyright 2015, The QGIS Project'
-# This will get replaced with a git SHA1 when you do a git archive
-__revision__ = '$Format:%H$'
 
 import os
 import re
@@ -21,7 +19,7 @@ import osgeo.gdal
 import osgeo.ogr
 import sys
 
-from qgis.core import QgsSettings, QgsFeature, QgsField, QgsGeometry, QgsVectorLayer, QgsFeatureRequest, QgsVectorDataProvider, QgsAggregateCalculator
+from qgis.core import QgsSettings, QgsFeature, QgsField, QgsGeometry, QgsVectorLayer, QgsFeatureRequest, QgsVectorDataProvider, QgsWkbTypes, QgsAggregateCalculator
 from qgis.PyQt.QtCore import QVariant
 from qgis.testing import start_app, unittest
 from utilities import unitTestDataPath
@@ -703,6 +701,18 @@ class TestPyQgsShapefileProvider(unittest.TestCase, ProviderTestCase):
         self.assertEqual(_lessdigits(subSet_vl.extent().toString()), filtered_extent)
         self.assertNotEqual(_lessdigits(subSet_vl.extent().toString()), unfiltered_extent)
 
+    def testMultipatch(self):
+        """Check that we can deal with multipatch shapefiles, returned natively by OGR as GeometryCollection of TIN"""
+
+        testPath = TEST_DATA_DIR + '/' + 'multipatch.shp'
+        vl = QgsVectorLayer(testPath, 'test', 'ogr')
+        self.assertTrue(vl.isValid())
+        self.assertEqual(vl.wkbType(), QgsWkbTypes.MultiPolygonZ)
+        f = next(vl.getFeatures())
+        self.assertEqual(f.geometry().wkbType(), QgsWkbTypes.MultiPolygonZ)
+        self.assertEqual(f.geometry().constGet().asWkt(),
+                         'MultiPolygonZ (((0 0 0, 0 1 0, 1 1 0, 0 0 0)),((0 0 0, 1 1 0, 1 0 0, 0 0 0)),((0 0 0, 0 -1 0, 1 -1 0, 0 0 0)),((0 0 0, 1 -1 0, 1 0 0, 0 0 0)))')
+
     def test_iterator(self):
         vl = self.getSource()
         field = "pk"
@@ -715,7 +725,6 @@ class TestPyQgsShapefileProvider(unittest.TestCase, ProviderTestCase):
         StackedFR.setFilter('1')
 
         StackedFR.stackFilters(True)
-
         total1 = DefaultFR.calculate(QgsAggregateCalculator.Sum, field, context=qexc)
         total2 = StackedFR.calculate(QgsAggregateCalculator.Sum, field, context=qexc)
         self.assertNotEqual(total1, total2)

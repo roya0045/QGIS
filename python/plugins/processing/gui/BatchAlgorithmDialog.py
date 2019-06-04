@@ -21,27 +21,18 @@ __author__ = 'Victor Olaya'
 __date__ = 'August 2012'
 __copyright__ = '(C) 2012, Victor Olaya'
 
-# This will get replaced with a git SHA1 when you do a git archive
-
-__revision__ = '$Format:%H$'
-
 from pprint import pformat
 import time
 
-from qgis.PyQt.QtWidgets import QMessageBox
+from qgis.PyQt.QtWidgets import QPushButton, QDialogButtonBox
 from qgis.PyQt.QtCore import Qt, QCoreApplication
 
-from qgis.core import (QgsProcessingParameterDefinition,
-                       QgsProcessingParameterRasterDestination,
-                       QgsProcessingParameterVectorDestination,
-                       QgsProcessingParameterFeatureSink,
-                       QgsProcessingOutputLayerDefinition,
-                       QgsProcessingOutputHtml,
+from qgis.core import (QgsProcessingOutputHtml,
                        QgsProcessingOutputNumber,
                        QgsProcessingOutputString,
+                       QgsProcessingOutputBoolean,
                        QgsProject,
                        QgsProcessingMultiStepFeedback,
-                       Qgis,
                        QgsScopedProxyProgressTask)
 
 from qgis.gui import QgsProcessingAlgorithmDialogBase
@@ -70,6 +61,18 @@ class BatchAlgorithmDialog(QgsProcessingAlgorithmDialogBase):
         self.setMainWidget(BatchPanel(self, self.algorithm()))
         self.hideShortHelp()
 
+        self.btnRunSingle = QPushButton(self.tr("Run as Single Process…"))
+        self.btnRunSingle.clicked.connect(self.runAsSingle)
+        self.buttonBox().addButton(self.btnRunSingle, QDialogButtonBox.ResetRole) # reset role to ensure left alignment
+
+    def runAsSingle(self):
+        self.close()
+
+        from processing.gui.AlgorithmDialog import AlgorithmDialog
+        dlg = AlgorithmDialog(self.algorithm().create(), parent=iface.mainWindow())
+        dlg.show()
+        dlg.exec_()
+
     def runAlgorithm(self):
         alg_parameters = []
 
@@ -95,7 +98,7 @@ class BatchAlgorithmDialog(QgsProcessingAlgorithmDialogBase):
             try:
                 self.showLog()
                 self.repaint()
-            except:
+            except Exception:  # FIXME which one?
                 pass
 
             start_time = time.time()
@@ -164,7 +167,7 @@ class BatchAlgorithmDialog(QgsProcessingAlgorithmDialogBase):
         createTable = False
 
         for out in self.algorithm().outputDefinitions():
-            if isinstance(out, (QgsProcessingOutputNumber, QgsProcessingOutputString)):
+            if isinstance(out, (QgsProcessingOutputNumber, QgsProcessingOutputString, QgsProcessingOutputBoolean)):
                 createTable = True
                 break
 

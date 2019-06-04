@@ -60,6 +60,7 @@
 #endif
 #include <QStatusBar>
 #include <QStringList>
+#include <QSysInfo>
 #include <QTcpSocket>
 #include <QTextStream>
 #include <QtGlobal>
@@ -334,6 +335,7 @@ Q_GUI_EXPORT extern int qt_defaultDpiX();
 #include "qgsdatasourcemanagerdialog.h"
 #include "qgsappwindowmanager.h"
 #include "qgsvaliditycheckregistry.h"
+#include "qgsappcoordinateoperationhandlers.h"
 
 #include "qgsuserprofilemanager.h"
 #include "qgsuserprofile.h"
@@ -1406,9 +1408,25 @@ QgisApp::QgisApp( QSplashScreen *splash, bool restorePlugins, bool skipVersionCh
     QgsGui::instance()->nativePlatformInterface()->setApplicationBadgeCount( count );
   } );
 
+  ( void )new QgsAppMissingGridHandler( this );
+
   // supposedly all actions have been added, now register them to the shortcut manager
   QgsGui::shortcutsManager()->registerAllChildren( this );
   QgsGui::shortcutsManager()->registerAllChildren( mSnappingWidget );
+
+  // register additional action
+  auto registerShortcuts = [ = ]( const QString & sequence, const QString & objectName, const QString & whatsThis )
+  {
+    QShortcut *sc = new QShortcut( QKeySequence( sequence ), this );
+    sc->setContext( Qt::ApplicationShortcut );
+    sc->setObjectName( objectName );
+    sc->setWhatsThis( whatsThis );
+    QgsGui::shortcutsManager()->registerShortcut( sc, sequence );
+  };
+  registerShortcuts( QStringLiteral( "Ctrl+Alt+{" ), QStringLiteral( "mAttributeTableFirstEditedFeature" ), tr( "Edit first feature in attribute table" ) );
+  registerShortcuts( QStringLiteral( "Ctrl+Alt+[" ), QStringLiteral( "mAttributeTablePreviousEditedFeature" ), tr( "Edit previous feature in attribute table" ) );
+  registerShortcuts( QStringLiteral( "Ctrl+Alt+]" ), QStringLiteral( "mAttributeTableNextEditedFeature" ), tr( "Edit next feature in attribute table" ) );
+  registerShortcuts( QStringLiteral( "Ctrl+Alt+}" ), QStringLiteral( "mAttributeTableLastEditedFeature" ), tr( "Edit last feature in attribute table" ) );
 
   QgsProviderRegistry::instance()->registerGuis( this );
 
@@ -1657,51 +1675,6 @@ void QgisApp::dropEvent( QDropEvent *event )
   for ( i = urls.begin(); i != urls.end(); ++i )
   {
     QString fileName = i->toLocalFile();
-#ifdef Q_OS_MAC
-    // Mac OS X 10.10, under Qt4.8 ,changes dropped URL format
-    // https://bugreports.qt.io/browse/QTBUG-40449
-    // [pzion 20150805] Work around
-    if ( fileName.startsWith( "/.file/id=" ) )
-    {
-      QgsDebugMsg( QStringLiteral( "Mac dropped URL with /.file/id= (converting)" ) );
-      CFStringRef relCFStringRef =
-        CFStringCreateWithCString(
-          kCFAllocatorDefault,
-          fileName.toUtf8().constData(),
-          kCFStringEncodingUTF8
-        );
-      CFURLRef relCFURL =
-        CFURLCreateWithFileSystemPath(
-          kCFAllocatorDefault,
-          relCFStringRef,
-          kCFURLPOSIXPathStyle,
-          false // isDirectory
-        );
-      CFErrorRef error = 0;
-      CFURLRef absCFURL =
-        CFURLCreateFilePathURL(
-          kCFAllocatorDefault,
-          relCFURL,
-          &error
-        );
-      if ( !error )
-      {
-        static const CFIndex maxAbsPathCStrBufLen = 4096;
-        char absPathCStr[maxAbsPathCStrBufLen];
-        if ( CFURLGetFileSystemRepresentation(
-               absCFURL,
-               true, // resolveAgainstBase
-               reinterpret_cast<UInt8 *>( &absPathCStr[0] ),
-               maxAbsPathCStrBufLen ) )
-        {
-          fileName = QString( absPathCStr );
-        }
-      }
-      CFRelease( absCFURL );
-      CFRelease( relCFURL );
-      CFRelease( relCFStringRef );
-    }
-#endif
     // seems that some drag and drop operations include an empty url
     // so we test for length to make sure we have something
     if ( !fileName.isEmpty() )
@@ -2185,7 +2158,7 @@ void QgisApp::createActions()
   connect( mActionZoomActualSize, &QAction::triggered, this, &QgisApp::zoomActualSize );
   connect( mActionMapTips, &QAction::toggled, this, &QgisApp::toggleMapTips );
   connect( mActionNewBookmark, &QAction::triggered, this, &QgisApp::newBookmark );
-  connect( mActionDraw, &QAction::triggered, this, &QgisApp::refreshMapCanvas );
+  connect( mActionDraw, &QAction::triggered, this, [this] { refreshMapCanvas( true ); } );
   connect( mActionTextAnnotation, &QAction::triggered, this, &QgisApp::addTextAnnotation );
   connect( mActionFormAnnotation, &QAction::triggered, this, &QgisApp::addFormAnnotation );
   connect( mActionHtmlAnnotation, &QAction::triggered, this, &QgisApp::addHtmlAnnotation );
@@ -4097,31 +4070,39 @@ void QgisApp::setupLayerTreeViewFromSettings()
 void QgisApp::updateNewLayerInsertionPoint()
 {
   // defaults
-  QgsLayerTreeGroup *parentGroup = mLayerTreeView->layerTreeModel()->rootGroup();
-  int index = 0;
+  QgsLayerTreeGroup *insertGroup = mLayerTreeView->layerTreeModel()->rootGroup();
   QModelIndex current = mLayerTreeView->currentIndex();
+  int index = 0;
 
   if ( current.isValid() )
   {
+    index = current.row();
+
     if ( QgsLayerTreeNode *currentNode = mLayerTreeView->currentNode() )
     {
       // if the insertion point is actually a group, insert new layers into the group
       if ( QgsLayerTree::isGroup( currentNode ) )
       {
-        QgsProject::instance()->layerTreeRegistryBridge()->setLayerInsertionPoint( QgsLayerTree::toGroup( currentNode ), 0 );
+        // if the group is embedded go to the first non-embedded group, at worst the top level item
+        QgsLayerTreeGroup *insertGroup = QgsLayerTreeUtils::firstGroupWithoutCustomProperty( QgsLayerTree::toGroup( currentNode ), QStringLiteral( "embedded" ) );
+        QgsProject::instance()->layerTreeRegistryBridge()->setLayerInsertionPoint( insertGroup, 0 );
         return;
       }
 
       // otherwise just set the insertion point in front of the current node
       QgsLayerTreeNode *parentNode = currentNode->parent();
       if ( QgsLayerTree::isGroup( parentNode ) )
-        parentGroup = QgsLayerTree::toGroup( parentNode );
+      {
+        // if the group is embedded go to the first non-embedded group, at worst the top level item
+        QgsLayerTreeGroup *parentGroup = QgsLayerTree::toGroup( parentNode );
+        insertGroup = QgsLayerTreeUtils::firstGroupWithoutCustomProperty( parentGroup, QStringLiteral( "embedded" ) );
+        if ( parentGroup != insertGroup )
+          index = 0;
+      }
     }
-
-    index = current.row();
   }
 
-  QgsProject::instance()->layerTreeRegistryBridge()->setLayerInsertionPoint( parentGroup, index );
+  QgsProject::instance()->layerTreeRegistryBridge()->setLayerInsertionPoint( insertGroup, index );
 }
 
 void QgisApp::autoSelectAddedLayer( QList<QgsMapLayer *> layers )
@@ -4254,6 +4235,13 @@ void QgisApp::saveRecentProjectPath( bool savePreviewImage )
   // Get canonical absolute path
   QgsWelcomePageItemsModel::RecentProjectData projectData;
   projectData.path = QgsProject::instance()->absoluteFilePath();
+  QString templateDirName = QgsSettings().value( QStringLiteral( "qgis/projectTemplateDir" ),
+                            QgsApplication::qgisSettingsDirPath() + "project_templates" ).toString();
+
+  // We don't want the template path to appear in the recent projects list. Never.
+  if ( projectData.path.startsWith( templateDirName ) )
+    return;
+
   if ( projectData.path.isEmpty() )  // in case of custom project storage
     projectData.path = QgsProject::instance()->fileName();
   projectData.title = QgsProject::instance()->title();
@@ -4515,6 +4503,10 @@ void QgisApp::about()
     versionString += "</tr><tr><td colspan=4>" + tr( "This copy of QGIS writes debugging output." ) + "</td>";
 #endif
 
+    versionString += QLatin1String( "</tr><tr>" );
+
+    versionString += "<td>" + tr( "OS Version" ) + "</td><td>" + QSysInfo::prettyProductName() + "</td>";
+
     versionString += QLatin1String( "</tr></table></div></body></html>" );
 
     sAbt->setVersion( versionString );
@@ -4642,6 +4634,7 @@ bool QgisApp::addVectorLayersPrivate( const QStringList &layerQStringList, const
   QList<QgsMapLayer *> layersToAdd;
   QList<QgsMapLayer *> addedLayers;
   QgsSettings settings;
+  bool userAskedToAddLayers = false;
 
   for ( QString src : layerQStringList )
   {
@@ -4718,6 +4711,7 @@ bool QgisApp::addVectorLayersPrivate( const QStringList &layerQStringList, const
 
     if ( layer->isValid() )
     {
+      userAskedToAddLayers = true;
       layer->setProviderEncoding( enc );
 
       QStringList sublayers = layer->dataProvider()->subLayers();
@@ -4773,7 +4767,9 @@ bool QgisApp::addVectorLayersPrivate( const QStringList &layerQStringList, const
   // make sure at least one layer was successfully added
   if ( layersToAdd.isEmpty() )
   {
-    return !addedLayers.isEmpty();
+    // we also return true if we asked the user for sublayers, but they choose none. In this case nothing
+    // went wrong, so we shouldn't return false and cause GUI warnings to appear
+    return userAskedToAddLayers || !addedLayers.isEmpty();
   }
 
   // Register this layer with the layers registry
@@ -5507,8 +5503,7 @@ bool QgisApp::fileNew( bool promptToSaveFlag, bool forceBlank )
   mScaleWidget->updateScales();
 
   // set project CRS
-  QString defCrs = settings.value( QStringLiteral( "Projections/projectDefaultCrs" ), GEO_EPSG_CRS_AUTHID ).toString();
-  QgsCoordinateReferenceSystem srs = QgsCoordinateReferenceSystem::fromOgcWmsCrs( defCrs );
+  const QgsCoordinateReferenceSystem srs = QgsCoordinateReferenceSystem( settings.value( QStringLiteral( "/projections/defaultProjectCrs" ), GEO_EPSG_CRS_AUTHID, QgsSettings::App ).toString() );
   // write the projections _proj string_ to project settings
   prj->setCrs( srs );
   prj->setEllipsoid( srs.ellipsoidAcronym() );
@@ -7153,6 +7148,7 @@ void QgisApp::changeDataSource( QgsMapLayer *layer )
   QgsMapLayerType layerType( layer->type() );
 
   QgsDataSourceSelectDialog dlg( mBrowserModel, true, layerType );
+  dlg.setDescription( tr( "Original source URI: %1" ).arg( layer->publicSource() ) );
 
   if ( dlg.exec() == QDialog::Accepted )
   {
@@ -9391,14 +9387,17 @@ void QgisApp::copyFeatures( QgsFeatureStore &featureStore )
   clipboard()->replaceWithCopyOf( featureStore );
 }
 
-void QgisApp::refreshMapCanvas()
+void QgisApp::refreshMapCanvas( bool redrawAllLayers )
 {
   const auto canvases = mapCanvases();
   for ( QgsMapCanvas *canvas : canvases )
   {
     //stop any current rendering
     canvas->stopRendering();
-    canvas->refreshAllLayers();
+    if ( redrawAllLayers )
+      canvas->refreshAllLayers();
+    else
+      canvas->refresh();
   }
 }
 
@@ -12346,7 +12345,7 @@ void QgisApp::layersWereAdded( const QList<QgsMapLayer *> &layers )
     if ( provider )
     {
       connect( provider, &QgsDataProvider::dataChanged, layer, [layer] { layer->triggerRepaint(); } );
-      connect( provider, &QgsDataProvider::dataChanged, this, &QgisApp::refreshMapCanvas );
+      connect( provider, &QgsDataProvider::dataChanged, this, [this] { refreshMapCanvas(); } );
     }
   }
 }
@@ -14430,6 +14429,51 @@ void QgisApp::populateProjectStorageMenu( QMenu *menu, bool saving )
 {
   menu->clear();
   const QList<QgsProjectStorage *> storages = QgsApplication::projectStorageRegistry()->projectStorages();
+  QAction *action = menu->addAction( tr( "Templates" ) + QChar( 0x2026 ) ); // 0x2026 = ellipsis character
+  connect( action, &QAction::triggered, this, [ this ]
+  {
+    QgsSettings settings;
+    QString templateDirName = settings.value( QStringLiteral( "qgis/projectTemplateDir" ),
+        QgsApplication::qgisSettingsDirPath() + "project_templates" ).toString();
+
+    const QString originalFilename = QgsProject::instance()->fileName();
+    QString templateName = QFileInfo( originalFilename ).baseName();
+
+    if ( templateName.isEmpty() )
+    {
+      bool ok;
+      templateName = QInputDialog::getText( this, tr( "Template Name" ),
+                                            tr( "Name for the template" ), QLineEdit::Normal,
+                                            QString(), &ok );
+
+      if ( !ok )
+        return;
+      if ( templateName.isEmpty() )
+      {
+        messageBar()->pushInfo( tr( "Template not saved" ), tr( "The template can not have an empty name." ) );
+      }
+    }
+    const QString filePath = templateDirName + QDir::separator() + templateName + QStringLiteral( ".qgz" );
+    if ( QFileInfo( filePath ).exists() )
+    {
+      QMessageBox msgBox( this );
+      msgBox.setWindowTitle( tr( "Overwrite template" ) );
+      msgBox.setText( tr( "The template %1 already exists, do you want to replace it?" ).arg( templateName ) );
+      msgBox.addButton( tr( "Overwrite" ), QMessageBox::YesRole );
+      auto cancelButton = msgBox.addButton( QMessageBox::Cancel );
+      msgBox.setIcon( QMessageBox::Question );
+      msgBox.exec();
+      if ( msgBox.clickedButton() == cancelButton )
+      {
+        return;
+      }
+    }
+
+    QgsProject::instance()->write( filePath );
+    QgsProject::instance()->setFileName( originalFilename );
+    messageBar()->pushInfo( tr( "Template saved" ), tr( "Template %1 was saved" ).arg( templateName ) );
+
+  } );
   for ( QgsProjectStorage *storage : storages )
   {
     QString name = storage->visibleName();

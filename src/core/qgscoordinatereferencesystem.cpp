@@ -186,7 +186,16 @@ QgsCoordinateReferenceSystem QgsCoordinateReferenceSystem::fromOgcWmsCrs( const 
 
 QgsCoordinateReferenceSystem QgsCoordinateReferenceSystem::fromEpsgId( long epsg )
 {
-  return fromOgcWmsCrs( "EPSG:" + QString::number( epsg ) );
+  QgsCoordinateReferenceSystem res = fromOgcWmsCrs( "EPSG:" + QString::number( epsg ) );
+  if ( res.isValid() )
+    return res;
+
+  // pre proj6 builds allowed use of ESRI: codes here (e.g. 54030), so we need to keep compatibility
+  res = fromOgcWmsCrs( "ESRI:" + QString::number( epsg ) );
+  if ( res.isValid() )
+    return res;
+
+  return QgsCoordinateReferenceSystem();
 }
 
 QgsCoordinateReferenceSystem QgsCoordinateReferenceSystem::fromProj4( const QString &proj4 )
@@ -374,6 +383,27 @@ bool QgsCoordinateReferenceSystem::createFromOgcWmsCrs( const QString &crs )
     }
   }
 
+#if PROJ_VERSION_MAJOR>=6
+  // first chance for proj 6 - scan through legacy systems and try to use authid directly
+  const QString legacyKey = wmsCrs.toLower();
+  for ( auto it = sAuthIdToQgisSrsIdMap.constBegin(); it != sAuthIdToQgisSrsIdMap.constEnd(); ++it )
+  {
+    if ( it.key().compare( legacyKey, Qt::CaseInsensitive ) == 0 )
+    {
+      const QStringList parts = it.key().split( ':' );
+      const QString auth = parts.at( 0 );
+      const QString code = parts.at( 1 );
+      if ( loadFromAuthCode( auth, code ) )
+      {
+        sOgcLock.lockForWrite();
+        sOgcCache.insert( crs, *this );
+        sOgcLock.unlock();
+        return true;
+      }
+    }
+  }
+#endif
+
   if ( loadFromDatabase( QgsApplication::srsDatabaseFilePath(), QStringLiteral( "lower(auth_name||':'||auth_id)" ), wmsCrs.toLower() ) )
   {
     sOgcLock.lockForWrite();
@@ -454,6 +484,27 @@ bool QgsCoordinateReferenceSystem::createFromSrid( const long id )
   }
   sSrIdCacheLock.unlock();
 
+#if PROJ_VERSION_MAJOR>=6
+  // first chance for proj 6 - scan through legacy systems and try to use authid directly
+  for ( auto it = sAuthIdToQgisSrsIdMap.constBegin(); it != sAuthIdToQgisSrsIdMap.constEnd(); ++it )
+  {
+    if ( it.value().endsWith( QStringLiteral( ",%1" ).arg( id ) ) )
+    {
+      const QStringList parts = it.key().split( ':' );
+      const QString auth = parts.at( 0 );
+      const QString code = parts.at( 1 );
+      if ( loadFromAuthCode( auth, code ) )
+      {
+        sSrIdCacheLock.lockForWrite();
+        sSrIdCache.insert( id, *this );
+        sSrIdCacheLock.unlock();
+
+        return true;
+      }
+    }
+  }
+#endif
+
   bool result = loadFromDatabase( QgsApplication::srsDatabaseFilePath(), QStringLiteral( "srid" ), QString::number( id ) );
 
   sSrIdCacheLock.lockForWrite();
@@ -475,6 +526,27 @@ bool QgsCoordinateReferenceSystem::createFromSrsId( const long id )
     return true;
   }
   sCRSSrsIdLock.unlock();
+
+#if PROJ_VERSION_MAJOR>=6
+  // first chance for proj 6 - scan through legacy systems and try to use authid directly
+  for ( auto it = sAuthIdToQgisSrsIdMap.constBegin(); it != sAuthIdToQgisSrsIdMap.constEnd(); ++it )
+  {
+    if ( it.value().startsWith( QString::number( id ) + ',' ) )
+    {
+      const QStringList parts = it.key().split( ':' );
+      const QString auth = parts.at( 0 );
+      const QString code = parts.at( 1 );
+      if ( loadFromAuthCode( auth, code ) )
+      {
+        sCRSSrsIdLock.lockForWrite();
+        sSrsIdCache.insert( id, *this );
+        sCRSSrsIdLock.unlock();
+
+        return true;
+      }
+    }
+  }
+#endif
 
   bool result = loadFromDatabase( id < USER_CRS_START_ID ? QgsApplication::srsDatabaseFilePath() :
                                   QgsApplication::qgisUserDatabaseFilePath(),
@@ -687,12 +759,13 @@ bool QgsCoordinateReferenceSystem::createFromWkt( const QString &wkt )
     const QString authCode( proj_get_id_code( d->mPj.get(), 0 ) );
     if ( !authName.isEmpty() && !authCode.isEmpty() )
     {
-      const QString authid = QStringLiteral( "%1:%2" ).arg( authName, authCode );
-      bool result = createFromOgcWmsCrs( authid );
-      sCRSWktLock.lockForWrite();
-      sWktCache.insert( wkt, *this );
-      sCRSWktLock.unlock();
-      return result;
+      if ( loadFromAuthCode( authName, authCode ) )
+      {
+        sCRSWktLock.lockForWrite();
+        sWktCache.insert( wkt, *this );
+        sCRSWktLock.unlock();
+        return true;
+      }
     }
   }
 #else
@@ -787,6 +860,14 @@ bool QgsCoordinateReferenceSystem::createFromProj4( const QString &proj4String )
 {
   d.detach();
 
+  if ( proj4String.trimmed().isEmpty() )
+  {
+    d->mIsValid = false;
+    d->mWkt.clear();
+    d->mProj4.clear();
+    return false;
+  }
+
   sProj4CacheLock.lockForRead();
   QHash< QString, QgsCoordinateReferenceSystem >::const_iterator crsIt = sProj4Cache.constFind( proj4String );
   if ( crsIt != sProj4Cache.constEnd() )
@@ -839,6 +920,7 @@ bool QgsCoordinateReferenceSystem::createFromProj4( const QString &proj4String )
         {
           // prefer EPSG codes for compatibility with earlier qgis conversions
           QgsProjUtils::proj_pj_unique_ptr candidateCrs( proj_list_get( QgsProjContext::get(), crsList, i ) );
+          candidateCrs = QgsProjUtils::crsToSingleCrs( candidateCrs.get() );
           const QString authName( proj_get_id_auth_name( candidateCrs.get(), 0 ) );
           if ( confidence[i] > bestConfidence || authName == QLatin1String( "EPSG" ) )
           {
@@ -856,11 +938,13 @@ bool QgsCoordinateReferenceSystem::createFromProj4( const QString &proj4String )
         if ( !authName.isEmpty() && !authCode.isEmpty() )
         {
           const QString authid = QStringLiteral( "%1:%2" ).arg( authName, authCode );
-          const bool result = createFromOgcWmsCrs( authid );
-          sProj4CacheLock.lockForWrite();
-          sProj4Cache.insert( proj4String, *this );
-          sProj4CacheLock.unlock();
-          return result;
+          if ( createFromOgcWmsCrs( authid ) )
+          {
+            sProj4CacheLock.lockForWrite();
+            sProj4Cache.insert( proj4String, *this );
+            sProj4CacheLock.unlock();
+            return true;
+          }
         }
       }
     }
@@ -1240,6 +1324,29 @@ QgsRectangle QgsCoordinateReferenceSystem::bounds() const
   if ( !d->mIsValid )
     return QgsRectangle();
 
+#if PROJ_VERSION_MAJOR>=6
+  if ( !d->mPj )
+    return QgsRectangle();
+
+  double westLon = 0;
+  double southLat = 0;
+  double eastLon = 0;
+  double northLat = 0;
+
+  if ( !proj_get_area_of_use( QgsProjContext::get(), d->mPj.get(),
+                              &westLon, &southLat, &eastLon, &northLat, nullptr ) )
+    return QgsRectangle();
+
+
+  // don't use the constructor which normalizes!
+  QgsRectangle rect;
+  rect.setXMinimum( westLon );
+  rect.setYMinimum( southLat );
+  rect.setXMaximum( eastLon );
+  rect.setYMaximum( northLat );
+  return rect;
+
+#else
   //check the db is available
   QString databaseFileName = QgsApplication::srsDatabaseFilePath();
 
@@ -1273,8 +1380,8 @@ QgsRectangle QgsCoordinateReferenceSystem::bounds() const
       rect.setYMaximum( north );
     }
   }
-
   return rect;
+#endif
 }
 
 
@@ -1637,11 +1744,12 @@ bool QgsCoordinateReferenceSystem::readXml( const QDomNode &node )
   {
     bool initialized = false;
 
-    long srsid = srsNode.namedItem( QStringLiteral( "srsid" ) ).toElement().text().toLong();
+    bool ok = false;
+    long srsid = srsNode.namedItem( QStringLiteral( "srsid" ) ).toElement().text().toLong( &ok );
 
     QDomNode myNode;
 
-    if ( srsid < USER_CRS_START_ID )
+    if ( ok && srsid > 0 && srsid < USER_CRS_START_ID )
     {
       myNode = srsNode.namedItem( QStringLiteral( "authid" ) );
       if ( !myNode.isNull() )
@@ -1670,13 +1778,13 @@ bool QgsCoordinateReferenceSystem::readXml( const QDomNode &node )
     if ( !initialized )
     {
       myNode = srsNode.namedItem( QStringLiteral( "proj4" ) );
+      const QString proj4 = myNode.toElement().text();
 
-      if ( !createFromProj4( myNode.toElement().text() ) )
+      if ( !createFromProj4( proj4 ) )
       {
         // Setting from elements one by one
-
-        myNode = srsNode.namedItem( QStringLiteral( "proj4" ) );
-        setProj4String( myNode.toElement().text() );
+        if ( !proj4.trimmed().isEmpty() )
+          setProj4String( myNode.toElement().text() );
 
         myNode = srsNode.namedItem( QStringLiteral( "srsid" ) );
         setInternalId( myNode.toElement().text().toLong() );
@@ -1713,7 +1821,7 @@ bool QgsCoordinateReferenceSystem::readXml( const QDomNode &node )
       // this behavior was changed in order to separate creation and saving.
       // Not sure if it necessary to save it here, should be checked by someone
       // familiar with the code (should also give a more descriptive name to the generated CRS)
-      if ( d->mSrsId == 0 )
+      if ( isValid() && d->mSrsId == 0 )
       {
         QString myName = QStringLiteral( " * %1 (%2)" )
                          .arg( QObject::tr( "Generated CRS", "A CRS automatically generated from layer info get this prefix for description" ),
@@ -2022,6 +2130,128 @@ long QgsCoordinateReferenceSystem::getRecordCount()
   return myRecordCount;
 }
 
+#if PROJ_VERSION_MAJOR>=6
+bool testIsGeographic( PJ *crs )
+{
+  PJ_CONTEXT *pjContext = QgsProjContext::get();
+  bool isGeographic = false;
+  QgsProjUtils::proj_pj_unique_ptr coordinateSystem( proj_crs_get_coordinate_system( pjContext, crs ) );
+  if ( coordinateSystem )
+  {
+    const int axisCount = proj_cs_get_axis_count( pjContext, coordinateSystem.get() );
+    if ( axisCount > 0 )
+    {
+      const char *outUnitAuthName = nullptr;
+      const char *outUnitAuthCode = nullptr;
+      // Read only first axis
+      proj_cs_get_axis_info( pjContext, coordinateSystem.get(), 0,
+                             nullptr,
+                             nullptr,
+                             nullptr,
+                             nullptr,
+                             nullptr,
+                             &outUnitAuthName,
+                             &outUnitAuthCode );
+
+      if ( outUnitAuthName && outUnitAuthCode )
+      {
+        const char *unitCategory = nullptr;
+        if ( proj_uom_get_info_from_database( pjContext, outUnitAuthName, outUnitAuthCode, nullptr, nullptr, &unitCategory ) )
+        {
+          isGeographic = QString( unitCategory ).compare( QLatin1String( "angular" ), Qt::CaseInsensitive ) == 0;
+        }
+      }
+    }
+  }
+  return isGeographic;
+}
+
+void getOperationAndEllipsoidFromProjString( const QString &proj, QString &operation, QString &ellipsoid )
+{
+  QRegExp projRegExp( "\\+proj=(\\S+)" );
+  if ( projRegExp.indexIn( proj ) < 0 )
+  {
+    QgsDebugMsgLevel( QStringLiteral( "no +proj argument found [%2]" ).arg( proj ), 2 );
+    return;
+  }
+  operation = projRegExp.cap( 1 );
+
+  QRegExp ellipseRegExp( "\\+(?:ellps|datum)=(\\S+)" );
+  QString ellps;
+  if ( ellipseRegExp.indexIn( proj ) >= 0 )
+  {
+    ellipsoid = ellipseRegExp.cap( 1 );
+  }
+  else
+  {
+    // satisfy not null constraint on ellipsoid_acronym field
+    // possibly we should drop the constraint, yet the crses with missing ellipsoid_acronym are malformed
+    // and will result in oddities within other areas of QGIS (e.g. project ellipsoid won't be correctly
+    // set for these CRSes). Better just hack around and make the constraint happy for now,
+    // and hope that the definitions get corrected in future.
+    ellipsoid = "";
+  }
+}
+
+
+bool QgsCoordinateReferenceSystem::loadFromAuthCode( const QString &auth, const QString &code )
+{
+  d.detach();
+  d->mIsValid = false;
+  d->mWkt.clear();
+
+  PJ_CONTEXT *pjContext = QgsProjContext::get();
+  QgsProjUtils::proj_pj_unique_ptr crs( proj_create_from_database( pjContext, auth.toUtf8().constData(), code.toUtf8().constData(), PJ_CATEGORY_CRS, false, nullptr ) );
+  if ( !crs )
+  {
+    return false;
+  }
+
+  switch ( proj_get_type( crs.get() ) )
+  {
+    case PJ_TYPE_VERTICAL_CRS:
+      return false;
+
+    default:
+      break;
+  }
+
+  crs = QgsProjUtils::crsToSingleCrs( crs.get() );
+
+  QString proj4 = getFullProjString( crs.get() );
+  proj4.replace( QStringLiteral( "+type=crs" ), QString() );
+  proj4 = proj4.trimmed();
+
+  d->mIsValid = true;
+  d->mProj4 = proj4;
+  d->mDescription = QString( proj_get_name( crs.get() ) );
+  d->mAuthId = QStringLiteral( "%1:%2" ).arg( auth, code );
+  d->mIsGeographic = testIsGeographic( crs.get() );
+  d->mAxisInvertedDirty = true;
+  QString operation;
+  QString ellipsoid;
+  getOperationAndEllipsoidFromProjString( proj4, operation, ellipsoid );
+  d->mProjectionAcronym = operation;
+  d->mEllipsoidAcronym = ellipsoid;
+  d->mPj = std::move( crs );
+
+  const QString dbVals = sAuthIdToQgisSrsIdMap.value( QStringLiteral( "%1:%2" ).arg( auth, code ).toUpper() );
+  QString srsId;
+  QString srId;
+  if ( !dbVals.isEmpty() )
+  {
+    const QStringList parts = dbVals.split( ',' );
+    d->mSrsId = parts.at( 0 ).toInt();
+    d->mSRID = parts.at( 1 ).toInt();
+  }
+
+  setMapUnits();
+
+  return true;
+}
+#endif
+
+#if PROJ_VERSION_MAJOR<6
 // adapted from gdal/ogr/ogr_srs_dict.cpp
 bool QgsCoordinateReferenceSystem::loadWkts( QHash<int, QString> &wkts, const char *filename )
 {
@@ -2153,6 +2383,7 @@ bool QgsCoordinateReferenceSystem::loadIds( QHash<int, QString> &wkts )
 
   return true;
 }
+#endif
 
 int QgsCoordinateReferenceSystem::syncDatabase()
 {
@@ -2194,8 +2425,10 @@ int QgsCoordinateReferenceSystem::syncDatabase()
 
 #if PROJ_VERSION_MAJOR>=6
   PJ_CONTEXT *pjContext = QgsProjContext::get();
+
   PROJ_STRING_LIST authorities = proj_get_authorities_from_database( pjContext );
 
+  int nextSrsId = 60000;
   int nextSrId = 520000000;
   for ( auto authIter = authorities; authIter && *authIter; ++authIter )
   {
@@ -2235,7 +2468,8 @@ int QgsCoordinateReferenceSystem::syncDatabase()
       if ( proj4.isEmpty() )
       {
         QgsDebugMsg( QStringLiteral( "No proj4 for '%1:%2'" ).arg( authority, code ) );
-        continue;
+        // satisfy not null constraint
+        proj4 = "";
       }
 
       const bool deprecated = proj_is_deprecated( crs.get() );
@@ -2288,63 +2522,11 @@ int QgsCoordinateReferenceSystem::syncDatabase()
       }
       else
       {
-        // ideally we'd be getting these using the proj api -- but that's not possible
-
-        QRegExp projRegExp( "\\+proj=(\\S+)" );
-        if ( projRegExp.indexIn( proj4 ) < 0 )
-        {
-          QgsDebugMsg( QStringLiteral( "%1:%2: no +proj argument found [%2]" ).arg( authority, code, proj4 ) );
-          continue;
-        }
-        const QString operation = projRegExp.cap( 1 );
-
-        QRegExp ellipseRegExp( "\\+ellps=(\\S+)" );
-        QString ellps;
-        if ( ellipseRegExp.indexIn( proj4 ) >= 0 )
-        {
-          ellps = ellipseRegExp.cap( 1 );
-        }
-        else
-        {
-          // satisfy not null constraint on ellipsoid_acronym field
-          // possibly we should drop the constraint, yet the crses with missing ellipsoid_acronym are malformed
-          // and will result in oddities within other areas of QGIS (e.g. project ellipsoid won't be correctly
-          // set for these CRSes). Better just hack around and make the constraint happy for now,
-          // and hope that the definitions get corrected in future.
-          ellps = "";
-        }
-
-
-        bool isGeographic = false;
-
-        QgsProjUtils::proj_pj_unique_ptr coordinateSystem( proj_crs_get_coordinate_system( pjContext, crs.get() ) );
-        if ( coordinateSystem )
-        {
-          const int axisCount = proj_cs_get_axis_count( pjContext, coordinateSystem.get() );
-          if ( axisCount > 0 )
-          {
-            const char *outUnitAuthName = nullptr;
-            const char *outUnitAuthCode = nullptr;
-            // Read only first axis
-            proj_cs_get_axis_info( pjContext, coordinateSystem.get(), 0,
-                                   nullptr,
-                                   nullptr,
-                                   nullptr,
-                                   nullptr,
-                                   nullptr,
-                                   &outUnitAuthName,
-                                   &outUnitAuthCode );
-
-            if ( outUnitAuthName && outUnitAuthCode )
-            {
-              const char *unitCategory = nullptr;
-              if ( proj_uom_get_info_from_database( pjContext, outUnitAuthName, outUnitAuthCode, nullptr, nullptr, &unitCategory ) )
-              {
-                isGeographic = QString( unitCategory ).compare( QLatin1String( "angular" ), Qt::CaseInsensitive ) == 0;
-              }
-            }
-          }
-        }
+        // there's a not-null contraint on these columns, so we must use empty strings instead
+        QString operation = "";
+        QString ellps = "";
+        getOperationAndEllipsoidFromProjString( proj4, operation, ellps );
+        const bool isGeographic = testIsGeographic( crs.get() );
 
         // work out srid and srsid
         const QString dbVals = sAuthIdToQgisSrsIdMap.value( QStringLiteral( "%1:%2" ).arg( authority, code ) );
@@ -2360,6 +2542,11 @@ int QgsCoordinateReferenceSystem::syncDatabase()
         {
           srId = QString::number( nextSrId );
           nextSrId++;
+        }
+        if ( srsId.isEmpty() )
+        {
+          srsId = QString::number( nextSrsId );
+          nextSrsId++;
         }
 
         if ( !srsId.isEmpty() )
@@ -2707,6 +2894,7 @@ int QgsCoordinateReferenceSystem::syncDatabase()
     return updated + inserted;
 }
 
+#if PROJ_VERSION_MAJOR<6
 bool QgsCoordinateReferenceSystem::syncDatumTransform( const QString &dbPath )
 {
   const char *filename = CSVFilename( "datum_shift.csv" );
@@ -2903,6 +3091,7 @@ bool QgsCoordinateReferenceSystem::syncDatumTransform( const QString &dbPath )
 
   return true;
 }
+#endif
 
 QString QgsCoordinateReferenceSystem::geographicCrsAuthId() const
 {
@@ -2927,6 +3116,13 @@ QString QgsCoordinateReferenceSystem::geographicCrsAuthId() const
     return QString();
   }
 }
+
+#if PROJ_VERSION_MAJOR>=6
+PJ *QgsCoordinateReferenceSystem::projObject() const
+{
+  return d->mPj.get();
+}
+#endif
 
 QStringList QgsCoordinateReferenceSystem::recentProjections()
 {

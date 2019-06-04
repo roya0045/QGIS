@@ -552,6 +552,11 @@ namespace QgsWms
     return mWmsParameters[name];
   }
 
+  void QgsWmsParameters::set( QgsWmsParameter::Name name, const QVariant &value )
+  {
+    mWmsParameters[name].mValue = value;
+  }
+
   bool QgsWmsParameters::loadParameter( const QString &key, const QString &value )
   {
     bool loaded = false;
@@ -1431,16 +1436,18 @@ namespace QgsWms
       {
         // filter format: "LayerName,LayerName2:filterString;LayerName3:filterString2;..."
         // several filters can be defined for one layer
-        const QStringList splits = f.split( ':' );
-        if ( splits.size() == 2 )
+        const int colonIndex = f.indexOf( ':' );
+        if ( colonIndex != -1 )
         {
-          const QStringList layers = splits[0].split( ',' );
-          for ( const QString &layer : layers )
+          const QString layers = f.section( ':', 0, 0 );
+          const QString filter = f.section( ':', 1 );
+          const QStringList layersList = layers.split( ',' );
+          for ( const QString &layer : layersList )
           {
-            QgsWmsParametersFilter filter;
-            filter.mFilter = splits[1];
-            filter.mType = QgsWmsParametersFilter::SQL;
-            filters.insert( layer, filter );
+            QgsWmsParametersFilter parametersFilter;
+            parametersFilter.mFilter = filter;
+            parametersFilter.mType = QgsWmsParametersFilter::SQL;
+            filters.insert( layer, parametersFilter );
           }
         }
         else

@@ -22,10 +22,6 @@ __author__ = 'Arnaud Morvan'
 __date__ = 'May 2016'
 __copyright__ = '(C) 2016, Arnaud Morvan'
 
-# This will get replaced with a git SHA1 when you do a git archive
-
-__revision__ = '$Format:%H$'
-
 import locale
 import os
 import re
@@ -1345,7 +1341,7 @@ class FeatureSourceWidgetWrapper(WidgetWrapper):
             except:
                 return QgsProcessingFeatureSourceDefinition(self.combo.currentText(), use_selected_features)
         elif self.dialogType == DIALOG_BATCH:
-            return self.widget.value()
+            return self.widget.getValue()
         else:
             def validator(v):
                 if not bool(v):

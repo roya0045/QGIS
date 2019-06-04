@@ -31,12 +31,15 @@
 #include "qgssinglesymbolrenderer.h"
 #include "qgscategorizedsymbolrenderer.h"
 #include "qgsvectorlayerlabeling.h"
+#include "qgsapplication.h"
+#include "qgsmessagelog.h"
 
 #include <QEventLoop>
 #include <QNetworkRequest>
 #include "qgsblockingnetworkrequest.h"
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QImageReader>
 
 QVariant::Type QgsArcGisRestUtils::mapEsriFieldType( const QString &esriFieldType )
 {
@@ -488,7 +491,7 @@ QList<quint32> QgsArcGisRestUtils::getObjectIdsByExtent( const QString &layerurl
   return ids;
 }
 
-QByteArray QgsArcGisRestUtils::queryService( const QUrl &u, const QString &authcfg, QString &errorTitle, QString &errorText, const QgsStringMap &requestHeaders, QgsFeedback *feedback )
+QByteArray QgsArcGisRestUtils::queryService( const QUrl &u, const QString &authcfg, QString &errorTitle, QString &errorText, const QgsStringMap &requestHeaders, QgsFeedback *feedback, QString *contentType )
 {
   QUrl url = parseUrl( u );
 
@@ -516,6 +519,8 @@ QByteArray QgsArcGisRestUtils::queryService( const QUrl &u, const QString &authc
   }
 
   const QgsNetworkReplyContent content = networkRequest.reply();
+  if ( contentType )
+    *contentType = content.rawHeader( "Content-Type" );
   return content.content();
 }
 
@@ -1122,10 +1127,23 @@ QgsArcGisAsyncQuery::~QgsArcGisAsyncQuery()
     mReply->deleteLater();
 }
 
-void QgsArcGisAsyncQuery::start( const QUrl &url, QByteArray *result, bool allowCache )
+void QgsArcGisAsyncQuery::start( const QUrl &url, const QString &authCfg, QByteArray *result, bool allowCache, const QgsStringMap &headers )
 {
   mResult = result;
   QNetworkRequest request( url );
+
+  for ( auto it = headers.constBegin(); it != headers.constEnd(); ++it )
+  {
+    request.setRawHeader( it.key().toUtf8(), it.value().toUtf8() );
+  }
+
+  if ( !authCfg.isEmpty() &&  !QgsApplication::authManager()->updateNetworkRequest( request, authCfg ) )
+  {
+    const QString error = tr( "network request update failed for authentication config" );
+    emit failed( QStringLiteral( "Network" ), error );
+    return;
+  }
+
   QgsSetRequestInitiatorClass( request, QStringLiteral( "QgsArcGisAsyncQuery" ) );
   if ( allowCache )
   {
@@ -1167,8 +1185,10 @@ void QgsArcGisAsyncQuery::handleReply()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-QgsArcGisAsyncParallelQuery::QgsArcGisAsyncParallelQuery( QObject *parent )
+QgsArcGisAsyncParallelQuery::QgsArcGisAsyncParallelQuery( const QString &authcfg, const QgsStringMap &requestHeaders, QObject *parent )
   : QObject( parent )
+  , mAuthCfg( authcfg )
+  , mRequestHeaders( requestHeaders )
 {
 }
 
@@ -1182,6 +1202,19 @@ void QgsArcGisAsyncParallelQuery::start( const QVector<QUrl> &urls, QVector<QByt
     QNetworkRequest request( urls[i] );
     QgsSetRequestInitiatorClass( request, QStringLiteral( "QgsArcGisAsyncParallelQuery" ) );
     QgsSetRequestInitiatorId( request, QString::number( i ) );
+
+    for ( auto it = mRequestHeaders.constBegin(); it != mRequestHeaders.constEnd(); ++it )
+    {
+      request.setRawHeader( it.key().toUtf8(), it.value().toUtf8() );
+    }
+    if ( !mAuthCfg.isEmpty() && !QgsApplication::authManager()->updateNetworkRequest( request, mAuthCfg ) )
+    {
+      const QString error = tr( "network request update failed for authentication config" );
+      mErrors.append( error );
+      QgsMessageLog::logMessage( error, tr( "Network" ) );
+      continue;
+    }
+
     request.setAttribute( QNetworkRequest::HttpPipeliningAllowedAttribute, true );
     if ( allowCache )
     {
@@ -1296,9 +1329,28 @@ void QgsArcGisRestUtils::visitServiceItems( const std::function< void( const QSt
   }
 }
 
-void QgsArcGisRestUtils::addLayerItems( const std::function< void( const QString &, const QString &, const QString &, const QString &, const QString &, bool, const QString & )> &visitor, const QVariantMap &serviceData, const QString &parentUrl )
+void QgsArcGisRestUtils::addLayerItems( const std::function< void( const QString &, const QString &, const QString &, const QString &, const QString &, bool, const QString &, const QString & )> &visitor, const QVariantMap &serviceData, const QString &parentUrl )
 {
   const QString authid = QgsArcGisRestUtils::parseSpatialReference( serviceData.value( QStringLiteral( "spatialReference" ) ).toMap() ).authid();
+
+  QString format = QStringLiteral( "jpg" );
+  bool found = false;
+  const QList<QByteArray> supportedFormats = QImageReader::supportedImageFormats();
+  const QStringList supportedImageFormatTypes = serviceData.value( QStringLiteral( "supportedImageFormatTypes" ) ).toString().split( ',' );
+  for ( const QString &encoding : supportedImageFormatTypes )
+  {
+    for ( const QByteArray &fmt : supportedFormats )
+    {
+      if ( encoding.startsWith( fmt, Qt::CaseInsensitive ) )
+      {
+        format = encoding;
+        found = true;
+        break;
+      }
+    }
+    if ( found )
+      break;
+  }
 
   const QVariantList layerInfoList = serviceData.value( QStringLiteral( "layers" ) ).toList();
   for ( const QVariant &layerInfo : layerInfoList )
@@ -1311,11 +1363,11 @@ void QgsArcGisRestUtils::addLayerItems( const std::function< void( const QString
 
     if ( !layerInfoMap.value( QStringLiteral( "subLayerIds" ) ).toList().empty() )
     {
-      visitor( parentLayerId, id, name, description, parentUrl + '/' + id, true, QString() );
+      visitor( parentLayerId, id, name, description, parentUrl + '/' + id, true, QString(), format );
     }
     else
     {
-      visitor( parentLayerId, id, name, description, parentUrl + '/' + id, false, authid );
+      visitor( parentLayerId, id, name, description, parentUrl + '/' + id, false, authid, format );
     }
   }
 }

@@ -5,7 +5,6 @@ ENDIF(NOT WIN32)
 
 SET(QGIS_APP_SRCS
   ${CMAKE_SOURCE_DIR}/external/nmea/gmath.c
-  ${CMAKE_SOURCE_DIR}/external/nlohmann/json.hpp
 
   qgisapp.cpp
   qgisappinterface.cpp
@@ -14,6 +13,7 @@ SET(QGIS_APP_SRCS
   qgsalignrasterdialog.cpp
   qgsappauthrequesthandler.cpp
   qgsappbrowserproviders.cpp
+  qgsappcoordinateoperationhandlers.cpp
   qgsapplayertreeviewmenuprovider.cpp
   qgsappwindowmanager.cpp
   qgsaddattrdialog.cpp
@@ -256,6 +256,7 @@ SET (QGIS_APP_MOC_HDRS
   qgsaddattrdialog.h
   qgsalignrasterdialog.h
   qgsappbrowserproviders.h
+  qgsappcoordinateoperationhandlers.h
   qgsappscreenshots.h
   qgsjoindialog.h
   qgsaddtaborgroup.h

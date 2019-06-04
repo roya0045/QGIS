@@ -56,6 +56,8 @@ class QgsAmsProvider : public QgsRasterDataProvider
   public:
     QgsAmsProvider( const QString &uri, const QgsDataProvider::ProviderOptions &providerOptions );
 
+    explicit QgsAmsProvider( const QgsAmsProvider &other, const QgsDataProvider::ProviderOptions &providerOptions );
+
     /* Inherited from QgsDataProvider */
     bool isValid() const override { return mValid; }
     QString name() const override { return QStringLiteral( "mapserver" ); }
@@ -86,9 +88,9 @@ class QgsAmsProvider : public QgsRasterDataProvider
     QgsRasterIdentifyResult identify( const QgsPointXY &point, QgsRaster::IdentifyFormat format, const QgsRectangle &extent = QgsRectangle(), int width = 0, int height = 0, int dpi = 96 ) override;
 
   protected:
-    void readBlock( int bandNo, const QgsRectangle &viewExtent, int width, int height, void *data, QgsRasterBlockFeedback *feedback = nullptr ) override;
+    bool readBlock( int bandNo, const QgsRectangle &viewExtent, int width, int height, void *data, QgsRasterBlockFeedback *feedback = nullptr ) override;
 
-    void draw( const QgsRectangle &viewExtent, int pixelWidth, int pixelHeight );
+    void draw( const QgsRectangle &viewExtent, int pixelWidth, int pixelHeight, QgsRasterBlockFeedback *feedback = nullptr );
 
   private:
     bool mValid = false;
@@ -103,6 +105,7 @@ class QgsAmsProvider : public QgsRasterDataProvider
     QString mError;
     QImage mCachedImage;
     QgsRectangle mCachedImageExtent;
+    QgsStringMap mRequestHeaders;
 };
 
 #endif // QGSMAPSERVERPROVIDER_H
