@@ -1348,7 +1348,7 @@ class TestPyQgsOGRProviderGpkg(unittest.TestCase):
         testdata_path = unitTestDataPath('provider')
         shutil.copy(os.path.join(unitTestDataPath('provider'), 'test_json.gpkg'), tmpfile)
 
-        vl = QgsVectorLayer('{}|layername=foo'.format(tmpfile),'foo', 'ogr'))
+        vl = QgsVectorLayer('{}|layername=foo'.format(tmpfile),'foo', 'ogr')
         self.assertTrue(vl.isValid())
 
         field = "AREA"

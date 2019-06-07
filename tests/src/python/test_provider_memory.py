@@ -620,7 +620,7 @@ class TestPyQgsMemoryProvider(unittest.TestCase, ProviderTestCase):
         self.assertEqual([f.attributes() for f in dp.getFeatures()], [[1, True, NULL], [2, False, NULL], [3, NULL, NULL], [2, NULL, True]])
 
     def test_iterator(self):
-        vl = self.createLayer()
+        vl = self.vl
         field = "pk"
         qexc = vl.createExpressionContext()
         DefaultFR = QgsAggregateCalculator(vl)
