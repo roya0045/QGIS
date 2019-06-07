@@ -28,9 +28,9 @@ from qgis.core import (NULL,
                        QgsRectangle,
                        QgsCategorizedSymbolRenderer,
                        QgsProviderRegistry,
-                       QgsWkbTypes
+                       QgsWkbTypes,
                        QgsAggregateCalculator,
-                       QgsFeatureRequest
+                       QgsFeatureRequest,
                        )
 from qgis.testing import (start_app,
                           unittest
