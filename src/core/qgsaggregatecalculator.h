@@ -143,7 +143,7 @@ class CORE_EXPORT QgsAggregateCalculator
      * \param  fids feature ids for feature filtering, and empty list will return no features.
      * \see filter()
      */
-    void setFidsFilter( const QgsFeatureIds fids );
+    void setFidsFilter( const QgsFeatureIds &fids );
 
     /**
      * Endable or disable filter stacking, if disabled the expression filter will override the Fids filter if both are set.
