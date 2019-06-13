@@ -489,6 +489,7 @@ class TestPyQgsOGRProviderSqlite(unittest.TestCase):
         ds = None
 
         vl = QgsVectorLayer(tmpfile, 'test', 'ogr')
+        self.assertTrue(vl1.isValid())
         field = "type"
         qexc = vl.createExpressionContext()
         DefaultFR = QgsAggregateCalculator(vl)
