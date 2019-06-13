@@ -608,7 +608,7 @@ class PyQgsOGRProvider(unittest.TestCase):
         StackedFR.setFilter('1')
 
         StackedFR.stackFilters(True)
-
+        self.assertTrue(vl.isValid())
         total1 = DefaultFR.calculate(QgsAggregateCalculator.Sum, field, context=qexc)
         total2 = StackedFR.calculate(QgsAggregateCalculator.Sum, field, context=qexc)
         self.assertNotEqual(total1, total2)
