@@ -714,7 +714,7 @@ class TestPyQgsShapefileProvider(unittest.TestCase, ProviderTestCase):
                          'MultiPolygonZ (((0 0 0, 0 1 0, 1 1 0, 0 0 0)),((0 0 0, 1 1 0, 1 0 0, 0 0 0)),((0 0 0, 0 -1 0, 1 -1 0, 0 0 0)),((0 0 0, 1 -1 0, 1 0 0, 0 0 0)))')
 
     def test_iterator(self):
-        vl = self.getSource()
+        vl = self.vl
         field = "pk"
         qexc = vl.createExpressionContext()
         DefaultFR = QgsAggregateCalculator(vl)
