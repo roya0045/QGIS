@@ -104,9 +104,12 @@ QgsCoordinateTransformPrivate::QgsCoordinateTransformPrivate( const QgsCoordinat
   , mDestCRS( other.mDestCRS )
   , mSourceDatumTransform( other.mSourceDatumTransform )
   , mDestinationDatumTransform( other.mDestinationDatumTransform )
+  , mProjCoordinateOperation( other.mProjCoordinateOperation )
 {
+#if PROJ_VERSION_MAJOR < 6
   //must reinitialize to setup mSourceProjection and mDestinationProjection
   initialize();
+#endif
 }
 Q_NOWARN_DEPRECATED_POP
 
@@ -265,6 +268,26 @@ void QgsCoordinateTransformPrivate::calculateTransforms( const QgsCoordinateTran
 #endif
 }
 
+#if PROJ_VERSION_MAJOR>=6
+static void proj_collecting_logger( void *user_data, int /*level*/, const char *message )
+{
+  QStringList *dest = reinterpret_cast< QStringList * >( user_data );
+  dest->append( QString( message ) );
+}
+
+static void proj_logger( void *, int level, const char *message )
+{
+  if ( level == PJ_LOG_ERROR )
+  {
+    QgsDebugMsg( QString( message ) );
+  }
+  else if ( level == PJ_LOG_DEBUG )
+  {
+    QgsDebugMsgLevel( QString( message ), 3 );
+  }
+}
+#endif
+
 ProjData QgsCoordinateTransformPrivate::threadLocalProjData()
 {
   QgsReadWriteLocker locker( mProjLock, QgsReadWriteLocker::Read );
@@ -300,6 +323,10 @@ ProjData QgsCoordinateTransformPrivate::threadLocalProjData()
   locker.changeMode( QgsReadWriteLocker::Write );
 
 #if PROJ_VERSION_MAJOR>=6
+  // use a temporary proj error collector
+  QStringList projErrors;
+  proj_log_func( context, &projErrors, proj_collecting_logger );
+
   QgsProjUtils::proj_pj_unique_ptr transform;
   if ( !mProjCoordinateOperation.isEmpty() )
   {
@@ -316,9 +343,9 @@ ProjData QgsCoordinateTransformPrivate::threadLocalProjData()
       }
       else
       {
-        const QString err = QObject::tr( "Could not use operation specified in project between %1 and %2. (Wanted to use: %3)." ).arg( mSourceCRS.authid() )
-                            .arg( mDestCRS.authid() )
-                            .arg( mProjCoordinateOperation );
+        const QString err = QObject::tr( "Could not use operation specified in project between %1 and %2. (Wanted to use: %3)." ).arg( mSourceCRS.authid(),
+                            mDestCRS.authid(),
+                            mProjCoordinateOperation );
         QgsMessageLog::logMessage( err, QString(), Qgis::Critical );
       }
 
@@ -330,7 +357,10 @@ ProjData QgsCoordinateTransformPrivate::threadLocalProjData()
   if ( !transform ) // fallback on default proj pathway
   {
     if ( !mSourceCRS.projObject() || ! mDestCRS.projObject() )
+    {
+      proj_log_func( context, nullptr, nullptr );
       return nullptr;
+    }
 
     PJ_OPERATION_FACTORY_CONTEXT *operationContext = proj_create_operation_factory_context( context, nullptr );
 
@@ -392,9 +422,9 @@ ProjData QgsCoordinateTransformPrivate::threadLocalProjData()
                 }
                 else
                 {
-                  const QString err = QObject::tr( "Cannot create transform between %1 and %2, missing required grid %3" ).arg( mSourceCRS.authid() )
-                                      .arg( mDestCRS.authid() )
-                                      .arg( shortName );
+                  const QString err = QObject::tr( "Cannot create transform between %1 and %2, missing required grid %3" ).arg( mSourceCRS.authid(),
+                                      mDestCRS.authid(),
+                                      shortName );
                   QgsMessageLog::logMessage( err, QString(), Qgis::Critical );
                 }
                 break;
@@ -408,8 +438,9 @@ ProjData QgsCoordinateTransformPrivate::threadLocalProjData()
             transform.reset( proj_normalize_for_visualization( context, transform.get() ) );
             if ( !transform )
             {
-              const QString err = QObject::tr( "Cannot normalize transform between %1 and %2" ).arg( mSourceCRS.authid() )
-                                  .arg( mDestCRS.authid() );
+              const QString err = QObject::tr( "Cannot normalize transform between %1 and %2" ).arg( mSourceCRS.authid(),
+                                  mDestCRS.authid() );
+              QgsMessageLog::logMessage( err, QString(), Qgis::Critical );
             }
           }
         }
@@ -447,9 +478,10 @@ ProjData QgsCoordinateTransformPrivate::threadLocalProjData()
           }
           else
           {
-            const QString err = QObject::tr( "Using non-preferred coordinate operation between %1 and %2. Using %3, preferred %4." ).arg( mSourceCRS.authid() )
-                                .arg( mDestCRS.authid() )
-                                .arg( available.proj, preferred.proj );
+            const QString err = QObject::tr( "Using non-preferred coordinate operation between %1 and %2. Using %3, preferred %4." ).arg( mSourceCRS.authid(),
+                                mDestCRS.authid(),
+                                available.proj,
+                                preferred.proj );
             QgsMessageLog::logMessage( err, QString(), Qgis::Critical );
           }
         }
@@ -459,8 +491,8 @@ ProjData QgsCoordinateTransformPrivate::threadLocalProjData()
           transform.reset( proj_normalize_for_visualization( context, transform.get() ) );
         if ( !transform )
         {
-          const QString err = QObject::tr( "Cannot normalize transform between %1 and %2" ).arg( mSourceCRS.authid() )
-                              .arg( mDestCRS.authid() );
+          const QString err = QObject::tr( "Cannot normalize transform between %1 and %2" ).arg( mSourceCRS.authid(),
+                              mDestCRS.authid() );
           QgsMessageLog::logMessage( err, QString(), Qgis::Critical );
         }
       }
@@ -476,9 +508,19 @@ ProjData QgsCoordinateTransformPrivate::threadLocalProjData()
     {
       nonAvailableError = QString( proj_errno_string( errNo ) );
     }
-    else
+    else if ( !projErrors.empty() )
+    {
+      nonAvailableError = projErrors.constLast();
+    }
+
+    if ( nonAvailableError.isEmpty() )
     {
       nonAvailableError = QObject::tr( "No coordinate operations are available between these two reference systems" );
+    }
+    else
+    {
+      // strip proj prefixes from error string, so that it's nicer for users
+      nonAvailableError = nonAvailableError.remove( QStringLiteral( "internal_proj_create_operations: " ) );
     }
   }
 
@@ -490,12 +532,15 @@ ProjData QgsCoordinateTransformPrivate::threadLocalProjData()
     }
     else
     {
-      const QString err = QObject::tr( "Cannot create transform between %1 and %2: %3" ).arg( mSourceCRS.authid() )
-                          .arg( mDestCRS.authid() )
-                          .arg( nonAvailableError );
+      const QString err = QObject::tr( "Cannot create transform between %1 and %2: %3" ).arg( mSourceCRS.authid(),
+                          mDestCRS.authid(),
+                          nonAvailableError );
       QgsMessageLog::logMessage( err, QString(), Qgis::Critical );
     }
   }
+
+  // reset logger to terminal output
+  proj_log_func( context, nullptr, proj_logger );
 
   if ( !transform )
   {

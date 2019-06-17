@@ -328,7 +328,7 @@ class PyQgsOGRProvider(unittest.TestCase):
         self.assertEqual(gdal.GetConfigOption("GDAL_HTTP_PROXYUSERPWD"), "username")
 
     def testEditGeoJsonRemoveField(self):
-        """ Test bugfix of https://issues.qgis.org/issues/18596 (deleting an existing field)"""
+        """ Test bugfix of https://github.com/qgis/QGIS/issues/26484 (deleting an existing field)"""
 
         datasource = os.path.join(self.basetestpath, 'testEditGeoJsonRemoveField.json')
         with open(datasource, 'wt') as f:
@@ -351,7 +351,7 @@ class PyQgsOGRProvider(unittest.TestCase):
         self.assertEqual(f['w'], 4)
 
     def testEditGeoJsonAddField(self):
-        """ Test bugfix of https://issues.qgis.org/issues/18596 (adding a new field)"""
+        """ Test bugfix of https://github.com/qgis/QGIS/issues/26484 (adding a new field)"""
 
         datasource = os.path.join(self.basetestpath, 'testEditGeoJsonAddField.json')
         with open(datasource, 'wt') as f:
@@ -378,7 +378,7 @@ class PyQgsOGRProvider(unittest.TestCase):
         self.assertEqual(len(vl.fields()), 1)
 
     def testEditGeoJsonAddFieldAndThenAddFeatures(self):
-        """ Test bugfix of https://issues.qgis.org/issues/18596 (adding a new field)"""
+        """ Test bugfix of https://github.com/qgis/QGIS/issues/26484 (adding a new field)"""
 
         datasource = os.path.join(self.basetestpath, 'testEditGeoJsonAddField.json')
         with open(datasource, 'wt') as f:

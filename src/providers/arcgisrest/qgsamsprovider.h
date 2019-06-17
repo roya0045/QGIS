@@ -32,16 +32,23 @@ class QgsAmsLegendFetcher : public QgsImageFetcher
 {
     Q_OBJECT
   public:
-    QgsAmsLegendFetcher( QgsAmsProvider *provider );
+    QgsAmsLegendFetcher( QgsAmsProvider *provider, const QImage &fetchedImage );
     void start() override;
     bool haveImage() const { return mLegendImage.isNull(); }
     QImage getImage() const { return mLegendImage; }
+    void setImage( const QImage &image ) { mLegendImage = image; }
+    void clear() { mLegendImage = QImage(); }
     const QString &errorTitle() const { return mErrorTitle; }
     const QString &errorMessage() const { return mError; }
+
+  signals:
+
+    void fetchedNew( const QImage &image );
 
   private slots:
     void handleFinished();
     void handleError( const QString &errorTitle, const QString &errorMsg );
+    void sendCachedImage();
 
   private:
     QgsAmsProvider *mProvider = nullptr;
@@ -113,9 +120,10 @@ class QgsAmsProvider : public QgsRasterDataProvider
     //! Helper structure to store a cached tile image with its rectangle
     typedef struct TileImage
     {
-      TileImage( const QRectF &r, const QImage &i ): rect( r ), img( i ) {}
+      TileImage( const QRectF &r, const QImage &i, bool smooth ): rect( r ), img( i ), smooth( smooth ) {}
       QRectF rect; //!< Destination rectangle for a tile (in screen coordinates)
       QImage img;  //!< Cached tile to be drawn
+      bool smooth;
     } TileImage;
 
   protected:
@@ -140,6 +148,8 @@ class QgsAmsProvider : public QgsRasterDataProvider
     int mTileReqNo = 0;
     bool mTiled = false;
     bool mImageServer = false;
+    int mMaxImageWidth = 4096;
+    int mMaxImageHeight = 4096;
     QgsLayerMetadata mLayerMetadata;
     QList< double > mResolutions;
 };

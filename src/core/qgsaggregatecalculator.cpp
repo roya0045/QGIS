@@ -74,9 +74,7 @@ QVariant QgsAggregateCalculator::calculate( QgsAggregateCalculator::Aggregate ag
     expression.reset( new QgsExpression( fieldOrExpression ) );
 
     if ( expression->hasParserError() || !expression->prepare( context ) )
-    {
       return QVariant();
-    }
   }
 
   QSet<QString> lst;
@@ -124,9 +122,7 @@ QVariant QgsAggregateCalculator::calculate( QgsAggregateCalculator::Aggregate ag
     resultType = v.type();
   }
   else
-  {
     resultType = mLayer->fields().at( attrNum ).type();
-  }
 
   QgsFeatureIterator fit = mLayer->getFeatures( request );
   return calculate( aggregate, fit, resultType, attrNum, expression.get(), mDelimiter, context, ok );
