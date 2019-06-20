@@ -568,8 +568,8 @@ void QgsHandleBadLayers::autoFind()
 
     if ( !( dataSourceChanged ) )
     {
-      datasource = find_file( filename, basepath ).append( longname );
-      if ( QgsProject::instance()->mapLayer( layerId ) && !( datasource.isEmpty() ))
+      datasource = find_file( filename, basepath ).replace( filename, longname );
+      if ( QgsProject::instance()->mapLayer( layerId ) && !( datasource.isEmpty() ) )
       {
         QgsDataProvider::ProviderOptions options;
         QgsMapLayer *mapLayer = QgsProject::instance()->mapLayer( layerId );
