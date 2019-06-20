@@ -68,16 +68,28 @@ class APP_EXPORT QgsHandleBadLayers
   private:
     QPushButton *mBrowseButton = nullptr;
     QPushButton *mApplyButton = nullptr;
+    QPushButton *mAutoFindButton = nullptr;
     const QList<QDomNode> &mLayers;
     QList<int> mRows;
     QString mVectorFileFilter;
     QString mRasterFileFilter;
-    QHash <QString, QList<QString> > mFileBase;
+    // Registry of the original paths associated with a file as a backup
+    QHash <QString, QString > mOriginalFileBase;
+    // Keeps a registry of valid alternatives for a basepath
+    QHash <QString, QList<QString> > mAlternativeBasepaths;
 
     QString filename( int row );
     void setFilename( int row, const QString &filename );
-    bool check_basepath( const QString basepath );
-    QString find_file( const QString filename, const QString basepath, const int maxdepth = 4 );
+    /*checkBasepath will check if the newPath for the provided name is valid.
+     * Otherwise all other know viable alternative for the original basepath will be tested.
+     * Since: QGIS 3.10
+     */
+    bool checkBasepath( const QString name, const QString newPath );
+    /* Will check folder in an outward spiral up to 4 levels to check if the files exists
+     * found files will be highligted in green of approval, otherwise in red.
+     * Since: QGIS 3.10
+     */
+    QString findFile( const QString filename, const QString basepath, const int maxdepth = 4 );
 };
 
 #endif

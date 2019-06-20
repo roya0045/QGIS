@@ -81,3 +81,4 @@ class QgsGuiVectorLayerTools : public QgsVectorLayerTools
 };
 
 #endif // QGSGUIVECTORLAYERTOOLS_H
+
