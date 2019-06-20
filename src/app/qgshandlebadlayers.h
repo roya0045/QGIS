@@ -63,6 +63,7 @@ class APP_EXPORT QgsHandleBadLayers
     void editAuthCfg();
     void apply();
     void accept() override;
+    void autoFind();
 
   private:
     QPushButton *mBrowseButton = nullptr;
@@ -75,6 +76,8 @@ class APP_EXPORT QgsHandleBadLayers
 
     QString filename( int row );
     void setFilename( int row, const QString &filename );
+    bool check_basepath( const QString basepath );
+    QString find_file( const QString filename, const QString basepath, const int maxdepth = 4 );
 };
 
 #endif
