@@ -378,13 +378,14 @@ void QgsHandleBadLayers::apply()
 
     QTableWidgetItem *item = mLayerList->item( i, 4 );
     QString datasource = item->text();
+    const QString fileName;
     const QString name { mLayerList->item( i, 0 )->text() };
     const QString basepath = datasource.left( datasource.lastIndexOf( '/' ) );
     const QString longName = datasource.mid( datasource.lastIndexOf( '/' ) );
     if ( longName.lastIndexOf( '|' ) != -1 )
-      const QString fileName = longName.left( longName.lastIndexOf( '|' ) - 1 );
+      fileName = longName.left( longName.lastIndexOf( '|' ) - 1 );
     else
-      const QString fileName = longName;
+      fileName = longName;
     if ( !( item->foreground() == QBrush( Qt::green ) ) )
       datasource = checkBasepath( name, datasource, fileName ).replace( fileName, longname );
 
@@ -549,13 +550,14 @@ void QgsHandleBadLayers::autoFind()
 
     QTableWidgetItem *item = mLayerList->item( i, 4 );
     QString datasource = item->text();
+    const QString fileName;
     const QString name { mLayerList->item( i, 0 )->text() };
     const QString basepath = datasource.left( datasource.lastIndexOf( '/' ) );
     const QString longname = datasource.mid( datasource.lastIndexOf( '/' ) );
     if ( longname.lastIndexOf( '|' ) != -1 )
-      const QString fileName = longname.left( longname.lastIndexOf( '|' ) - 1 );
+      fileName = longname.left( longname.lastIndexOf( '|' ) - 1 );
     else
-      const QString fileName = longname;
+      fileName = longname;
     datasource = checkBasepath( name, basepath, fileName ).replace( fileName, longname );
 
     bool dataSourceChanged { false };
