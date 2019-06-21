@@ -84,12 +84,12 @@ class APP_EXPORT QgsHandleBadLayers
      * Otherwise all other know viable alternative for the original basepath will be tested.
      * Since: QGIS 3.10
      */
-    bool checkBasepath( const QString name, const QString newPath );
+    bool checkBasepath( const QString &name, const QString &newPath, const QString &filename );
     /* Will check folder in an outward spiral up to 4 levels to check if the files exists
      * found files will be highligted in green of approval, otherwise in red.
      * Since: QGIS 3.10
      */
-    QString findFile( const QString filename, const QString basepath, const int maxdepth = 4 );
+    QString findFile( const QString &filename, const QString &basepath, int maxDepth = 4 );
 };
 
 #endif
