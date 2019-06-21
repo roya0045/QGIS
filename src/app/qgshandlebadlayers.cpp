@@ -478,12 +478,12 @@ int QgsHandleBadLayers::layerCount()
   return mLayerList->rowCount();
 }
 
-QString QgsHandleBadLayers::findFile( const QString filename, const QString basePath, int maxDepth )
+QString QgsHandleBadLayers::findFile( const QString filename, const QString basePath, int maxDepth, const int driveMargin )
 {
   int depth = 0;
   QDir folder = QDir( basePath );
   QString exstingBase;
-  while ( !folder.exists() )
+  while ( !folder.exists() && folder.absolutePath().count( folder.separator() ) > driveMargin )
   {
     existingBase = folder.path();
     if ( existingBase.contains( '/' ) )
@@ -497,7 +497,7 @@ QString QgsHandleBadLayers::findFile( const QString filename, const QString base
   }
   if ( depth > maxDepth )
     maxdepth = depth
-  while ( depth <= maxDepth && folder.cdUp() )
+  while ( depth <= maxDepth && folder.cdUp() && folder.absolutePath().count( folder.separator() ) > driveMargin )
   {
     QDirIterator finder( folder.path(), filename, QDir::Files, QDirIterator::Subdirectories );
     if ( finder.hasNext() )
@@ -505,10 +505,10 @@ QString QgsHandleBadLayers::findFile( const QString filename, const QString base
     else
       depth += 1;
   }
-  return ( existingBase + QDir::separator + filename );
+  return ( existingBase + folder.separator() + filename );
 }
 
-QString QgsHandleBadLayer::checkBasepath( const QString name, const QString newPath const Qstring fileName)
+QString QgsHandleBadLayer::checkBasepath( const QString name, const QString newPath const Qstring fileName )
 {
   const QString orignialBase = mOriginalFileBase.value( name );
 
