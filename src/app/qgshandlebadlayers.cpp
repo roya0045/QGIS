@@ -378,7 +378,7 @@ void QgsHandleBadLayers::apply()
 
     QTableWidgetItem *item = mLayerList->item( i, 4 );
     QString datasource = item->text();
-    const QString fileName;
+    QString fileName;
     const QString name { mLayerList->item( i, 0 )->text() };
     const QString basepath = datasource.left( datasource.lastIndexOf( '/' ) );
     const QString longName = datasource.mid( datasource.lastIndexOf( '/' ) );
@@ -387,7 +387,7 @@ void QgsHandleBadLayers::apply()
     else
       fileName = longName;
     if ( !( item->foreground() == QBrush( Qt::green ) ) )
-      datasource = checkBasepath( name, datasource, fileName ).replace( fileName, longname );
+      datasource = checkBasepath( name, datasource, fileName ).replace( fileName, longName );
 
 
     bool dataSourceChanged { false };
@@ -550,15 +550,15 @@ void QgsHandleBadLayers::autoFind()
 
     QTableWidgetItem *item = mLayerList->item( i, 4 );
     QString datasource = item->text();
-    const QString fileName;
+    QString fileName;
     const QString name { mLayerList->item( i, 0 )->text() };
     const QString basepath = datasource.left( datasource.lastIndexOf( '/' ) );
-    const QString longname = datasource.mid( datasource.lastIndexOf( '/' ) );
-    if ( longname.lastIndexOf( '|' ) != -1 )
-      fileName = longname.left( longname.lastIndexOf( '|' ) - 1 );
+    const QString longName = datasource.mid( datasource.lastIndexOf( '/' ) );
+    if ( longName.lastIndexOf( '|' ) != -1 )
+      fileName = longName.left( longName.lastIndexOf( '|' ) - 1 );
     else
-      fileName = longname;
-    datasource = checkBasepath( name, basepath, fileName ).replace( fileName, longname );
+      fileName = longName;
+    datasource = checkBasepath( name, basepath, fileName ).replace( fileName, longName );
 
     bool dataSourceChanged { false };
     const QString layerId { node.namedItem( QStringLiteral( "id" ) ).toElement().text() };
@@ -580,7 +580,7 @@ void QgsHandleBadLayers::autoFind()
 
     if ( !( dataSourceChanged ) )
     {
-      datasource = findFile( fileName, basepath ).replace( fileName, longname );
+      datasource = findFile( fileName, basepath ).replace( fileName, longName );
       if ( QgsProject::instance()->mapLayer( layerId ) && !( datasource.isEmpty() ) )
       {
         QgsDataProvider::ProviderOptions options;
@@ -594,7 +594,7 @@ void QgsHandleBadLayers::autoFind()
       if ( dataSourceChanged )
       {
         const QString altBasepath = datasource.left( datasource.lastIndexOf( '/' ) );
-        checkBasepath( name, altBasepath, fileName ).replace( fileName, longname );
+        checkBasepath( name, altBasepath, fileName ).replace( fileName, longName );
       }
     }
 
