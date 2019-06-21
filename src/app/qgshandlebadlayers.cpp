@@ -478,7 +478,7 @@ int QgsHandleBadLayers::layerCount()
   return mLayerList->rowCount();
 }
 
-QString QgsHandleBadLayers::findFile( const QString &filename, const QString &basePath, int maxDepth, const int driveMargin )
+QString QgsHandleBadLayers::findFile( const QString &fileName, const QString &basePath, int maxDepth, const int driveMargin )
 {
   int depth = 0;
   QDir folder = QDir( basePath );
@@ -499,13 +499,13 @@ QString QgsHandleBadLayers::findFile( const QString &filename, const QString &ba
     maxDepth = depth;
   while ( depth <= maxDepth && folder.cdUp() && folder.absolutePath().count( folder.separator() ) > driveMargin )
   {
-    QDirIterator finder( folder.path(), QStringList() << filename, QDir::Files, QDirIterator::Subdirectories );
+    QDirIterator finder( folder.path(), QStringList() << fileName, QDir::Files, QDirIterator::Subdirectories );
     if ( finder.hasNext() )
       return ( finder.next() );
     else
       depth += 1;
   }
-  return ( existingBase + folder.separator() + filename );
+  return ( existingBase + folder.separator() + fileName );
 }
 
 QString QgsHandleBadLayers::checkBasepath( const QString &name, const QString &newPath, const QString &fileName )
@@ -528,7 +528,7 @@ QString QgsHandleBadLayers::checkBasepath( const QString &name, const QString &n
       {
         if ( QFileInfo::exists( altPath + fileName ) && QFileInfo( altPath + fileName ).isFile() );
         {
-          return ( altPath + filename );
+          return ( altPath + fileName );
         }
       }
     }
@@ -552,10 +552,10 @@ void QgsHandleBadLayers::autoFind()
     const QString basepath = datasource.left( datasource.lastIndexOf( '/' ) );
     const QString longname = datasource.mid( datasource.lastIndexOf( '/' ) );
     if ( longname.lastIndexOf( '|' ) != -1 )
-      const QString filename = longname.left( longname.lastIndexOf( '|' ) - 1 );
+      const QString fileName = longname.left( longname.lastIndexOf( '|' ) - 1 );
     else
-      const QString filename = longname;
-    datasource = checkBasepath( name, basepath, filename );
+      const QString fileName = longname;
+    datasource = checkBasepath( name, basepath, fileName );
 
     bool dataSourceChanged { false };
     const QString layerId { node.namedItem( QStringLiteral( "id" ) ).toElement().text() };
@@ -577,7 +577,7 @@ void QgsHandleBadLayers::autoFind()
 
     if ( !( dataSourceChanged ) )
     {
-      datasource = findFile( filename, basepath ).replace( filename, longname );
+      datasource = findFile( fileName, basepath ).replace( fileName, longname );
       if ( QgsProject::instance()->mapLayer( layerId ) && !( datasource.isEmpty() ) )
       {
         QgsDataProvider::ProviderOptions options;
