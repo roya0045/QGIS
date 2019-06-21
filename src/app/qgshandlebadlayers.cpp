@@ -124,7 +124,7 @@ QgsHandleBadLayers::QgsHandleBadLayers( const QList<QDomNode> &layers )
     QString vectorProvider = type == QLatin1String( "vector" ) ? provider : tr( "none" );
     bool providerFileBased = ( QgsProviderRegistry::instance()->providerCapabilities( provider ) & QgsDataProvider::File ) != 0;
 
-    mOriginalFileBase[name] = const datasource.left( datasource.lastIndexOf( '/' ) );
+    mOriginalFileBase[name] = datasource.left( datasource.lastIndexOf( '/' ) );
 
     QgsDebugMsg( QStringLiteral( "name=%1 type=%2 provider=%3 datasource='%4'" )
                  .arg( name,
@@ -380,12 +380,12 @@ void QgsHandleBadLayers::apply()
     QString datasource = item->text();
     const QString basepath = datasource.left( datasource.lastIndexOf( '/' ) );
     const QString longname = datasource.mid( datasource.lastIndexOf( '/' ) );
-    if ( longname.lastIndexOf( '|' ) != -1)
+    if ( longname.lastIndexOf( '|' ) != -1 )
       const QString filename = longname.left( longname.lastIndexOf( '|' ) - 1 );
     else
       const QString filename = longname;
     if ( !( item->foreground() == QBrush( Qt::green ) ) )
-      datasource = checkBasepath( name ,datasource, filename );
+      datasource = checkBasepath( name, datasource, filename );
 
 
     bool dataSourceChanged { false };
@@ -482,7 +482,7 @@ QString QgsHandleBadLayers::findFile( const QString filename, const QString base
 {
   int depth = 0;
   QDir folder = QDir( basePath );
-  QString exstingBase;
+  QString existingBase;
   while ( !folder.exists() && folder.absolutePath().count( folder.separator() ) > driveMargin )
   {
     existingBase = folder.path();
@@ -496,10 +496,10 @@ QString QgsHandleBadLayers::findFile( const QString filename, const QString base
     depth += 1;
   }
   if ( depth > maxDepth )
-    maxdepth = depth
+    maxDepth = depth;
   while ( depth <= maxDepth && folder.cdUp() && folder.absolutePath().count( folder.separator() ) > driveMargin )
   {
-    QDirIterator finder( folder.path(), filename, QDir::Files, QDirIterator::Subdirectories );
+    QDirIterator finder( folder.path(), QStringList() << filename, QDir::Files, QDirIterator::Subdirectories );
     if ( finder.hasNext() )
       return ( finder.Next() );
     else
@@ -508,7 +508,7 @@ QString QgsHandleBadLayers::findFile( const QString filename, const QString base
   return ( existingBase + folder.separator() + filename );
 }
 
-QString QgsHandleBadLayer::checkBasepath( const QString name, const QString newPath const Qstring fileName )
+QString QgsHandleBadLayers::checkBasepath( const QString name, const QString newPath, const Qstring fileName )
 {
   const QString orignialBase = mOriginalFileBase.value( name );
 
@@ -517,21 +517,23 @@ QString QgsHandleBadLayer::checkBasepath( const QString name, const QString newP
     cosnt QString newBasepath = newPath.left( newPath.lastIndexOf( '/' ) );
     if ( !mAlternativeBasepaths.value( originalBase ).contains( newBasepath ) )
       mAlternativeBasepaths[ originalBase ].append( newBasePath );
-    return( newPath );
+    return ( newPath );
   }
   else if ( alternativeBasepaths.contains( originalBase ))
   {
-    const Qlist<Qstring> altPaths = mAlternativeBasepaths.value( originalBase )
+    const Qlist<Qstring> altPaths = mAlternativeBasepaths.value( originalBase );
     if ( ! altPaths.isEmpty() )
       {
       for ( QString altPath : altPaths )
       {
         if ( QFileInfo::exists( altPath + filename ) && QFileInfo( altPath + filename ).isFile() );
-          return( altPath + filename );
+        {
+          return ( altPath + filename );
+        }
       }
     }
   }
-   return( mOriginalBasepath.value( name ) );
+  return ( mOriginalBasepath.value( name ) );
 }
 
 void QgsHandleBadLayers::autoFind()
@@ -549,7 +551,7 @@ void QgsHandleBadLayers::autoFind()
     const QString name { mLayerList->item( i, 0 )->text() };
     const QString basepath = datasource.left( datasource.lastIndexOf( '/' ) );
     const QString longname = datasource.mid( datasource.lastIndexOf( '/' ) );
-    if ( longname.lastIndexOf( '|' ) != -1)
+    if ( longname.lastIndexOf( '|' ) != -1 )
       const QString filename = longname.left( longname.lastIndexOf( '|' ) - 1 );
     else
       const QString filename = longname;

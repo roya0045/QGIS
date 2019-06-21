@@ -86,12 +86,12 @@ class APP_EXPORT QgsHandleBadLayers
      */
     bool checkBasepath( const QString &name, const QString &newPath, const QString &filename );
     /* Will check folder in an outward spiral up to 4 levels to check if the files exists
-     * found files will be highligted in green of approval, otherwise in red.
+     * found files will be highlighted in green of approval, otherwise in red.
      * maxDepth limit the number of time the search can move up
      * driveMargin limits how close the search can get to the drive level
      * Since: QGIS 3.10
      */
-    QString findFile( const QString &filename, const QString &basepath, int maxDepth = 4 ,const int driveMargin = 3);
+    QString findFile( const QString &filename, const QString &basepath, int maxDepth = 4 ,const int driveMargin = 3 );
 };
 
 #endif
