@@ -378,14 +378,15 @@ void QgsHandleBadLayers::apply()
 
     QTableWidgetItem *item = mLayerList->item( i, 4 );
     QString datasource = item->text();
+    const QString name { mLayerList->item( i, 0 )->text() };
     const QString basepath = datasource.left( datasource.lastIndexOf( '/' ) );
     const QString longName = datasource.mid( datasource.lastIndexOf( '/' ) );
     if ( longName.lastIndexOf( '|' ) != -1 )
       const QString fileName = longName.left( longName.lastIndexOf( '|' ) - 1 );
     else
-      const QString fileName = longname;
+      const QString fileName = longName;
     if ( !( item->foreground() == QBrush( Qt::green ) ) )
-      datasource = checkBasepath( name, datasource, fileName );
+      datasource = checkBasepath( name, datasource, fileName ).replace( fileName, longname );
 
 
     bool dataSourceChanged { false };
@@ -516,24 +517,24 @@ QString QgsHandleBadLayers::checkBasepath( const QString &name, const QString &n
   {
     const QString newBasepath = newPath.left( newPath.lastIndexOf( '/' ) );
     if ( !mAlternativeBasepaths.value( originalBase ).contains( newBasepath ) )
-      mAlternativeBasepaths[ originalBase ].append( newBasePath );
+      mAlternativeBasepaths[ originalBase ].append( newBasepath );
     return ( newPath );
   }
-  else if ( alternativeBasepaths.contains( originalBase ) )
+  else if ( mAlternativeBasepaths.contains( originalBase ) )
   {
     const QList<QString> altPaths = mAlternativeBasepaths.value( originalBase );
     if ( ! altPaths.isEmpty() )
     {
       for ( QString altPath : altPaths )
       {
-        if ( QFileInfo::exists( altPath + fileName ) && QFileInfo( altPath + fileName ).isFile() );
+        if ( QFileInfo::exists( altPath + fileName ) && QFileInfo( altPath + fileName ).isFile() )
         {
           return ( altPath + fileName );
         }
       }
     }
   }
-  return ( mOriginalBasepath.value( name ) );
+  return ( mOriginalFileBase.value( name ) );
 }
 
 void QgsHandleBadLayers::autoFind()
@@ -555,7 +556,7 @@ void QgsHandleBadLayers::autoFind()
       const QString fileName = longname.left( longname.lastIndexOf( '|' ) - 1 );
     else
       const QString fileName = longname;
-    datasource = checkBasepath( name, basepath, fileName );
+    datasource = checkBasepath( name, basepath, fileName ).replace( fileName, longname );
 
     bool dataSourceChanged { false };
     const QString layerId { node.namedItem( QStringLiteral( "id" ) ).toElement().text() };
@@ -590,8 +591,8 @@ void QgsHandleBadLayers::autoFind()
       }
       if ( dataSourceChanged )
       {
-        name = datasource.left( datasource.lastIndexOf( '/' ) );
-        check_basepath( name );
+        const QString altBasepath = datasource.left( datasource.lastIndexOf( '/' ) );
+        checkBasepath( name, altBasepath, fileName ).replace( fileName, longname );
       }
     }
 
