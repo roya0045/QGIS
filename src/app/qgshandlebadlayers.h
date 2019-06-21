@@ -91,7 +91,7 @@ class APP_EXPORT QgsHandleBadLayers
      * driveMargin limits how close the search can get to the drive level
      * Since: QGIS 3.10
      */
-    QString findFile( const QString &filename, const QString &basepath, int maxDepth = 4 ,const int driveMargin = 3 );
+    QString findFile( const QString &filename, const QString &basepath, int maxDepth = 4, const int driveMargin = 3 );
 };
 
 #endif

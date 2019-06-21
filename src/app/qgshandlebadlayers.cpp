@@ -519,11 +519,11 @@ QString QgsHandleBadLayers::checkBasepath( const QString &name, const QString &n
       mAlternativeBasepaths[ originalBase ].append( newBasePath );
     return ( newPath );
   }
-  else if ( alternativeBasepaths.contains( originalBase ))
+  else if ( alternativeBasepaths.contains( originalBase ) )
   {
     const QList<QString> altPaths = mAlternativeBasepaths.value( originalBase );
     if ( ! altPaths.isEmpty() )
-      {
+    {
       for ( QString altPath : altPaths )
       {
         if ( QFileInfo::exists( altPath + fileName ) && QFileInfo( altPath + fileName ).isFile() );
