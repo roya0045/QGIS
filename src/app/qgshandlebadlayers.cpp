@@ -180,7 +180,8 @@ void QgsHandleBadLayers::selectionChanged()
 
   mRows.clear();
 
-  Q_FOREACH ( QTableWidgetItem *item, mLayerList->selectedItems() )
+  const auto constSelectedItems = mLayerList->selectedItems();
+  for ( QTableWidgetItem *item : constSelectedItems )
   {
     if ( item->column() != 0 )
       continue;
@@ -309,7 +310,8 @@ void QgsHandleBadLayers::browseClicked()
       return;
     }
 
-    Q_FOREACH ( int row, mRows )
+    const auto constMRows = mRows;
+    for ( int row : constMRows )
     {
       bool providerFileBased = mLayerList->item( row, 1 )->data( Qt::UserRole + 0 ).toBool();
       if ( !providerFileBased )
@@ -368,11 +370,9 @@ void QgsHandleBadLayers::editAuthCfg()
 void QgsHandleBadLayers::apply()
 {
   QgsProject::instance()->layerTreeRegistryBridge()->setEnabled( true );
-  buttonBox->button( QDialogButtonBox::Ignore )->setEnabled( false );
 
   for ( int i = 0; i < mLayerList->rowCount(); i++ )
   {
-
     int idx = mLayerList->item( i, 0 )->data( Qt::UserRole ).toInt();
     QDomNode &node = const_cast<QDomNode &>( mLayers[ idx ] );
 
