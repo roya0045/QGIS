@@ -80,18 +80,18 @@ class APP_EXPORT QgsHandleBadLayers
 
     QString filename( int row );
     void setFilename( int row, const QString &filename );
-    /*checkBasepath will check if the newPath for the provided name is valid.
+    /**
+     * Checks if \a newPath for the provided \a name is valid.
      * Otherwise all other know viable alternative for the original basepath will be tested.
-     * Since: QGIS 3.10
      */
     QString checkBasepath( const QString &name, const QString &newPath, const QString &fileName );
-    /* Will check folder in an outward spiral up to 4 levels to check if the files exists
+    /**
+     * Will check folder in an outward spiral up to 4 levels to check if the files exists
      * found files will be highlighted in green of approval, otherwise in red.
      * maxDepth limit the number of time the search can move up
      * driveMargin limits how close the search can get to the drive level
-     * Since: QGIS 3.10
      */
-    QString findFile( const QString &fileName, const QString &basepath, int maxDepth = 4, const int driveMargin = 3 );
+    QString findFile( const QString &fileName, const QString &basepath, int maxDepth = 4, int driveMargin = 3 );
 };
 
 #endif

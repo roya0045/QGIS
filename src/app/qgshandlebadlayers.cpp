@@ -480,7 +480,7 @@ int QgsHandleBadLayers::layerCount()
   return mLayerList->rowCount();
 }
 
-QString QgsHandleBadLayers::findFile( const QString &fileName, const QString &basePath, int maxDepth, const int driveMargin )
+QString QgsHandleBadLayers::findFile( const QString &fileName, const QString &basePath, int maxDepth, int driveMargin )
 {
   int depth = 0;
   QDir folder = QDir( basePath );
@@ -526,7 +526,7 @@ QString QgsHandleBadLayers::checkBasepath( const QString &name, const QString &n
     const QList<QString> altPaths = mAlternativeBasepaths.value( originalBase );
     if ( ! altPaths.isEmpty() )
     {
-      for ( QString altPath : altPaths )
+      for ( const QString altPath : altPaths )
       {
         if ( QFileInfo::exists( altPath + fileName ) && QFileInfo( altPath + fileName ).isFile() )
         {
