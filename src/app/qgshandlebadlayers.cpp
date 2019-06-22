@@ -540,6 +540,7 @@ QString QgsHandleBadLayers::checkBasepath( const QString &name, const QString &n
 
 void QgsHandleBadLayers::autoFind()
 {
+  QDir::setCurrent( QgsProject::instance()->absolutePath() );
   QgsProject::instance()->layerTreeRegistryBridge()->setEnabled( true );
   buttonBox->button( QDialogButtonBox::Ignore )->setEnabled( false );
 
