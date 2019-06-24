@@ -562,7 +562,6 @@ void QgsHandleBadLayers::autoFind()
     
     const QString provider { node.namedItem( QStringLiteral( "provider" ) ).toElement().text() };
 
-
     // Try first to change the datasource of the existing layers, this will
     // maintain the current status (checked/unchecked) and group
     if ( QgsProject::instance()->mapLayer( layerId ) )
