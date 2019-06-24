@@ -393,7 +393,6 @@ void QgsHandleBadLayers::apply()
 
 
     bool dataSourceChanged { false };
-    const QString layerId { node.namedItem( QStringLiteral( "id" ) ).toElement().text() };
     const QString provider { node.namedItem( QStringLiteral( "provider" ) ).toElement().text() };
 
 
@@ -529,10 +528,7 @@ QString QgsHandleBadLayers::checkBasepath( const QString &layerId, const QString
     for ( const QString altPath : altPaths )
     {
       if ( QFileInfo::exists( altPath + fileName ) && QFileInfo( altPath + fileName ).isFile() )
-      {
         return ( altPath + fileName );
-      }
-    }
     }
   }
   return ( mOriginalFileBase.value( layerId ) );
