@@ -119,12 +119,13 @@ QgsHandleBadLayers::QgsHandleBadLayers( const QList<QDomNode> &layers )
 
     QString name = node.namedItem( QStringLiteral( "layername" ) ).toElement().text();
     QString type = node.toElement().attribute( QStringLiteral( "type" ) );
+    QString id = node.namedItem( QStringLiteral( "id" ) ).toElement().text();
     QString datasource = node.namedItem( QStringLiteral( "datasource" ) ).toElement().text();
     QString provider = node.namedItem( QStringLiteral( "provider" ) ).toElement().text();
     QString vectorProvider = type == QLatin1String( "vector" ) ? provider : tr( "none" );
     bool providerFileBased = ( QgsProviderRegistry::instance()->providerCapabilities( provider ) & QgsDataProvider::File ) != 0;
 
-    mOriginalFileBase[name] = datasource.left( datasource.lastIndexOf( '/' ) );
+    mOriginalFileBase[id] = datasource.left( datasource.lastIndexOf( QDir::separator() ) );
 
     QgsDebugMsg( QStringLiteral( "name=%1 type=%2 provider=%3 datasource='%4'" )
                  .arg( name,
@@ -380,8 +381,8 @@ void QgsHandleBadLayers::apply()
     QString datasource = item->text();
     QString fileName;
     const QString name { mLayerList->item( i, 0 )->text() };
-    const QString basepath = datasource.left( datasource.lastIndexOf( '/' ) );
-    const QString longName = datasource.mid( datasource.lastIndexOf( '/' ) );
+    const QString basepath = datasource.left( datasource.lastIndexOf( QDir::separator() ) );
+    const QString longName = datasource.mid( datasource.lastIndexOf( QDir::separator() ) );
     if ( longName.lastIndexOf( '|' ) != -1 )
       fileName = longName.left( longName.lastIndexOf( '|' ) - 1 );
     else
@@ -488,9 +489,9 @@ QString QgsHandleBadLayers::findFile( const QString &fileName, const QString &ba
   while ( !folder.exists() && folder.absolutePath().count( folder.separator() ) > driveMargin )
   {
     existingBase = folder.path();
-    if ( existingBase.contains( '/' ) )
+    if ( existingBase.contains( QDir::separator() ) )
     {
-      existingBase = existingBase.left( existingBase.lastIndexOf( '/' ) );
+      existingBase = existingBase.left( existingBase.lastIndexOf( QDir::separator() ) );
       folder = QDir( existingBase );
     }
     else
@@ -510,13 +511,13 @@ QString QgsHandleBadLayers::findFile( const QString &fileName, const QString &ba
   return ( existingBase + folder.separator() + fileName );
 }
 
-QString QgsHandleBadLayers::checkBasepath( const QString &name, const QString &newPath, const QString &fileName )
+QString QgsHandleBadLayers::checkBasepath( const QString &layerId, const QString &newPath, const QString &fileName )
 {
-  const QString originalBase = mOriginalFileBase.value( name );
+  const QString originalBase = mOriginalFileBase.value( layerId );
 
   if ( QFileInfo::exists( newPath ) && QFileInfo( newPath ).isFile() )
   {
-    const QString newBasepath = newPath.left( newPath.lastIndexOf( '/' ) );
+    const QString newBasepath = newPath.left( newPath.lastIndexOf( QDir::separator() ) );
     if ( !mAlternativeBasepaths.value( originalBase ).contains( newBasepath ) )
       mAlternativeBasepaths[ originalBase ].append( newBasepath );
     return ( newPath );
@@ -524,18 +525,16 @@ QString QgsHandleBadLayers::checkBasepath( const QString &name, const QString &n
   else if ( mAlternativeBasepaths.contains( originalBase ) )
   {
     const QList<QString> altPaths = mAlternativeBasepaths.value( originalBase );
-    if ( ! altPaths.isEmpty() )
+    for ( const QString altPath : altPaths )
     {
-      for ( const QString altPath : altPaths )
+      if ( QFileInfo::exists( altPath + fileName ) && QFileInfo( altPath + fileName ).isFile() )
       {
-        if ( QFileInfo::exists( altPath + fileName ) && QFileInfo( altPath + fileName ).isFile() )
-        {
-          return ( altPath + fileName );
-        }
+        return ( altPath + fileName );
       }
     }
+    }
   }
-  return ( mOriginalFileBase.value( name ) );
+  return ( mOriginalFileBase.value( layerId ) );
 }
 
 void QgsHandleBadLayers::autoFind()
@@ -552,17 +551,18 @@ void QgsHandleBadLayers::autoFind()
     QTableWidgetItem *item = mLayerList->item( i, 4 );
     QString datasource = item->text();
     QString fileName;
+    const QString layerId { node.namedItem( QStringLiteral( "id" ) ).toElement().text() };
     const QString name { mLayerList->item( i, 0 )->text() };
-    const QString basepath = datasource.left( datasource.lastIndexOf( '/' ) );
-    const QString longName = datasource.mid( datasource.lastIndexOf( '/' ) );
+    const QString basepath = datasource.left( datasource.lastIndexOf( QDir::separator() ) );
+    const QString longName = datasource.mid( datasource.lastIndexOf( QDir::separator() ) );
     if ( longName.lastIndexOf( '|' ) != -1 )
       fileName = longName.left( longName.lastIndexOf( '|' ) - 1 );
     else
       fileName = longName;
-    datasource = checkBasepath( name, basepath, fileName ).replace( fileName, longName );
+    datasource = checkBasepath( layerId, basepath, fileName ).replace( fileName, longName );
 
     bool dataSourceChanged { false };
-    const QString layerId { node.namedItem( QStringLiteral( "id" ) ).toElement().text() };
+    
     const QString provider { node.namedItem( QStringLiteral( "provider" ) ).toElement().text() };
 
 
@@ -594,8 +594,8 @@ void QgsHandleBadLayers::autoFind()
       }
       if ( dataSourceChanged )
       {
-        const QString altBasepath = datasource.left( datasource.lastIndexOf( '/' ) );
-        checkBasepath( name, altBasepath, fileName ).replace( fileName, longName );
+        const QString altBasepath = datasource.left( datasource.lastIndexOf( QDir::separator() ) );
+        checkBasepath( layerId, altBasepath, fileName ).replace( fileName, longName );
       }
     }
 
@@ -618,20 +618,6 @@ void QgsHandleBadLayers::autoFind()
         item->setForeground( QBrush( Qt::red ) );
       }
     }
-  }
-
-  // Final cleanup: remove any bad layer (it should not be any btw)
-  if ( mLayerList->rowCount() == 0 )
-  {
-    QList<QgsMapLayer *> toRemove;
-    const auto mapLayers = QgsProject::instance()->mapLayers();
-    for ( const auto &l : mapLayers )
-    {
-      if ( ! l->isValid() )
-        toRemove << l;
-    }
-    QgsProject::instance()->removeMapLayers( toRemove );
-    accept();
   }
 
   QgsProject::instance()->layerTreeRegistryBridge()->setEnabled( false );

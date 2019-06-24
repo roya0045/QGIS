@@ -82,10 +82,10 @@ class APP_EXPORT QgsHandleBadLayers
     void setFilename( int row, const QString &filename );
 
     /**
-     * Checks if \a newPath for the provided \a name is valid.
+     * Checks if \a newPath for the provided \a layerId is valid.
      * Otherwise all other know viable alternative for the original basepath will be tested.
      */
-    QString checkBasepath( const QString &name, const QString &newPath, const QString &fileName );
+    QString checkBasepath( const QString &layerId, const QString &newPath, const QString &fileName );
 
     /**
      * Will check folder in an outward spiral up to 4 levels to check if the files exists
