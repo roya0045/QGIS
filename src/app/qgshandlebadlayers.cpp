@@ -381,6 +381,7 @@ void QgsHandleBadLayers::apply()
     QString datasource = item->text();
     QString fileName;
     const QString name { mLayerList->item( i, 0 )->text() };
+    const QString layerId { node.namedItem( QStringLiteral( "id" ) ).toElement().text() };
     const QString basepath = datasource.left( datasource.lastIndexOf( QDir::separator() ) );
     const QString longName = datasource.mid( datasource.lastIndexOf( QDir::separator() ) );
     if ( longName.lastIndexOf( '|' ) != -1 )
@@ -388,7 +389,7 @@ void QgsHandleBadLayers::apply()
     else
       fileName = longName;
     if ( !( item->foreground() == QBrush( Qt::green ) ) )
-      datasource = checkBasepath( name, datasource, fileName ).replace( fileName, longName );
+      datasource = checkBasepath( layerId, datasource, fileName ).replace( fileName, longName );
 
 
     bool dataSourceChanged { false };
