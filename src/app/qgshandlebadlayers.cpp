@@ -559,7 +559,7 @@ void QgsHandleBadLayers::autoFind()
     datasource = checkBasepath( layerId, basepath, fileName ).replace( fileName, longName );
 
     bool dataSourceChanged { false };
-    
+
     const QString provider { node.namedItem( QStringLiteral( "provider" ) ).toElement().text() };
 
     // Try first to change the datasource of the existing layers, this will
