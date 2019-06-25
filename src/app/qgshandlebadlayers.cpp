@@ -384,9 +384,9 @@ void QgsHandleBadLayers::apply()
     const QString name { mLayerList->item( i, 0 )->text() };
     const QString basepath = QFileInfo( datasource ).absoluteDir().path();
     const QString longName = QFileInfo( datasource ).fileName();
-    QString provider = mLayerList->item( i, 3 )->text();
+    QString provider = node.namedItem( QStringLiteral( "provider" ) ).toElement().text();
     const QString fileType = mLayerList->item( i, 2 )->text();
-    if ( provider == "none")
+    if ( provider == "none" )
     {
       if ( mLayerList->item( i, 2 )->text() == "raster" )
         provider = "gdal";
@@ -404,7 +404,6 @@ void QgsHandleBadLayers::apply()
     }
 
     bool dataSourceChanged { false };
-    const QString provider { node.namedItem( QStringLiteral( "provider" ) ).toElement().text() };
 
 
     // Try first to change the datasource of the existing layers, this will
@@ -559,9 +558,9 @@ void QgsHandleBadLayers::autoFind()
     const QString name { mLayerList->item( i, 0 )->text() };
     const QString basepath = QFileInfo( datasource ).absoluteDir().path();
     const QString longName = QFileInfo( datasource ).fileName();
-    QString provider = mLayerList->item( i, 3 )->text();
+    QString provider = node.namedItem( QStringLiteral( "provider" ) ).toElement().text();
     const QString fileType = mLayerList->item( i, 2 )->text();
-    if ( provider == "none")
+    if ( provider == "none" )
     {
       if ( mLayerList->item( i, 2 )->text() == "raster" )
         provider = "gdal";
@@ -576,8 +575,6 @@ void QgsHandleBadLayers::autoFind()
     datasource = checkBasepath( layerId, basepath, fileName ).replace( fileName, longName );
 
     bool dataSourceChanged { false };
-
-    const QString provider { node.namedItem( QStringLiteral( "provider" ) ).toElement().text() };
 
     // Try first to change the datasource of the existing layers, this will
     // maintain the current status (checked/unchecked) and group
@@ -618,7 +615,7 @@ void QgsHandleBadLayers::autoFind()
     if ( dataSourceChanged )
     {
       item->setForeground( QBrush( Qt::green ) );
-      item->setData(Qt::UserRole + 2, QVaraint( true ) );
+      item->setData( Qt::UserRole + 2, QVariant( true ) );
     }
     else
     {
