@@ -743,14 +743,14 @@ expression function.
 False = Default iterator behavior, will ignore provided Fids and will iterate over every features if not filtering by fids.
 True = Enable using the provided fids as a base in the iterator instead of the full list of features.
 
-.. versionadded:: 3.8
+.. versionadded:: 3.10
 %End
 
     bool iterateOnFids() const;
 %Docstring
 Returns true if Fid iteration was enabled.
 
-.. versionadded:: 3.8
+.. versionadded:: 3.10
 %End
 
   protected:

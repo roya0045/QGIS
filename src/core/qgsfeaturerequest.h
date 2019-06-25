@@ -708,14 +708,14 @@ class CORE_EXPORT QgsFeatureRequest
      * False = Default iterator behavior, will ignore provided Fids and will iterate over every features if not filtering by fids.
      * True = Enable using the provided fids as a base in the iterator instead of the full list of features.
      *
-     * \since QGIS 3.8
+     * \since QGIS 3.10
      */
     void iterateFidsOnly( bool useFids );
 
     /**
      * Returns true if Fid iteration was enabled.
      *
-     * \since QGIS 3.8
+     * \since QGIS 3.10
      */
     bool iterateOnFids() const;
 
