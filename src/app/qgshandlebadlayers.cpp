@@ -87,8 +87,8 @@ QgsHandleBadLayers::QgsHandleBadLayers( const QList<QDomNode> &layers )
   mApplyButton = new QPushButton( tr( "Apply Changes" ) );
   mApplyButton->setToolTip( tr( "Apply fixes to unavailable layers (remaining unavailable layers will be removed from the project)." ) );
   buttonBox->addButton( mApplyButton, QDialogButtonBox::ActionRole );
-  mAutoFindButton = new QPushButton( tr( "Auto-Find layers" ) );
-  mAutoFindButton->setToolTip( tr( "Attempts to find the layers based on path name." ) );
+  mAutoFindButton = new QPushButton( tr( "Auto-Find Layers" ) );
+  mAutoFindButton->setToolTip( tr( "Attempts to automatically find the layers based on path name." ) );
   buttonBox->addButton( mAutoFindButton, QDialogButtonBox::ActionRole );
 
   connect( mLayerList, &QTableWidget::itemSelectionChanged, this, &QgsHandleBadLayers::selectionChanged );
@@ -380,17 +380,28 @@ void QgsHandleBadLayers::apply()
     QTableWidgetItem *item = mLayerList->item( i, 4 );
     QString datasource = item->text();
     QString fileName;
-    const QString name { mLayerList->item( i, 0 )->text() };
     const QString layerId { node.namedItem( QStringLiteral( "id" ) ).toElement().text() };
-    const QString basepath = datasource.left( datasource.lastIndexOf( QDir::separator() ) );
-    const QString longName = datasource.mid( datasource.lastIndexOf( QDir::separator() ) );
+    const QString name { mLayerList->item( i, 0 )->text() };
+    const QString basepath = QFileInfo( datasource ).absoluteDir().path();
+    const QString longName = QFileInfo( datasource ).fileName();
+    QString provider = mLayerList->item( i, 3 )->text();
+    const QString fileType = mLayerList->item( i, 2 )->text();
+    if ( provider == "none")
+    {
+      if ( mLayerList->item( i, 2 )->text() == "raster" )
+        provider = "gdal";
+      else if ( mLayerList->item( i, 2 )->text() == "vector" )
+        provider = "ogr";
+    }
     if ( longName.lastIndexOf( '|' ) != -1 )
       fileName = longName.left( longName.lastIndexOf( '|' ) - 1 );
     else
       fileName = longName;
-    if ( !( item->foreground() == QBrush( Qt::green ) ) )
-      datasource = checkBasepath( layerId, datasource, fileName ).replace( fileName, longName );
-
+    if ( item->data( Qt::UserRole + 2 ).isValid() )
+    {
+      if ( item->data( Qt::UserRole + 2 ).toBool() )
+        datasource = checkBasepath( layerId, datasource, fileName ).replace( fileName, longName );
+    }
 
     bool dataSourceChanged { false };
     const QString provider { node.namedItem( QStringLiteral( "provider" ) ).toElement().text() };
@@ -484,18 +495,14 @@ int QgsHandleBadLayers::layerCount()
 QString QgsHandleBadLayers::findFile( const QString &fileName, const QString &basePath, int maxDepth, int driveMargin )
 {
   int depth = 0;
-  QDir folder = QDir( basePath );
+  QDir folder = QDir( QDir( basePath ).absolutePath() );
   QString existingBase;
+  // find the nearest existing folder
   while ( !folder.exists() && folder.absolutePath().count( folder.separator() ) > driveMargin )
   {
     existingBase = folder.path();
-    if ( existingBase.contains( QDir::separator() ) )
-    {
-      existingBase = existingBase.left( existingBase.lastIndexOf( QDir::separator() ) );
-      folder = QDir( existingBase );
-    }
-    else
-      folder.cdUp();
+    if ( !folder.cdUp() )
+      folder = QFileInfo( existingBase ).absoluteDir();
     depth += 1;
   }
   if ( depth > maxDepth )
@@ -550,8 +557,18 @@ void QgsHandleBadLayers::autoFind()
     QString fileName;
     const QString layerId { node.namedItem( QStringLiteral( "id" ) ).toElement().text() };
     const QString name { mLayerList->item( i, 0 )->text() };
-    const QString basepath = datasource.left( datasource.lastIndexOf( QDir::separator() ) );
-    const QString longName = datasource.mid( datasource.lastIndexOf( QDir::separator() ) );
+    const QString basepath = QFileInfo( datasource ).absoluteDir().path();
+    const QString longName = QFileInfo( datasource ).fileName();
+    QString provider = mLayerList->item( i, 3 )->text();
+    const QString fileType = mLayerList->item( i, 2 )->text();
+    if ( provider == "none")
+    {
+      if ( mLayerList->item( i, 2 )->text() == "raster" )
+        provider = "gdal";
+      else if ( mLayerList->item( i, 2 )->text() == "vector" )
+        provider = "ogr";
+    }
+
     if ( longName.lastIndexOf( '|' ) != -1 )
       fileName = longName.left( longName.lastIndexOf( '|' ) - 1 );
     else
@@ -601,6 +618,7 @@ void QgsHandleBadLayers::autoFind()
     if ( dataSourceChanged )
     {
       item->setForeground( QBrush( Qt::green ) );
+      item->setData(Qt::UserRole + 2, QVaraint( true ) );
     }
     else
     {
