@@ -382,9 +382,9 @@ void QgsHandleBadLayers::apply()
     QString datasource = item->text();
     QString fileName;
     const QString layerId { node.namedItem( QStringLiteral( "id" ) ).toElement().text() };
-    const QString name { mLayerList->item( i, 0 )->text() };
-    const QString basepath = QFileInfo( datasource ).absoluteDir().path();
-    const QString longName = QFileInfo( datasource ).fileName();
+    const QFileInfo dataInfo = QFileInfo( datasource );
+    const QString basepath = dataInfo.absoluteDir().path();
+    const QString longName = dataInfo.fileName();
     QString provider = node.namedItem( QStringLiteral( "provider" ) ).toElement().text();
     const QString fileType = mLayerList->item( i, 2 )->text();
     if ( provider == "none" )
@@ -394,9 +394,10 @@ void QgsHandleBadLayers::apply()
       else if ( mLayerList->item( i, 2 )->text() == "vector" )
         provider = "ogr";
     }
-    QVariantMap providerMap = QgsProviderRegistry::instance()->decodeUri( datasource, provider );
+
+    QVariantMap providerMap = QgsProviderRegistry::instance()->decodeUri( dataInfo.absoluteFilePath(), provider );
     if ( providerMap.contains( QStringLiteral( "path" ) ) )
-      fileName = QFileInfo( providerMap[ QStringLiteral( "path" ) ] ).fileName();
+      fileName = QFileInfo( providerMap[ QStringLiteral( "path" ) ].toString() ).fileName();
     else
     {
       fileName = longName;
@@ -560,8 +561,9 @@ void QgsHandleBadLayers::autoFind()
     QString fileName;
     const QString layerId { node.namedItem( QStringLiteral( "id" ) ).toElement().text() };
     const QString name { mLayerList->item( i, 0 )->text() };
-    const QString basepath = QFileInfo( datasource ).absoluteDir().path();
-    const QString longName = QFileInfo( datasource ).fileName();
+    const QFileInfo dataInfo = QFileInfo( datasource );
+    const QString basepath = dataInfo.absoluteDir().path();
+    const QString longName = dataInfo.fileName();
     QString provider = node.namedItem( QStringLiteral( "provider" ) ).toElement().text();
     const QString fileType = mLayerList->item( i, 2 )->text();
     if ( provider == "none" )
@@ -572,9 +574,9 @@ void QgsHandleBadLayers::autoFind()
         provider = "ogr";
     }
 
-    QVariantMap providerMap = QgsProviderRegistry::instance()->decodeUri( datasource, provider );
+    QVariantMap providerMap = QgsProviderRegistry::instance()->decodeUri( dataInfo.absoluteFilePath(), provider );
     if ( providerMap.contains( QStringLiteral( "path" ) ) )
-      fileName = QFileInfo( providerMap[ QStringLiteral( "path" ) ] ).fileName();
+      fileName = QFileInfo( providerMap[ QStringLiteral( "path" ) ].toString() ).fileName();
     else
     {
       item->setForeground( QBrush( Qt::red ) );
