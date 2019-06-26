@@ -382,6 +382,7 @@ void QgsHandleBadLayers::apply()
     QString datasource = item->text();
     QString fileName;
     const QString layerId { node.namedItem( QStringLiteral( "id" ) ).toElement().text() };
+    const QString name { mLayerList->item( i, 0 )->text() };
     const QFileInfo dataInfo = QFileInfo( datasource );
     const QString basepath = dataInfo.absoluteDir().path();
     const QString longName = dataInfo.fileName();
