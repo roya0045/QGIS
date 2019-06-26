@@ -503,7 +503,7 @@ QString QgsHandleBadLayers::findFile( const QString &fileName, const QString &ba
   QDir folder = QDir( QDir( basePath ).absolutePath() );
   QString existingBase;
   // find the nearest existing folder
-  while ( !folder.exists() && folder.absolutePath().count( folder.separator() ) > driveMargin )
+  while ( !folder.exists() && folder.absolutePath().count( '/' ) > driveMargin )
   {
     existingBase = folder.path();
     if ( !folder.cdUp() )
@@ -512,7 +512,7 @@ QString QgsHandleBadLayers::findFile( const QString &fileName, const QString &ba
   }
   if ( depth > maxDepth )
     maxDepth = depth;
-  while ( depth <= maxDepth && folder.cdUp() && folder.absolutePath().count( folder.separator() ) > driveMargin )
+  while ( depth <= maxDepth && folder.cdUp() && folder.absolutePath().count( '/' ) > driveMargin )
   {
     QDirIterator finder( folder.path(), QStringList() << fileName, QDir::Files, QDirIterator::Subdirectories );
     if ( finder.hasNext() )
@@ -520,16 +520,16 @@ QString QgsHandleBadLayers::findFile( const QString &fileName, const QString &ba
     else
       depth += 1;
   }
-  return ( existingBase + folder.separator() + fileName );
+  return ( existingBase + '/' + fileName );
 }
 
 QString QgsHandleBadLayers::checkBasepath( const QString &layerId, const QString &newPath, const QString &fileName )
 {
   const QString originalBase = mOriginalFileBase.value( layerId );
-
-  if ( QFileInfo::exists( newPath ) && QFileInfo( newPath ).isFile() )
+  const QFileInfo newpathInfo = QFileInfo ( newPath );
+  if ( newpathInfo.exists() && newpathInfo.isFile() )
   {
-    const QString newBasepath = newPath.left( newPath.lastIndexOf( QDir::separator() ) );
+    const QString newBasepath = nepathInfo.absoluteDir().path();;
     if ( !mAlternativeBasepaths.value( originalBase ).contains( newBasepath ) )
       mAlternativeBasepaths[ originalBase ].append( newBasepath );
     return ( newPath );
@@ -616,7 +616,7 @@ void QgsHandleBadLayers::autoFind()
       }
       if ( dataSourceChanged )
       {
-        const QString altBasepath = datasource.left( datasource.lastIndexOf( QDir::separator() ) );
+        const QString altBasepath = QFileInfo( datasource ).absoluteDir().path();
         checkBasepath( layerId, altBasepath, fileName ).replace( fileName, longName );
       }
     }
