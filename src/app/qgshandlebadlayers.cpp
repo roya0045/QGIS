@@ -505,7 +505,7 @@ QString QgsHandleBadLayers::findFile( const QString &fileName, const QString &ba
   {
     existingBase = folder.path();
     if ( !folder.cdUp() )
-      folder = QFileInfo( existingBase ).absoluteDir();
+      folder = QFileInfo( existingBase ).absoluteDir(); // using fileinfo to move up one level
     depth += 1;
   }
   if ( depth > maxDepth )
