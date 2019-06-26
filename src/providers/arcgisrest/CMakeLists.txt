@@ -12,10 +12,11 @@ INCLUDE_DIRECTORIES(
   ${CMAKE_SOURCE_DIR}/external
   ${CMAKE_BINARY_DIR}/src/ui
   ${CMAKE_BINARY_DIR}/src/core
-  ${CMAKE_BINARY_DIR}/src/gui  
+  ${CMAKE_BINARY_DIR}/src/gui
 )
 
 INCLUDE_DIRECTORIES(SYSTEM
+  ${GEOS_INCLUDE_DIR}
   ${QCA_INCLUDE_DIR}
   ${QTKEYCHAIN_INCLUDE_DIR}
 )
@@ -33,7 +34,6 @@ SET (AFS_SRCS
   qgsafsdataitems.cpp
   qgsafsfeatureiterator.cpp
   qgsafsprovider.cpp
-  qgsafsproviderextern.cpp
   qgsafsshareddata.cpp
 )
 SET (AFS_MOC_HDRS
@@ -88,7 +88,6 @@ SET (AMS_SRCS
   qgsarcgisrestutils.cpp
   qgsamsdataitems.cpp
   qgsamsprovider.cpp
-  qgsamsproviderextern.cpp
 )
 SET (AMS_MOC_HDRS
   qgsarcgisrestutils.h
