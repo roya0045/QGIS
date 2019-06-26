@@ -393,10 +393,13 @@ void QgsHandleBadLayers::apply()
       else if ( mLayerList->item( i, 2 )->text() == "vector" )
         provider = "ogr";
     }
-    if ( longName.lastIndexOf( '|' ) != -1 )
-      fileName = longName.left( longName.lastIndexOf( '|' ) - 1 );
+    QVariantMap providerMap = QgsProviderRegistry::instance()->decodeUri( datasource, provider );
+    if ( providerMap.contains( QStringLiteral( "path" ) ) )
+      fileName = QFileInfo( providerMap[ QStringLiteral( "path" ) ] ).fileName();
     else
+    {
       fileName = longName;
+    }
     if ( item->data( Qt::UserRole + 2 ).isValid() )
     {
       if ( item->data( Qt::UserRole + 2 ).toBool() )
@@ -568,10 +571,15 @@ void QgsHandleBadLayers::autoFind()
         provider = "ogr";
     }
 
-    if ( longName.lastIndexOf( '|' ) != -1 )
-      fileName = longName.left( longName.lastIndexOf( '|' ) - 1 );
+    QVariantMap providerMap = QgsProviderRegistry::instance()->decodeUri( datasource, provider );
+    if ( providerMap.contains( QStringLiteral( "path" ) ) )
+      fileName = QFileInfo( providerMap[ QStringLiteral( "path" ) ] ).fileName();
     else
-      fileName = longName;
+    {
+      item->setForeground( QBrush( Qt::red ) );
+      continue;
+    }
+
     datasource = checkBasepath( layerId, basepath, fileName ).replace( fileName, longName );
 
     bool dataSourceChanged { false };
