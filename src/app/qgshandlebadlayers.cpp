@@ -526,10 +526,10 @@ QString QgsHandleBadLayers::findFile( const QString &fileName, const QString &ba
 QString QgsHandleBadLayers::checkBasepath( const QString &layerId, const QString &newPath, const QString &fileName )
 {
   const QString originalBase = mOriginalFileBase.value( layerId );
-  const QFileInfo newpathInfo = QFileInfo ( newPath );
+  const QFileInfo newpathInfo = QFileInfo( newPath );
   if ( newpathInfo.exists() && newpathInfo.isFile() )
   {
-    const QString newBasepath = nepathInfo.absoluteDir().path();;
+    const QString newBasepath = newpathInfo.absoluteDir().path();;
     if ( !mAlternativeBasepaths.value( originalBase ).contains( newBasepath ) )
       mAlternativeBasepaths[ originalBase ].append( newBasepath );
     return ( newPath );
