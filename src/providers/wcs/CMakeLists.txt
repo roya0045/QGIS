@@ -14,9 +14,12 @@ SET (WCS_MOC_HDRS
 
 IF (WITH_GUI)
   SET(WCS_SRCS ${WCS_SRCS}
+    qgswcsprovidergui.cpp
+    qgswcsdataitemguiprovider.cpp
     qgswcssourceselect.cpp
   )
   SET(WCS_MOC_HDRS ${WCS_MOC_HDRS}
+    qgswcsdataitemguiprovider.h
     qgswcssourceselect.h
   )
 ENDIF ()

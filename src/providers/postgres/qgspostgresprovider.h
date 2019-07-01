@@ -50,6 +50,10 @@ class QgsPostgresProvider : public QgsVectorDataProvider
     Q_OBJECT
 
   public:
+
+    static const QString POSTGRES_KEY;
+    static const QString POSTGRES_DESCRIPTION;
+
     enum Relkind
     {
       Unknown,
@@ -468,6 +472,9 @@ class QgsPostgresProvider : public QgsVectorDataProvider
 class QgsPostgresUtils
 {
   public:
+    static bool deleteLayer( const QString &uri, QString &errCause );
+    static bool deleteSchema( const QString &schema, const QgsDataSourceUri &uri, QString &errCause, bool cascade = false );
+
     static QString whereClause( QgsFeatureId featureId,
                                 const QgsFields &fields,
                                 QgsPostgresConn *conn,
