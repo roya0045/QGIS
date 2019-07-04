@@ -1344,14 +1344,14 @@ class TestPyQgsOGRProviderGpkg(unittest.TestCase):
         self.assertEqual(vl1.uniqueValues(1), {'one', 'two'})
 
     def test_iterator(self):
-        tmpfile = os.path.join(self.basetestpath, 'test_json.gpkg')
+        tmpfile = os.path.join(self.basetestpath,'..', 'points_gpkg.gpkg')
         testdata_path = unitTestDataPath('provider')
-        shutil.copy(os.path.join(unitTestDataPath('provider'), 'test_json.gpkg'), tmpfile)
+        shutil.copy(os.path.join(unitTestDataPath('provider'),'..', 'points_gpkg.gpkg'), tmpfile)
 
-        vl = QgsVectorLayer('{}|layerid=0'.format(tmpfile, 'foo', 'ogr'))
+        vl = QgsVectorLayer('{}|layername=points_gpkg'.format(tmpfile), 'foo', 'ogr')
         self.assertTrue(vl.isValid())
 
-        field = "AREA"
+        field = "Cabin Crew"
         qexc = vl.createExpressionContext()
         DefaultFR = QgsAggregateCalculator(vl)
         StackedFR = QgsAggregateCalculator(vl)
