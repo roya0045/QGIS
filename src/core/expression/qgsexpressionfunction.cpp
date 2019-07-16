@@ -5085,7 +5085,7 @@ const QList<QgsExpressionFunction *> &QgsExpression::Functions()
                                             << QgsExpressionFunction::Parameter( QStringLiteral( "aggregate" ) )
                                             << QgsExpressionFunction::Parameter( QStringLiteral( "expression" ), false, QVariant(), true )
                                             << QgsExpressionFunction::Parameter( QStringLiteral( "concatenator" ), true )
-                                            << QgsExpressionFunction::Parameter( QStringLiteral( "order_by" ), true, QVariant(), true ),
+                                            << QgsExpressionFunction::Parameter( QStringLiteral( "order_by" ), true, QVariant(), true )
                                             << QgsExpressionFunction::Parameter( QStringLiteral( "symbol_id" ), true, QVariant(), true ),
                                             fcnAggregateRelation, QStringLiteral( "Aggregates" ), QString(), false, QSet<QString>() << QgsFeatureRequest::ALL_ATTRIBUTES, true )
 
