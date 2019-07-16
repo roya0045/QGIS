@@ -3958,8 +3958,10 @@ QVariant QgsVectorLayer::aggregate( QgsAggregateCalculator::Aggregate aggregate,
   if ( symbolId )
   {
     if ( ! *symbolId.isEmpty() )
-    ids = mFeatureCounter.featureIds( *symbolId );
-    hasFids = true;
+    {
+      ids = mFeatureCounter.featureIds( *symbolId );
+      hasFids = true;
+    }
   }
 
 

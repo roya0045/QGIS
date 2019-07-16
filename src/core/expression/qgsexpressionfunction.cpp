@@ -564,7 +564,7 @@ static QVariant fcnAggregate( const QVariantList &values, const QgsExpressionCon
     }
   }
 
-  //optional sixth node is symbo Id
+  //optional sixth node is symbol Id
   QString symbolId;
   if ( values.count() > 6 )
   {
@@ -593,7 +593,7 @@ static QVariant fcnAggregate( const QVariantList &values, const QgsExpressionCon
     }
     else
     {
-      cacheKey = QStringLiteral( "aggfcn:%1:%2:%3:%4:%5:%6" ).arg( vl->id(), QString::number( aggregate ), subExpression, parameters.filter, orderBy, symolId );
+      cacheKey = QStringLiteral( "aggfcn:%1:%2:%3:%4:%5:%6" ).arg( vl->id(), QString::number( aggregate ), subExpression, parameters.filter, orderBy, symbolId );
     }
 
     if ( context && context->hasCachedValue( cacheKey ) )
@@ -4949,7 +4949,7 @@ const QList<QgsExpressionFunction *> &QgsExpression::Functions()
         << QgsExpressionFunction::Parameter( QStringLiteral( "expression" ) )
         << QgsExpressionFunction::Parameter( QStringLiteral( "group_by" ), true )
         << QgsExpressionFunction::Parameter( QStringLiteral( "filter" ), true )
-        << QgsExpressionFunction::Parameter( QStringLiteral( "symbol_id" ), true, QVariant(), true ),;
+        << QgsExpressionFunction::Parameter( QStringLiteral( "symbol_id" ), true, QVariant(), true );
 
     QgsExpressionFunction::ParameterList aggParamsConcat = aggParams;
     aggParamsConcat <<  QgsExpressionFunction::Parameter( QStringLiteral( "concatenator" ), true )
