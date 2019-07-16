@@ -697,7 +697,7 @@ long QgsVectorLayer::featureCount( const QString &legendKey ) const
   if ( !mSymbolFeatureCounted )
     return -1;
 
-  return mFeatureCounter->.featureCount( legendKey );
+  return mFeatureCounter->featureCount( legendKey );
 }
 
 
@@ -3264,7 +3264,7 @@ void QgsVectorLayer::setRenderer( QgsFeatureRenderer *r )
     delete mRenderer;
     mRenderer = r;
     mSymbolFeatureCounted = false;
-    mFeatureCounter = null;
+    mFeatureCounter = nullptr;
 
     emit rendererChanged();
     emit styleChanged();
@@ -3957,9 +3957,9 @@ QVariant QgsVectorLayer::aggregate( QgsAggregateCalculator::Aggregate aggregate,
   QgsFeatureIds ids;
   if ( symbolId )
   {
-    if ( ! *symbolId.isEmpty() )
+    if ( ! symbolId->isEmpty() )
     {
-      ids = mFeatureCounter.featureIds( *symbolId );
+      ids = mFeatureCounter->featureIds( *symbolId );
       hasFids = true;
     }
   }
