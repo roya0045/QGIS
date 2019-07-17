@@ -3983,7 +3983,6 @@ QVariant QgsVectorLayer::aggregate( QgsAggregateCalculator::Aggregate aggregate,
       QVariant val = mDataProvider->aggregate( aggregate, attrIndex, parameters, context, providerOk, fids );
       if ( providerOk )
       {
-        qDebug() << "provider";
         // provider handled calculation
         if ( ok )
           *ok = true;
