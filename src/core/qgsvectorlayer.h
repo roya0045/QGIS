@@ -1942,7 +1942,26 @@ class CORE_EXPORT QgsVectorLayer : public QgsMapLayer, public QgsExpressionConte
                         const QgsAggregateCalculator::AggregateParameters &parameters = QgsAggregateCalculator::AggregateParameters(),
                         QgsExpressionContext *context = nullptr,
                         bool *ok = nullptr,
-                        QString *symbolId = nullptr ) const;
+                        QString *symbolId ) const;
+
+    /**
+     * Calculates an aggregated value from the layer's features.
+     * Currently any filtering expression provided will override filters in the FeatureRequest.
+     * \param aggregate aggregate to calculate
+     * \param fieldOrExpression source field or expression to use as basis for aggregated values.
+     * \param parameters parameters controlling aggregate calculation
+     * \param context expression context for expressions and filters
+     * \param ok if specified, will be set to TRUE if aggregate calculation was successful
+     * \param fids list of fids to filter, otherwise will use all fids
+     * \returns calculated aggregate value
+     * \since QGIS 2.16
+     */
+    QVariant aggregate( QgsAggregateCalculator::Aggregate aggregate,
+                        const QString &fieldOrExpression,
+                        const QgsAggregateCalculator::AggregateParameters &parameters = QgsAggregateCalculator::AggregateParameters(),
+                        QgsExpressionContext *context = nullptr,
+                        bool *ok = nullptr,
+                        QgsFeatureIds *fids = nullptr ) const;
 
     //! Sets the blending mode used for rendering each feature
     void setFeatureBlendMode( QPainter::CompositionMode blendMode );

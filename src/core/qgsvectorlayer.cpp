@@ -3946,6 +3946,21 @@ QVariant QgsVectorLayer::aggregate( QgsAggregateCalculator::Aggregate aggregate,
                                     const QgsAggregateCalculator::AggregateParameters &parameters, QgsExpressionContext *context,
                                     bool *ok, QString *symbolId ) const
 {
+  if ( symbolId )
+  {
+    if ( ! symbolId->isEmpty() )
+    {
+      QgsFeatureIds ids = mFeatureCounter->featureIds( *symbolId );
+      return aggregate( aggregate, fieldOrExpressionToExpression, parameters, context, ok, &ids )
+    }
+  }
+  return aggregate( aggregate, fieldOrExpressionToExpression, parameters, context, ok, )
+}
+
+QVariant QgsVectorLayer::aggregate( QgsAggregateCalculator::Aggregate aggregate, const QString &fieldOrExpression,
+                                    const QgsAggregateCalculator::AggregateParameters &parameters, QgsExpressionContext *context,
+                                    bool *ok, QgsFeatureIds *fids ) const
+{
   if ( ok )
     *ok = false;
 
@@ -3954,17 +3969,10 @@ QVariant QgsVectorLayer::aggregate( QgsAggregateCalculator::Aggregate aggregate,
     return QVariant();
   }
   bool hasFids = false;
-  QgsFeatureIds ids;
-  if ( symbolId )
+  if ( fids )
   {
-    if ( ! symbolId->isEmpty() )
-    {
-      ids = mFeatureCounter->featureIds( *symbolId );
-      hasFids = true;
-    }
+    hasFids = true;
   }
-
-
   // test if we are calculating based on a field
   int attrIndex = mFields.lookupField( fieldOrExpression );
   if ( attrIndex >= 0 )
@@ -3991,7 +3999,7 @@ QVariant QgsVectorLayer::aggregate( QgsAggregateCalculator::Aggregate aggregate,
   QgsAggregateCalculator c( this );
   if ( hasFids )
   {
-    c.setFidsFilter( ids );
+    c.setFidsFilter( *ids );
   }
   c.setParameters( parameters );
   return c.calculate( aggregate, fieldOrExpression, context, ok );
