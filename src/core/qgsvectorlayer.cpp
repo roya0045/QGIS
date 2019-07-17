@@ -3946,12 +3946,12 @@ QVariant QgsVectorLayer::aggregate( QgsAggregateCalculator::Aggregate aggregate,
                                     const QgsAggregateCalculator::AggregateParameters &parameters, QgsExpressionContext *context,
                                     bool *ok, QString &symbolId ) const
 {
-  if ( ! symbolId->isEmpty() )
+  if ( ! symbolId.isEmpty() )
   {
-    QgsFeatureIds ids = mFeatureCounter->featureIds( *symbolId );
-    return aggregate( aggregate, fieldOrExpressionToExpression, parameters, context, ok, &ids )
+    QgsFeatureIds ids = mFeatureCounter->featureIds( symbolId );
+    return aggregate( aggregate, fieldOrExpression, parameters, context, ok, &ids )
   }
-  return aggregate( aggregate, fieldOrExpressionToExpression, parameters, context, ok, nullptr )
+  return aggregate( aggregate, fieldOrExpression, parameters, context, ok, nullptr )
 }
 
 QVariant QgsVectorLayer::aggregate( QgsAggregateCalculator::Aggregate aggregate, const QString &fieldOrExpression,
@@ -3980,7 +3980,7 @@ QVariant QgsVectorLayer::aggregate( QgsAggregateCalculator::Aggregate aggregate,
     if ( origin == QgsFields::OriginProvider )
     {
       bool providerOk = false;
-      QVariant val = mDataProvider->aggregate( aggregate, attrIndex, parameters, context, providerOk, &ids );
+      QVariant val = mDataProvider->aggregate( aggregate, attrIndex, parameters, context, providerOk, &fids );
       if ( providerOk )
       {
         qDebug() << "provider";
@@ -3996,7 +3996,7 @@ QVariant QgsVectorLayer::aggregate( QgsAggregateCalculator::Aggregate aggregate,
   QgsAggregateCalculator c( this );
   if ( hasFids )
   {
-    c.setFidsFilter( *ids );
+    c.setFidsFilter( *fids );
   }
   c.setParameters( parameters );
   return c.calculate( aggregate, fieldOrExpression, context, ok );
