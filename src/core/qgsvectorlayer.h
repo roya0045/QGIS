@@ -1939,10 +1939,10 @@ class CORE_EXPORT QgsVectorLayer : public QgsMapLayer, public QgsExpressionConte
      */
     QVariant aggregate( QgsAggregateCalculator::Aggregate aggregate,
                         const QString &fieldOrExpression,
-                        const QgsAggregateCalculator::AggregateParameters &parameters = QgsAggregateCalculator::AggregateParameters(),
-                        QgsExpressionContext *context = nullptr,
-                        bool *ok = nullptr,
-                        QString &symbolId = QString() ) const;
+                        const QgsAggregateCalculator::AggregateParameters &parameters,
+                        QgsExpressionContext *context,
+                        bool *ok,
+                        QString &symbolId ) const;
 
     /**
      * Calculates an aggregated value from the layer's features.

@@ -2099,10 +2099,10 @@ been changed inside the edit buffer then the previous saved value may be returne
 
     QVariant aggregate( QgsAggregateCalculator::Aggregate aggregate,
                         const QString &fieldOrExpression,
-                        const QgsAggregateCalculator::AggregateParameters &parameters = QgsAggregateCalculator::AggregateParameters(),
-                        QgsExpressionContext *context = 0,
-                        bool *ok = 0,
-                        QString &symbolId = QString() ) const;
+                        const QgsAggregateCalculator::AggregateParameters &parameters,
+                        QgsExpressionContext *context
+                        bool *ok,
+                        QString &symbolId ) const;
 %Docstring
 Calculates an aggregated value from the layer's features.
 Currently any filtering expression provided will override filters in the FeatureRequest.
