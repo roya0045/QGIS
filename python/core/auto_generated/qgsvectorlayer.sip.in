@@ -2100,7 +2100,7 @@ been changed inside the edit buffer then the previous saved value may be returne
     QVariant aggregate( QgsAggregateCalculator::Aggregate calculation,
                         const QString &fieldOrExpression,
                         const QgsAggregateCalculator::AggregateParameters &parameters,
-                        QgsExpressionContext *context
+                        QgsExpressionContext *context,
                         bool *ok,
                         QString &symbolId ) const;
 %Docstring
