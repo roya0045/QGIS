@@ -1942,7 +1942,7 @@ class CORE_EXPORT QgsVectorLayer : public QgsMapLayer, public QgsExpressionConte
                         const QgsAggregateCalculator::AggregateParameters &parameters = QgsAggregateCalculator::AggregateParameters(),
                         QgsExpressionContext *context = nullptr,
                         bool *ok = nullptr,
-                        QString *symbolId = nullptr ) const;
+                        QString &symbolId = QString() ) const;
 
     /**
      * Calculates an aggregated value from the layer's features.

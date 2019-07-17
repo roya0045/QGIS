@@ -3944,15 +3944,12 @@ QVariant QgsVectorLayer::maximumValue( int index ) const
 
 QVariant QgsVectorLayer::aggregate( QgsAggregateCalculator::Aggregate aggregate, const QString &fieldOrExpression,
                                     const QgsAggregateCalculator::AggregateParameters &parameters, QgsExpressionContext *context,
-                                    bool *ok, QString *symbolId ) const
+                                    bool *ok, QString &symbolId ) const
 {
-  if ( symbolId )
+  if ( ! symbolId->isEmpty() )
   {
-    if ( ! symbolId->isEmpty() )
-    {
-      QgsFeatureIds ids = mFeatureCounter->featureIds( *symbolId );
-      return aggregate( aggregate, fieldOrExpressionToExpression, parameters, context, ok, &ids )
-    }
+    QgsFeatureIds ids = mFeatureCounter->featureIds( *symbolId );
+    return aggregate( aggregate, fieldOrExpressionToExpression, parameters, context, ok, &ids )
   }
   return aggregate( aggregate, fieldOrExpressionToExpression, parameters, context, ok, )
 }

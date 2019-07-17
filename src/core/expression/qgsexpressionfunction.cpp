@@ -603,13 +603,13 @@ static QVariant fcnAggregate( const QVariantList &values, const QgsExpressionCon
     QgsExpressionContextScope *subScope = new QgsExpressionContextScope();
     subScope->setVariable( QStringLiteral( "parent" ), context->feature() );
     subContext.appendScope( subScope );
-    result = vl->aggregate( aggregate, subExpression, parameters, &subContext, &ok, &symbolId );
+    result = vl->aggregate( aggregate, subExpression, parameters, &subContext, &ok, symbolId );
 
     context->setCachedValue( cacheKey, result );
   }
   else
   {
-    result = vl->aggregate( aggregate, subExpression, parameters, nullptr, &ok );
+    result = vl->aggregate( aggregate, subExpression, parameters, nullptr, &ok, nullptr );
   }
   if ( !ok )
   {
@@ -706,15 +706,28 @@ static QVariant fcnAggregateRelation( const QVariantList &values, const QgsExpre
     }
   }
 
+  //optional sixth node is symbol Id
+  QString symbolId;
+  if ( values.count() > 5 )
+  {
+    node = QgsExpressionUtils::getNode( values.at( 6 ), parent );
+    ENSURE_NO_EVAL_ERROR
+    QgsExpressionNodeLiteral *nl = dynamic_cast< QgsExpressionNodeLiteral * >( node );
+    if ( !nl || nl->value().isValid() )
+    {
+      symbolId = node->dump();
+    }
+  }
 
   FEAT_FROM_CONTEXT( context, f )
   parameters.filter = relation.getRelatedFeaturesFilter( f );
 
-  QString cacheKey = QStringLiteral( "relagg:%1:%2:%3:%4:%5" ).arg( vl->id(),
+  QString cacheKey = QStringLiteral( "relagg:%1:%2:%3:%4:%5:%6" ).arg( vl->id(),
                      QString::number( static_cast< int >( aggregate ) ),
                      subExpression,
                      parameters.filter,
-                     orderBy );
+                     orderBy,
+                     symbolId );
   if ( context && context->hasCachedValue( cacheKey ) )
     return context->cachedValue( cacheKey );
 
@@ -723,7 +736,7 @@ static QVariant fcnAggregateRelation( const QVariantList &values, const QgsExpre
 
 
   QgsExpressionContext subContext( *context );
-  result = childLayer->aggregate( aggregate, subExpression, parameters, &subContext, &ok );
+  result = childLayer->aggregate( aggregate, subExpression, parameters, &subContext, &ok, symbolId );
 
   if ( !ok )
   {
@@ -838,7 +851,7 @@ static QVariant fcnAggregateGeneric( QgsAggregateCalculator::Aggregate aggregate
   bool ok = false;
 
   QgsExpressionContext subContext( *context );
-  result = vl->aggregate( aggregate, subExpression, parameters, &subContext, &ok, &symbolId );
+  result = vl->aggregate( aggregate, subExpression, parameters, &subContext, &ok, symbolId );
 
   if ( !ok )
   {
