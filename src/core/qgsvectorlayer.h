@@ -1928,7 +1928,7 @@ class CORE_EXPORT QgsVectorLayer : public QgsMapLayer, public QgsExpressionConte
     /**
      * Calculates an aggregated value from the layer's features.
      * Currently any filtering expression provided will override filters in the FeatureRequest.
-     * \param aggregate aggregate to calculate
+     * \param calculation aggregate to calculate
      * \param fieldOrExpression source field or expression to use as basis for aggregated values.
      * \param parameters parameters controlling aggregate calculation
      * \param context expression context for expressions and filters
@@ -1937,7 +1937,7 @@ class CORE_EXPORT QgsVectorLayer : public QgsMapLayer, public QgsExpressionConte
      * \returns calculated aggregate value
      * \since QGIS 2.16
      */
-    QVariant aggregate( QgsAggregateCalculator::Aggregate aggregate,
+    QVariant aggregate( QgsAggregateCalculator::Aggregate calculation,
                         const QString &fieldOrExpression,
                         const QgsAggregateCalculator::AggregateParameters &parameters,
                         QgsExpressionContext *context,
