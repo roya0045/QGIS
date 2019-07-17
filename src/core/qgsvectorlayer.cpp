@@ -3951,7 +3951,7 @@ QVariant QgsVectorLayer::aggregate( QgsAggregateCalculator::Aggregate aggregate,
     QgsFeatureIds ids = mFeatureCounter->featureIds( *symbolId );
     return aggregate( aggregate, fieldOrExpressionToExpression, parameters, context, ok, &ids )
   }
-  return aggregate( aggregate, fieldOrExpressionToExpression, parameters, context, ok, )
+  return aggregate( aggregate, fieldOrExpressionToExpression, parameters, context, ok, nullptr )
 }
 
 QVariant QgsVectorLayer::aggregate( QgsAggregateCalculator::Aggregate aggregate, const QString &fieldOrExpression,
