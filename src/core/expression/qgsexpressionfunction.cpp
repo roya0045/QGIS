@@ -609,7 +609,7 @@ static QVariant fcnAggregate( const QVariantList &values, const QgsExpressionCon
   }
   else
   {
-    result = vl->aggregate( aggregate, subExpression, parameters, nullptr, &ok, nullptr );
+    result = vl->aggregate( aggregate, subExpression, parameters, nullptr, &ok );
   }
   if ( !ok )
   {
