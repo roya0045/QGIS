@@ -710,7 +710,7 @@ static QVariant fcnAggregateRelation( const QVariantList &values, const QgsExpre
   QString symbolId;
   if ( values.count() > 5 )
   {
-    node = QgsExpressionUtils::getNode( values.at( 6 ), parent );
+    node = QgsExpressionUtils::getNode( values.at( 5 ), parent );
     ENSURE_NO_EVAL_ERROR
     QgsExpressionNodeLiteral *nl = dynamic_cast< QgsExpressionNodeLiteral * >( node );
     if ( !nl || nl->value().isValid() )
