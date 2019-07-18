@@ -811,7 +811,7 @@ static QVariant fcnAggregateGeneric( QgsAggregateCalculator::Aggregate aggregate
 
   //optional sixth? node is symbol Id
   QString symbolId;
-  if ( values.count() > orderByPos + 1 )
+  if ( values.count() > orderByPos + 1 && orderByPos > 0 )
   {
     node = QgsExpressionUtils::getNode( values.at( orderByPos + 1 ), parent );
     ENSURE_NO_EVAL_ERROR
