@@ -810,8 +810,10 @@ static QVariant fcnAggregateGeneric( QgsAggregateCalculator::Aggregate aggregate
   }
 
   qDebug() << QString::number( values.count() );
-  for ( int ix = 0; values.count(), ix++)
-    qDebug() << QgsExpressionUtils::getNode( values.at( 6 ), parent )->dump() << QString(" - ");
+  for ( int ix = 0; values.count(); ix++ )
+  {
+    qDebug() << QgsExpressionUtils::getNode( values.at( 6 ), parent )->dump() << QString( " - " );
+  }
   //optional sixth? node is symbol Id
   QString symbolId;
   if ( values.count() > 6 )
