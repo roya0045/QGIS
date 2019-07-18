@@ -3948,7 +3948,7 @@ QVariant QgsVectorLayer::aggregate( QgsAggregateCalculator::Aggregate calculatio
 {
   if ( ! symbolId.isEmpty() )
   {
-    QgsFeatureIds ids = mFeatureCounter->featureIds( symbolId );
+    QgsFeatureIds ids = mFeatureCounter->featureIds->value( symbolId, QgsFeatureIds() );
     return aggregate( calculation, fieldOrExpression, parameters, context, ok, &ids );
   }
   return aggregate( calculation, fieldOrExpression, parameters, context, ok, nullptr );
