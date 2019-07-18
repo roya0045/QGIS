@@ -809,7 +809,7 @@ static QVariant fcnAggregateGeneric( QgsAggregateCalculator::Aggregate aggregate
     }
   }
 
-  QDebug( QString::number( values.count() ) );
+  qDebug() << QString::number( values.count() );
   //optional sixth? node is symbol Id
   QString symbolId;
   if ( values.count() > 6 )
