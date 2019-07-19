@@ -768,7 +768,7 @@ static QVariant fcnAggregateGeneric( QgsAggregateCalculator::Aggregate aggregate
   }
 
   //lazy eval, so we need to evaluate nodes now
-  qDebug() << '-----';
+  qDebug() << "-----";
   //first node is subexpression (or field name)
   QgsExpressionNode *node = QgsExpressionUtils::getNode( values.at( 0 ), parent );
   ENSURE_NO_EVAL_ERROR
