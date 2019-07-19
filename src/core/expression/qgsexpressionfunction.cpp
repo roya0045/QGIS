@@ -969,6 +969,7 @@ static QVariant fcnAggregateStringConcat( const QVariantList &values, const QgsE
     QgsExpressionNode *node = QgsExpressionUtils::getNode( values.at( 3 ), parent );
     ENSURE_NO_EVAL_ERROR
     QVariant value = node->eval( parent, context );
+    qDebug() << value.toString();
     ENSURE_NO_EVAL_ERROR
     parameters.delimiter = value.toString();
   }
@@ -986,6 +987,7 @@ static QVariant fcnAggregateStringConcatUnique( const QVariantList &values, cons
     QgsExpressionNode *node = QgsExpressionUtils::getNode( values.at( 3 ), parent );
     ENSURE_NO_EVAL_ERROR
     QVariant value = node->eval( parent, context );
+    qDebug() << value.toString();
     ENSURE_NO_EVAL_ERROR
     parameters.delimiter = value.toString();
   }
