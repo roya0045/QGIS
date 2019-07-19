@@ -768,12 +768,12 @@ static QVariant fcnAggregateGeneric( QgsAggregateCalculator::Aggregate aggregate
   }
 
   //lazy eval, so we need to evaluate nodes now
-
+  qDebug() << '-----';
   //first node is subexpression (or field name)
   QgsExpressionNode *node = QgsExpressionUtils::getNode( values.at( 0 ), parent );
   ENSURE_NO_EVAL_ERROR
   QString subExpression = node->dump();
-
+  qDebug() << subExpression;
   //optional second node is group by
   QString groupBy;
   if ( values.count() > 1 )
@@ -784,7 +784,7 @@ static QVariant fcnAggregateGeneric( QgsAggregateCalculator::Aggregate aggregate
     if ( !nl || nl->value().isValid() )
       groupBy = node->dump();
   }
-
+  qDebug() << groupBy;
   //optional third node is filter
   if ( values.count() > 2 )
   {
@@ -794,7 +794,7 @@ static QVariant fcnAggregateGeneric( QgsAggregateCalculator::Aggregate aggregate
     if ( !nl || nl->value().isValid() )
       parameters.filter = node->dump();
   }
-
+  qDebug() << parameters.filter;
   //optional order by node, if supported
   QString orderBy;
   if ( orderByPos >= 0 && values.count() > orderByPos )
