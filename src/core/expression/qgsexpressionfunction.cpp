@@ -550,8 +550,8 @@ static QVariant fcnAggregate( const QVariantList &values, const QgsExpressionCon
     parameters.delimiter = value.toString();
   }
 
-  //optional sixth node is order by
-  QString orderBy;
+  //optional sixth node is symbol Id
+  QString symbolId;
   if ( values.count() > 5 )
   {
     node = QgsExpressionUtils::getNode( values.at( 5 ), parent );
@@ -559,13 +559,12 @@ static QVariant fcnAggregate( const QVariantList &values, const QgsExpressionCon
     QgsExpressionNodeLiteral *nl = dynamic_cast< QgsExpressionNodeLiteral * >( node );
     if ( !nl || nl->value().isValid() )
     {
-      orderBy = node->dump();
-      parameters.orderBy << QgsFeatureRequest::OrderByClause( orderBy );
+      symbolId = node->dump();
     }
   }
 
-  //optional sixth node is symbol Id
-  QString symbolId;
+  //optional sixth node is order by
+  QString orderBy;
   if ( values.count() > 6 )
   {
     node = QgsExpressionUtils::getNode( values.at( 6 ), parent );
@@ -573,7 +572,8 @@ static QVariant fcnAggregate( const QVariantList &values, const QgsExpressionCon
     QgsExpressionNodeLiteral *nl = dynamic_cast< QgsExpressionNodeLiteral * >( node );
     if ( !nl || nl->value().isValid() )
     {
-      symbolId = node->dump();
+      orderBy = node->dump();
+      parameters.orderBy << QgsFeatureRequest::OrderByClause( orderBy );
     }
   }
 
@@ -589,11 +589,11 @@ static QVariant fcnAggregate( const QVariantList &values, const QgsExpressionCon
          || subExp.referencedVariables().contains( QString() ) )
     {
       cacheKey = QStringLiteral( "aggfcn:%1:%2:%3:%4:%5%6:%7:%8" ).arg( vl->id(), QString::number( aggregate ), subExpression, parameters.filter,
-                 QString::number( context->feature().id() ), QString( qHash( context->feature() ) ), orderBy, symbolId );
+                 QString::number( context->feature().id() ), QString( qHash( context->feature() ) ), symbolId, orderBy );
     }
     else
     {
-      cacheKey = QStringLiteral( "aggfcn:%1:%2:%3:%4:%5:%6" ).arg( vl->id(), QString::number( aggregate ), subExpression, parameters.filter, orderBy, symbolId );
+      cacheKey = QStringLiteral( "aggfcn:%1:%2:%3:%4:%5:%6" ).arg( vl->id(), QString::number( aggregate ), subExpression, parameters.filter, symbolId, orderBy );
     }
 
     if ( context && context->hasCachedValue( cacheKey ) )
