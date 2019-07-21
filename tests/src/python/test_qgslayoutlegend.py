@@ -460,8 +460,8 @@ class TestQgsLayoutItemLegend(unittest.TestCase, LayoutItemTestCase):
         label3 = legendnodes[2].evaluateLabel()
         count.waitForFinished()
         self.assertEqual(label1, '0')
-        #self.assertEqual(label2, '5')
-        self.assertEqual(label3, '12')
+        self.assertEqual(label2, '5')
+        self.assertEqual(label3, '34')
 
         legendlayer.setLabelExpression("Concat(@symbol_label, count(\"Pilots\", symbol_id:=@symbol_id ))")
 
