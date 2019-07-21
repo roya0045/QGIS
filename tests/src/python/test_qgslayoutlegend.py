@@ -461,17 +461,17 @@ class TestQgsLayoutItemLegend(unittest.TestCase, LayoutItemTestCase):
         count.waitForFinished()
         self.assertEqual(label1, '0')
         #self.assertEqual(label2, '5')
-        #self.assertEqual(label3, '12')
+        self.assertEqual(label3, '12')
 
-        legendlayer.setLabelExpression("Concat(@symbol_label, @symbol_id)")
+        legendlayer.setLabelExpression("Concat(@symbol_label, count(\"Pilots\", symbol_id:=@symbol_id ))")
 
         label1 = legendnodes[0].evaluateLabel()
         label2 = legendnodes[1].evaluateLabel()
         label3 = legendnodes[2].evaluateLabel()
 
         self.assertEqual(label1, ' @symbol_id 0')
-        #self.assertEqual(label2, '@symbol_count 1')
-        #self.assertEqual(label3, 'sum("Pilots") 2')
+        self.assertEqual(label2, '@symbol_count 1')
+        self.assertEqual(label3, 'sum("Pilots") 2')
 
         QgsProject.instance().clear()
 
@@ -517,7 +517,7 @@ class TestQgsLayoutItemLegend(unittest.TestCase, LayoutItemTestCase):
         layer_tree_layer.setCustomProperty("legend/title-label", 'bbbb [% 1+2 %] xx [% @layout_name %] [% @layer_name %]')
         QgsMapLayerLegendUtils.setLegendNodeUserLabel(layer_tree_layer, 0, 'xxxx')
         legend.model().refreshLayerLegend(layer_tree_layer)
-        layer_tree_layer.setLabelExpression('Concat(@symbol_id, @symbol_label, count("Class", symbol_id:=@symbol_id))')
+        layer_tree_layer.setLabelExpression('Concat(@symbol_id, @symbol_label, count("Class"))')
         legend.model().layerLegendNodes(layer_tree_layer)[0].setUserLabel(' sym 1')
         legend.model().layerLegendNodes(layer_tree_layer)[1].setUserLabel('[%@symbol_count %]')
         legend.model().layerLegendNodes(layer_tree_layer)[2].setUserLabel('[% count("Class") %]')
