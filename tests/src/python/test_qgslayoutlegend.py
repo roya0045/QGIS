@@ -469,9 +469,9 @@ class TestQgsLayoutItemLegend(unittest.TestCase, LayoutItemTestCase):
         label2 = legendnodes[1].evaluateLabel()
         label3 = legendnodes[2].evaluateLabel()
 
-        self.assertEqual(label1, ' @symbol_id 1')
-        self.assertEqual(label2, '@symbol_count 1')
-        self.assertEqual(label3, 'sum("Pilots") 2')
+        self.assertEqual(label1, ' @symbol_id 0')
+        self.assertEqual(label2, '@symbol_count 0')
+        self.assertEqual(label3, 'sum("Pilots") 0')
 
         QgsProject.instance().clear()
 
