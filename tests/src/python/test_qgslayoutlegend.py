@@ -454,7 +454,7 @@ class TestQgsLayoutItemLegend(unittest.TestCase, LayoutItemTestCase):
         legendnodes = legend.model().layerLegendNodes(legendlayer)
         legendnodes[0].setUserLabel('[% @symbol_id %]')
         legendnodes[1].setUserLabel('[% @symbol_count %]')
-        legendnodes[2].setUserLabel('[% sum("Pilots") %]')
+        legendnodes[2].setUserLabel('[% sum("Pilots", symbol_id:=@symbol_id) %]')
         label1 = legendnodes[0].evaluateLabel()
         label2 = legendnodes[1].evaluateLabel()
         label3 = legendnodes[2].evaluateLabel()
@@ -463,15 +463,15 @@ class TestQgsLayoutItemLegend(unittest.TestCase, LayoutItemTestCase):
         #self.assertEqual(label2, '5')
         self.assertEqual(label3, '34')
 
-        legendlayer.setLabelExpression("Concat(@symbol_label, count(\"Pilots\", symbol_id:=@symbol_id ))")
+        legendlayer.setLabelExpression("Concat(@symbol_label, @symbol_id )")
 
         label1 = legendnodes[0].evaluateLabel()
         label2 = legendnodes[1].evaluateLabel()
         label3 = legendnodes[2].evaluateLabel()
 
         self.assertEqual(label1, ' @symbol_id 0')
-        self.assertEqual(label2, '@symbol_count 0')
-        self.assertEqual(label3, 'sum("Pilots") 0')
+        self.assertEqual(label2, '@symbol_count 1')
+        self.assertEqual(label3, 'sum("Pilots") 2')
 
         QgsProject.instance().clear()
 
