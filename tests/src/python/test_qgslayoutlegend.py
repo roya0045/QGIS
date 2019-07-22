@@ -450,6 +450,7 @@ class TestQgsLayoutItemLegend(unittest.TestCase, LayoutItemTestCase):
         actask = TM.activeTasks()
         print(TM.tasks(), actask)
         count = actask[0]
+        count.waitForFinished()
         legend.model().refreshLayerLegend(legendlayer)
         legendnodes = legend.model().layerLegendNodes(legendlayer)
         legendnodes[0].setUserLabel('[% @symbol_id %]')
@@ -458,7 +459,8 @@ class TestQgsLayoutItemLegend(unittest.TestCase, LayoutItemTestCase):
         label1 = legendnodes[0].evaluateLabel()
         label2 = legendnodes[1].evaluateLabel()
         label3 = legendnodes[2].evaluateLabel()
-        count.waitForFinished()
+        label4 = legendnodes[3].evaluateLabel()
+
         print(label1, label2, label3, label4)
         self.assertEqual(label1, '0')
         self.assertEqual(label2, '5')
