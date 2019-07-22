@@ -459,9 +459,8 @@ class TestQgsLayoutItemLegend(unittest.TestCase, LayoutItemTestCase):
         label1 = legendnodes[0].evaluateLabel()
         label2 = legendnodes[1].evaluateLabel()
         label3 = legendnodes[2].evaluateLabel()
-        label4 = legendnodes[3].evaluateLabel()
 
-        print(label1, label2, label3, label4)
+        print(label1, label2, label3 )
         self.assertEqual(label1, '0')
         self.assertEqual(label2, '5')
         self.assertEqual(label3, '12')
@@ -471,12 +470,10 @@ class TestQgsLayoutItemLegend(unittest.TestCase, LayoutItemTestCase):
         label1 = legendnodes[0].evaluateLabel()
         label2 = legendnodes[1].evaluateLabel()
         label3 = legendnodes[2].evaluateLabel()
-        label4 = legendnodes[3].evaluateLabel()
-        print(label1, label2, label3, label4)
+        print(label1, label2, label3 )
         self.assertEqual(label1, ' @symbol_id 0 7')
         self.assertEqual(label2, '@symbol_count 1 12')
         self.assertEqual(label3, 'sum("Pilots") 2 13')
-        self.assertEqual(label3, 'sum("Pilots") 3 13')
 
         QgsProject.instance().clear()
 
