@@ -446,11 +446,6 @@ class TestQgsLayoutItemLegend(unittest.TestCase, LayoutItemTestCase):
 
         counterTask = point_layer.countSymbolFeatures()
         counterTask.waitForFinished()
-        TM = QgsApplication.taskManager()
-        actask = TM.activeTasks()
-        print(TM.tasks(), actask)
-        count = actask[0]
-        count.waitForFinished()
         legend.model().refreshLayerLegend(legendlayer)
         legendnodes = legend.model().layerLegendNodes(legendlayer)
         legendnodes[0].setUserLabel('[% @symbol_id %]')
