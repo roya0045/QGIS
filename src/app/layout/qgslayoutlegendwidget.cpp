@@ -1027,9 +1027,9 @@ void QgsLayoutLegendWidget::mLayerExpressionButton_clicked()
   QgsExpressionContext legendContext = mLegend->createExpressionContext();
   legendContext.appendScope( vl->createExpressionContextScope() );
   QgsExpressionContextScope *scope = new QgsExpressionContextScope( tr( "Symbol scope" ) );
-  scope->addVariable( QgsExpressionContextScope::StaticVariable( QStringLiteral( "symbol_label" ), QString("label placeholder"), true ) );
-  scope->addVariable( QgsExpressionContextScope::StaticVariable( QStringLiteral( "symbol_id" ), QString("0"), true ) );
-  scope->addVariable( QgsExpressionContextScope::StaticVariable( QStringLiteral( "symbol_count" ), QString("N/A"), true ) );
+  scope->addVariable( QgsExpressionContextScope::StaticVariable( QStringLiteral( "symbol_label" ), QString( "label placeholder" ), true ) );
+  scope->addVariable( QgsExpressionContextScope::StaticVariable( QStringLiteral( "symbol_id" ), QString( "0" ), true ) );
+  scope->addVariable( QgsExpressionContextScope::StaticVariable( QStringLiteral( "symbol_count" ), QString( "N/A" ), true ) );
   legendContext.appendScope( scope );
   QgsExpressionBuilderDialog expressiondialog( vl, currentExpression, nullptr, "generic", legendContext );
   if ( expressiondialog.exec() )
