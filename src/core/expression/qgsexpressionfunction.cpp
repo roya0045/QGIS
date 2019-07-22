@@ -549,7 +549,7 @@ static QVariant fcnAggregate( const QVariantList &values, const QgsExpressionCon
     QgsExpressionNodeLiteral *nl = dynamic_cast< QgsExpressionNodeLiteral * >( node );
     if ( !nl || nl->value().isValid() )
     {
-      symbolId = node->eval( parent, context );
+      symbolId = node->eval( parent, context ).toString();
     }
   }
 
@@ -690,7 +690,7 @@ static QVariant fcnAggregateRelation( const QVariantList &values, const QgsExpre
     QgsExpressionNodeLiteral *nl = dynamic_cast< QgsExpressionNodeLiteral * >( node );
     if ( !nl || nl->value().isValid() )
     {
-      symbolId = node->eval( parent, context );
+      symbolId = node->eval( parent, context ).toString();
     }
   }
 
@@ -806,7 +806,7 @@ static QVariant fcnAggregateGeneric( QgsAggregateCalculator::Aggregate aggregate
     QgsExpressionNodeLiteral *nl = dynamic_cast< QgsExpressionNodeLiteral * >( node );
     if ( !nl || nl->value().isValid() )
     {
-      symbolId = node->eval( parent, context );
+      symbolId = node->eval( parent, context ).toString();
     }
   }
 
