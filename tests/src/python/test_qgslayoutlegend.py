@@ -459,7 +459,7 @@ class TestQgsLayoutItemLegend(unittest.TestCase, LayoutItemTestCase):
         self.assertEqual(label1, '0')
         self.assertEqual(label2, '-1')
         self.assertEqual(label3, '8')
-        print('-----')
+
         legendlayer.setLabelExpression("Concat(@symbol_label, @symbol_id, sum(\"Pilots\", symbol_id:=@symbol_id) )")
 
         label1 = legendnodes[0].evaluateLabel()
