@@ -396,56 +396,6 @@ class TestQgsLayoutItemLegend(unittest.TestCase, LayoutItemTestCase):
 
         counterTask = point_layer.countSymbolFeatures()
         counterTask.waitForFinished()
-        TM = QgsApplication.taskManager()
-        actask = TM.activeTasks()
-        print(TM.tasks(), actask)
-        count = actask[0]
-        legend.model().refreshLayerLegend(legendlayer)
-        legendnodes = legend.model().layerLegendNodes(legendlayer)
-        legendnodes[0].setUserLabel('[% @symbol_id %]')
-        legendnodes[1].setUserLabel('[% @symbol_count %]')
-        legendnodes[2].setUserLabel('[% sum("Pilots") %]')
-        label1 = legendnodes[0].evaluateLabel()
-        label2 = legendnodes[1].evaluateLabel()
-        label3 = legendnodes[2].evaluateLabel()
-        count.waitForFinished()
-        self.assertEqual(label1, '0')
-        #self.assertEqual(label2, '5')
-        #self.assertEqual(label3, '12')
-
-        legendlayer.setLabelExpression("Concat(@symbol_label, @symbol_id)")
-
-        label1 = legendnodes[0].evaluateLabel()
-        label2 = legendnodes[1].evaluateLabel()
-        label3 = legendnodes[2].evaluateLabel()
-
-        self.assertEqual(label1, ' @symbol_id 0')
-        #self.assertEqual(label2, '@symbol_count 1')
-        #self.assertEqual(label3, 'sum("Pilots") 2')
-
-        QgsProject.instance().clear()
-
-    def testSymbolExpressions(self):
-        "Test expressions embedded in legend node text"
-        QgsProject.instance().clear()
-        point_path = os.path.join(TEST_DATA_DIR, 'points.shp')
-        point_layer = QgsVectorLayer(point_path, 'points', 'ogr')
-
-        layout = QgsPrintLayout(QgsProject.instance())
-        layout.initializeDefaults()
-
-        map = QgsLayoutItemMap(layout)
-        map.setLayers([point_layer])
-        layout.addLayoutItem(map)
-        map.setExtent(point_layer.extent())
-
-        legend = QgsLayoutItemLegend(layout)
-
-        layer = QgsProject.instance().addMapLayer(point_layer)
-        legendlayer = legend.model().rootGroup().addLayer(point_layer)
-
-        counterTask = point_layer.countSymbolFeatures()
-        counterTask.waitForFinished()
         legend.model().refreshLayerLegend(legendlayer)
         legendnodes = legend.model().layerLegendNodes(legendlayer)
         legendnodes[0].setUserLabel('[% @symbol_id %]')
@@ -466,8 +416,8 @@ class TestQgsLayoutItemLegend(unittest.TestCase, LayoutItemTestCase):
         label3 = legendnodes[2].evaluateLabel()
 
         self.assertEqual(label1, ' @symbol_id 07')
-        self.assertEqual(label2, '@symbol_count 115')
-        self.assertEqual(label3, 'sum("Pilots") 212')
+        self.assertEqual(label2, ' @symbol_count 115')
+        self.assertEqual(label3, ' count("Pilots", symbol_id:=@symbol_id) 212')
 
         QgsProject.instance().clear()
 
@@ -509,11 +459,11 @@ class TestQgsLayoutItemLegend(unittest.TestCase, LayoutItemTestCase):
         group = legend.model().rootGroup().addGroup("Group [% 1 + 5 %] [% @layout_name %]")
         layer_tree_layer = group.addLayer(point_layer)
         counterTask = point_layer.countSymbolFeatures()
-        counterTask.waitForFinished() # does this even work?
+        counterTask.waitForFinished()
         layer_tree_layer.setCustomProperty("legend/title-label", 'bbbb [% 1+2 %] xx [% @layout_name %] [% @layer_name %]')
         QgsMapLayerLegendUtils.setLegendNodeUserLabel(layer_tree_layer, 0, 'xxxx')
         legend.model().refreshLayerLegend(layer_tree_layer)
-        layer_tree_layer.setLabelExpression('Concat(@symbol_id, @symbol_label, count("Class"))')
+        layer_tree_layer.setLabelExpression('Concat(@symbol_id, @symbol_label, sum(\"Pilots\", symbol_id:=@symbol_id) )')
         legend.model().layerLegendNodes(layer_tree_layer)[0].setUserLabel(' sym 1')
         legend.model().layerLegendNodes(layer_tree_layer)[1].setUserLabel('[%@symbol_count %]')
         legend.model().layerLegendNodes(layer_tree_layer)[2].setUserLabel('[% count("Class") %]')
