@@ -584,7 +584,7 @@ void QgsHandleBadLayers::autoFind()
       continue;
     }
 
-    datasource = checkBasepath( layerId, basepath, fileName ).replace( fileName, longName );
+    datasource = QDir::toNativeSeparatos( checkBasepath( layerId, basepath, fileName ).replace( fileName, longName ) );
 
     bool dataSourceChanged { false };
 
@@ -603,7 +603,7 @@ void QgsHandleBadLayers::autoFind()
 
     if ( !( dataSourceChanged ) )
     {
-      datasource = findFile( fileName, basepath ).replace( fileName, longName );
+      datasource = QDir::toNativeSeparatos( findFile( fileName, basepath ).replace( fileName, longName ) );
       if ( QgsProject::instance()->mapLayer( layerId ) && !( datasource.isEmpty() ) )
       {
         QgsDataProvider::ProviderOptions options;
@@ -617,7 +617,7 @@ void QgsHandleBadLayers::autoFind()
       if ( dataSourceChanged )
       {
         const QString altBasepath = QFileInfo( datasource ).absoluteDir().path();
-        checkBasepath( layerId, altBasepath, fileName ).replace( fileName, longName );
+        checkBasepath( layerId, altBasepath, fileName );
       }
     }
 
