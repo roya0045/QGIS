@@ -406,7 +406,7 @@ void QgsHandleBadLayers::apply()
     if ( item->data( Qt::UserRole + 2 ).isValid() )
     {
       if ( item->data( Qt::UserRole + 2 ).toBool() )
-        datasource = checkBasepath( layerId, datasource, fileName ).replace( fileName, longName );
+        datasource = QDir::toNativeSeparatos( checkBasepath( layerId, datasource, fileName ).replace( fileName, longName ) );
     }
 
     bool dataSourceChanged { false };
