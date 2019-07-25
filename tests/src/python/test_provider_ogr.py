@@ -23,7 +23,8 @@ from qgis.core import (NULL,
                        QgsRectangle,
                        QgsProviderRegistry,
                        QgsFeature, QgsFeatureRequest, QgsField, QgsSettings, QgsDataProvider,
-                       QgsVectorDataProvider, QgsVectorLayer, QgsWkbTypes, QgsNetworkAccessManager)
+                       QgsVectorDataProvider, QgsVectorLayer, QgsWkbTypes, QgsNetworkAccessManager,
+                       QgsAggregateCalculator)
 from qgis.testing import start_app, unittest
 
 from utilities import unitTestDataPath
@@ -585,6 +586,32 @@ class PyQgsOGRProvider(unittest.TestCase):
         self.assertEqual(vl.fields().at(0).type(), QVariant.Bool)
         self.assertEqual([f[0] for f in vl.getFeatures()], [True, False, NULL])
         self.assertEqual([f[0].__class__.__name__ for f in vl.getFeatures()], ['bool', 'bool', 'QVariant'])
+
+    def test_iterator(self):
+        datasource = os.path.join(self.basetestpath, 'testIteration.json')
+        with open(datasource, 'wt') as f:
+            f.write("""{
+"type": "FeatureCollection",
+"features": [
+{ "type": "Feature", "properties": { "x": 1,"pk2":3 }, "geometry": { "type": "Point", "coordinates": [ 0, 0 ] } },
+{ "type": "Feature", "properties": { "x": 5,"pk2":8 }, "geometry": { "type": "Point", "coordinates": [ 1, 1 ] } } ,
+{ "type": "Feature", "properties": { "x": 4,"pk2":6 }, "geometry": { "type": "Point", "coordinates": [ 2, 2 ] } }  ] }""")
+
+        vl = QgsVectorLayer(datasource, 'test', 'ogr')
+        field = "pk2"
+        qexc = vl.createExpressionContext()
+        DefaultFR = QgsAggregateCalculator(vl)
+        StackedFR = QgsAggregateCalculator(vl)
+        DefaultFR.setFidsFilter([1, ])
+        StackedFR.setFidsFilter([1, ])
+        DefaultFR.setFilter('1')
+        StackedFR.setFilter('1')
+
+        StackedFR.stackFilters(True)
+        self.assertTrue(vl.isValid())
+        total1 = DefaultFR.calculate(QgsAggregateCalculator.Sum, field, context=qexc)
+        total2 = StackedFR.calculate(QgsAggregateCalculator.Sum, field, context=qexc)
+        self.assertNotEqual(total1, total2)
 
 
 if __name__ == '__main__':

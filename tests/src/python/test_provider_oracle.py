@@ -14,7 +14,7 @@ import qgis  # NOQA
 
 import os
 
-from qgis.core import QgsSettings, QgsVectorLayer, QgsFeatureRequest, NULL
+from qgis.core import QgsSettings, QgsVectorLayer, QgsFeatureRequest, QgsAggregateCalculator, NULL
 
 from qgis.PyQt.QtCore import QDate, QTime, QDateTime, QVariant
 from qgis.PyQt.QtSql import QSqlDatabase, QSqlQuery
@@ -243,6 +243,24 @@ class TestPyQgsOracleProvider(unittest.TestCase, ProviderTestCase):
             compareWkt(features[11].geometry().asWkt(), 'CurvePolygon(CompoundCurve ((-1 -5, 1 2),CircularString (1 2, 5 4, 7 2.20, 10 0.1, 13 4),(13 4, 17 -6),CircularString (17 -6, 5 -7, -1 -5)))', 0.00001), features[11].geometry().asWkt())
         self.assertTrue(
             compareWkt(features[12].geometry().asWkt(), 'MultiSurface (CurvePolygon (CircularString (1 3, 3 5, 4 7, 7 3, 1 3)),CurvePolygon (CircularString (11 3, 13 5, 14 7, 17 3, 11 3)))', 0.00001), features[12].geometry().asWkt())
+
+    def test_iterator(self):
+        vl = self.getSource()
+        field = "cnt"
+        qexc = vl.createExpressionContext()
+        DefaultFR = QgsAggregateCalculator(vl)
+        StackedFR = QgsAggregateCalculator(vl)
+        DefaultFR.setFidsFilter([1, ])
+        StackedFR.setFidsFilter([1, ])
+        DefaultFR.setFilter('1')
+        StackedFR.setFilter('1')
+
+        StackedFR.stackFilters(True)
+
+        total1 = DefaultFR.calculate(QgsAggregateCalculator.Sum, field, context=qexc)
+        total2 = StackedFR.calculate(QgsAggregateCalculator.Sum, field, context=qexc)
+        self.assertNotEqual(total1, total2)
+        self.assertNotEqual(total1, total2)
 
 
 if __name__ == '__main__':

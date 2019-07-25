@@ -139,30 +139,38 @@ QgsOracleFeatureIterator::QgsOracleFeatureIterator( QgsOracleFeatureSource *sour
   {
     QgsDebugMsg( QStringLiteral( "filterRect without geometry ignored" ) );
   }
-
-  switch ( mRequest.filterType() )
+  if ( !mRequest.iterateOnFids() )
   {
-    case QgsFeatureRequest::FilterFid:
+    switch ( mRequest.filterType() )
     {
-      QString fidWhereClause = QgsOracleUtils::whereClause( mRequest.filterFid(), mSource->mFields, mSource->mPrimaryKeyType, mSource->mPrimaryKeyAttrs, mSource->mShared, args );
-      whereClause = QgsOracleUtils::andWhereClauses( whereClause, fidWhereClause );
-    }
-    break;
-
-    case QgsFeatureRequest::FilterFids:
-    {
-      QString fidsWhereClause = QgsOracleUtils::whereClause( mRequest.filterFids(), mSource->mFields, mSource->mPrimaryKeyType, mSource->mPrimaryKeyAttrs, mSource->mShared, args );
-      whereClause = QgsOracleUtils::andWhereClauses( whereClause, fidsWhereClause );
-    }
-    break;
-
-    case QgsFeatureRequest::FilterNone:
+      case QgsFeatureRequest::FilterFid:
+      {
+        QString fidWhereClause = QgsOracleUtils::whereClause( mRequest.filterFid(), mSource->mFields, mSource->mPrimaryKeyType, mSource->mPrimaryKeyAttrs, mSource->mShared, args );
+        whereClause = QgsOracleUtils::andWhereClauses( whereClause, fidWhereClause );
+      }
       break;
 
-    case QgsFeatureRequest::FilterExpression:
-      //handled below
+      case QgsFeatureRequest::FilterFids:
+      {
+        QString fidsWhereClause = QgsOracleUtils::whereClause( mRequest.filterFids(), mSource->mFields, mSource->mPrimaryKeyType, mSource->mPrimaryKeyAttrs, mSource->mShared, args );
+        whereClause = QgsOracleUtils::andWhereClauses( whereClause, fidsWhereClause );
+      }
       break;
 
+      case QgsFeatureRequest::FilterNone:
+        break;
+
+      case QgsFeatureRequest::FilterExpression:
+        //handled below
+        break;
+
+    }
+  }
+
+  if ( mRequest.filterType() == QgsFeatureRequest::filterExpression ||  mRequest.iterateOnFids() )
+  {
+    QString fidsWhereClause = QgsOracleUtils::whereClause( mRequest.filterFids(), mSource->mFields, mSource->mPrimaryKeyType, mSource->mPrimaryKeyAttrs, mSource->mShared, args );
+    whereClause = QgsOracleUtils::andWhereClauses( whereClause, fidsWhereClause );
   }
 
   if ( mSource->mRequestedGeomType != QgsWkbTypes::Unknown && mSource->mRequestedGeomType != mSource->mDetectedGeomType )
@@ -191,7 +199,7 @@ QgsOracleFeatureIterator::QgsOracleFeatureIterator( QgsOracleFeatureSource *sour
   mCompileStatus = NoCompilation;
   QString fallbackStatement;
   bool useFallback = false;
-  if ( request.filterType() == QgsFeatureRequest::FilterExpression )
+  if ( request.filterType() == QgsFeatureRequest::FilterExpression || ( request.iterateOnFids() && request.filterExpression() ) )
   {
     if ( QgsSettings().value( QStringLiteral( "qgis/compileExpressions" ), true ).toBool() )
     {

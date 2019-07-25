@@ -36,7 +36,8 @@ from qgis.core import (QgsFeature,
                        QgsProject,
                        QgsWkbTypes,
                        QgsDataProvider,
-                       QgsVectorDataProvider)
+                       QgsVectorDataProvider,
+                       QgsAggregateCalculator)
 from qgis.PyQt.QtCore import QCoreApplication, QVariant
 from qgis.testing import start_app, unittest
 from qgis.utils import spatialite_connect
@@ -1341,6 +1342,29 @@ class TestPyQgsOGRProviderGpkg(unittest.TestCase):
         self.assertTrue(vl1.isValid())
         self.assertEqual(vl1.uniqueValues(0), {1, 2})
         self.assertEqual(vl1.uniqueValues(1), {'one', 'two'})
+
+    def test_iterator(self):
+        tmpfile = os.path.join(self.basetestpath, '..', 'points_gpkg.gpkg')
+        testdata_path = unitTestDataPath('provider')
+        shutil.copy(os.path.join(unitTestDataPath('provider'), '..', 'points_gpkg.gpkg'), tmpfile)
+
+        vl = QgsVectorLayer('{}|layername=points_gpkg'.format(tmpfile), 'foo', 'ogr')
+        self.assertTrue(vl.isValid())
+
+        field = "Cabin Crew"
+        qexc = vl.createExpressionContext()
+        DefaultFR = QgsAggregateCalculator(vl)
+        StackedFR = QgsAggregateCalculator(vl)
+        DefaultFR.setFidsFilter([1, ])
+        StackedFR.setFidsFilter([1, ])
+        DefaultFR.setFilter('1')
+        StackedFR.setFilter('1')
+
+        StackedFR.stackFilters(True)
+
+        total1 = DefaultFR.calculate(QgsAggregateCalculator.Sum, field, context=qexc)
+        total2 = StackedFR.calculate(QgsAggregateCalculator.Sum, field, context=qexc)
+        self.assertNotEqual(total1, total2)
 
     def testForeignKeyViolation(self):
         """Test that we can open a dataset with a foreign key violation"""

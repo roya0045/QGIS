@@ -196,8 +196,8 @@ void QgsMssqlFeatureIterator::BuildStatement( const QgsFeatureRequest &request )
     mStatement += fidfilter;
     filterAdded = true;
   }
-  else if ( request.filterType() == QgsFeatureRequest::FilterFids && !mSource->mFidColName.isEmpty()
-            && !mRequest.filterFids().isEmpty() )
+  else if ( ( request.filterType() == QgsFeatureRequest::FilterFids && !mSource->mFidColName.isEmpty()
+              && !mRequest.filterFids().isEmpty() ) || mRequest.iterateOnFids() )
   {
     QString delim;
     QString inClause = QStringLiteral( "%1 IN (" ).arg( mSource->mFidColName );
@@ -230,7 +230,7 @@ void QgsMssqlFeatureIterator::BuildStatement( const QgsFeatureRequest &request )
   //NOTE - must be last added!
   mExpressionCompiled = false;
   mCompileStatus = NoCompilation;
-  if ( request.filterType() == QgsFeatureRequest::FilterExpression )
+  if ( request.filterType() == QgsFeatureRequest::FilterExpression || ( request.iterateOnFids() && request.filterExpression() ) )
   {
     if ( QgsSettings().value( QStringLiteral( "qgis/compileExpressions" ), true ).toBool() )
     {

@@ -997,6 +997,10 @@ QgsFeatureRequest QgsWFSFeatureIterator::buildRequestCache( int genCounter )
   }
   else
   {
+    if ( mRequest.iterateOnFids() )
+    {
+      requestCache.setFilterFids( mShared->dbIdsFromQgisIds( mRequest.filterFids() ) );
+    }
     if ( mRequest.filterType() == QgsFeatureRequest::FilterExpression )
     {
       // Transfer and transform context
@@ -1338,7 +1342,7 @@ bool QgsWFSFeatureIterator::fetchFeature( QgsFeature &f )
             continue;
           }
         }
-        else if ( mRequest.filterType() == QgsFeatureRequest::FilterFids )
+        else if ( mRequest.filterType() == QgsFeatureRequest::FilterFids || mRequest.iterateOnFids() )
         {
           if ( !mRequest.filterFids().contains( feat.id() ) )
           {

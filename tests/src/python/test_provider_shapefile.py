@@ -19,7 +19,7 @@ import osgeo.gdal
 import osgeo.ogr
 import sys
 
-from qgis.core import QgsApplication, QgsSettings, QgsFeature, QgsField, QgsGeometry, QgsVectorLayer, QgsFeatureRequest, QgsVectorDataProvider, QgsWkbTypes
+from qgis.core import QgsSettings, QgsFeature, QgsField, QgsGeometry, QgsVectorLayer, QgsFeatureRequest, QgsVectorDataProvider, QgsWkbTypes, QgsAggregateCalculator
 from qgis.PyQt.QtCore import QVariant
 from qgis.testing import start_app, unittest
 from utilities import unitTestDataPath
@@ -712,6 +712,23 @@ class TestPyQgsShapefileProvider(unittest.TestCase, ProviderTestCase):
         self.assertEqual(f.geometry().wkbType(), QgsWkbTypes.MultiPolygonZ)
         self.assertEqual(f.geometry().constGet().asWkt(),
                          'MultiPolygonZ (((0 0 0, 0 1 0, 1 1 0, 0 0 0)),((0 0 0, 1 1 0, 1 0 0, 0 0 0)),((0 0 0, 0 -1 0, 1 -1 0, 0 0 0)),((0 0 0, 1 -1 0, 1 0 0, 0 0 0)))')
+
+    def test_iterator(self):
+        vl = self.vl
+        field = "pk"
+        qexc = vl.createExpressionContext()
+        DefaultFR = QgsAggregateCalculator(vl)
+        StackedFR = QgsAggregateCalculator(vl)
+        DefaultFR.setFidsFilter([1, ])
+        StackedFR.setFidsFilter([1, ])
+        DefaultFR.setFilter('1')
+        StackedFR.setFilter('1')
+
+        StackedFR.stackFilters(True)
+        total1 = DefaultFR.calculate(QgsAggregateCalculator.Sum, field, context=qexc)
+        total2 = StackedFR.calculate(QgsAggregateCalculator.Sum, field, context=qexc)
+        self.assertNotEqual(total1, total2)
+        self.assertNotEqual(total1, total2)
 
     def testShzSupport(self):
         ''' Test support for single layer compressed shapefiles (.shz) '''
