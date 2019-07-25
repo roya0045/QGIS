@@ -63,18 +63,38 @@ class APP_EXPORT QgsHandleBadLayers
     void editAuthCfg();
     void apply();
     void accept() override;
+    void autoFind();
 
   private:
     QPushButton *mBrowseButton = nullptr;
     QPushButton *mApplyButton = nullptr;
+    QPushButton *mAutoFindButton = nullptr;
     const QList<QDomNode> &mLayers;
     QList<int> mRows;
     QString mVectorFileFilter;
     QString mRasterFileFilter;
-    QHash <QString, QList<QString> > mFileBase;
+    // Registry of the original paths associated with a file as a backup
+    QHash <QString, QString > mOriginalFileBase;
+    // Keeps a registry of valid alternatives for a basepath
+    QHash <QString, QList<QString> > mAlternativeBasepaths;
 
     QString filename( int row );
     void setFilename( int row, const QString &filename );
+
+    /**
+     * Checks if \a newPath for the provided \a layerId is valid.
+     * Otherwise all other know viable alternative for the original basepath will be tested.
+     */
+    QString checkBasepath( const QString &layerId, const QString &newPath, const QString &fileName );
+
+    /**
+     * Will check folder in an outward spiral up to 4 levels to check if the files exists
+     * found files will be highlighted in green of approval, otherwise in red.
+     * maxDepth limit the number of time the search can move up
+     * driveMargin limits how close the search can get to the drive level
+     */
+    QString findFile( const QString &fileName, const QString &basepath, int maxDepth = 4, int driveMargin = 3 );
+
 };
 
 #endif
