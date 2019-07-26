@@ -27,7 +27,7 @@
 #include <QFont>
 #include <QMutex>
 
-#include "qgis.h"
+#include "qgis_sip.h"
 #include "qgsmaplayer.h"
 #include "qgsfeature.h"
 #include "qgsfeaturerequest.h"
@@ -41,7 +41,6 @@
 #include "qgsfeatureiterator.h"
 #include "qgsexpressioncontextgenerator.h"
 #include "qgsexpressioncontextscopegenerator.h"
-#include "qgsexpressioncontext.h"
 
 class QPainter;
 class QImage;
@@ -74,7 +73,6 @@ class QgsFeedback;
 class QgsAuxiliaryStorage;
 class QgsAuxiliaryLayer;
 class QgsGeometryOptions;
-class QgsStyleEntityVisitorInterface;
 
 typedef QList<int> QgsAttributeList;
 typedef QSet<int> QgsAttributeIds;
@@ -1928,25 +1926,6 @@ class CORE_EXPORT QgsVectorLayer : public QgsMapLayer, public QgsExpressionConte
     /**
      * Calculates an aggregated value from the layer's features.
      * Currently any filtering expression provided will override filters in the FeatureRequest.
-     * \param calculation aggregate to calculate
-     * \param fieldOrExpression source field or expression to use as basis for aggregated values.
-     * \param parameters parameters controlling aggregate calculation
-     * \param context expression context for expressions and filters
-     * \param ok if specified, will be set to TRUE if aggregate calculation was successful
-     * \param symbolId Id of the symbol to use, otherwise uses all features
-     * \returns calculated aggregate value
-     * \since QGIS 2.16
-     */
-    QVariant aggregate( QgsAggregateCalculator::Aggregate calculation,
-                        const QString &fieldOrExpression,
-                        const QgsAggregateCalculator::AggregateParameters &parameters,
-                        QgsExpressionContext *context,
-                        bool *ok,
-                        QString &symbolId ) const;
-
-    /**
-     * Calculates an aggregated value from the layer's features.
-     * Currently any filtering expression provided will override filters in the FeatureRequest.
      * \param aggregate aggregate to calculate
      * \param fieldOrExpression source field or expression to use as basis for aggregated values.
      * \param parameters parameters controlling aggregate calculation
@@ -2216,8 +2195,6 @@ class CORE_EXPORT QgsVectorLayer : public QgsMapLayer, public QgsExpressionConte
      */
     virtual void setTransformContext( const QgsCoordinateTransformContext &transformContext ) override;
 
-    bool accept( QgsStyleEntityVisitorInterface *visitor ) const override;
-
   signals:
 
     /**
@@ -2476,6 +2453,8 @@ class CORE_EXPORT QgsVectorLayer : public QgsMapLayer, public QgsExpressionConte
 
   private slots:
     void invalidateSymbolCountedFlag();
+    void onFeatureCounterCompleted();
+    void onFeatureCounterTerminated();
     void onJoinedFieldsChanged();
     void onFeatureDeleted( QgsFeatureId fid );
     void onRelationsLoaded();
@@ -2620,6 +2599,10 @@ class CORE_EXPORT QgsVectorLayer : public QgsMapLayer, public QgsExpressionConte
 
     // Features in renderer classes counted
     bool mSymbolFeatureCounted = false;
+
+    // Feature counts for each renderer legend key
+    QHash<QString, long> mSymbolFeatureCountMap;
+    QHash<QString, QgsFeatureIds> mSymbolFeatureFidMap;
 
     //! True while an undo command is active
     bool mEditCommandActive = false;

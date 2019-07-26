@@ -697,7 +697,7 @@ long QgsVectorLayer::featureCount( const QString &legendKey ) const
   if ( !mSymbolFeatureCounted )
     return -1;
 
-  return mFeatureCounter->featureCount( legendKey );
+  return mSymbolFeatureCountMap.value( legendKey, -1 );
 }
 
 
@@ -706,6 +706,9 @@ QgsVectorLayerFeatureCounter *QgsVectorLayer::countSymbolFeatures()
 {
   if ( mSymbolFeatureCounted || mFeatureCounter )
     return mFeatureCounter;
+
+  mSymbolFeatureCountMap.clear();
+  mSymbolFeatureFidMap.clear();
 
   if ( !mValid )
   {
@@ -726,8 +729,8 @@ QgsVectorLayerFeatureCounter *QgsVectorLayer::countSymbolFeatures()
   if ( !mFeatureCounter )
   {
     mFeatureCounter = new QgsVectorLayerFeatureCounter( this );
-    connect( mFeatureCounter, &QgsTask::taskTerminated, this, &QgsVectorLayer::onSymbolsCounted );
-
+    connect( mFeatureCounter, &QgsTask::taskCompleted, this, &QgsVectorLayer::onFeatureCounterCompleted );
+    connect( mFeatureCounter, &QgsTask::taskTerminated, this, &QgsVectorLayer::onFeatureCounterTerminated );
     QgsApplication::taskManager()->addTask( mFeatureCounter );
   }
 
@@ -3264,7 +3267,8 @@ void QgsVectorLayer::setRenderer( QgsFeatureRenderer *r )
     delete mRenderer;
     mRenderer = r;
     mSymbolFeatureCounted = false;
-    mFeatureCounter = nullptr;
+    mSymbolFeatureCountMap.clear();
+    mSymbolFeatureFidMap.clear()
 
     emit rendererChanged();
     emit styleChanged();
@@ -3948,7 +3952,7 @@ QVariant QgsVectorLayer::aggregate( QgsAggregateCalculator::Aggregate calculatio
 {
   if ( ! symbolId.isEmpty() && mFeatureCounter )
   {
-    QgsFeatureIds ids = mFeatureCounter->featureIds( symbolId );
+    QgsFeatureIds ids = mSymbolFeatureFidMap.value( symbolId, QgsFeatureIds() );
     return aggregate( calculation, fieldOrExpression, parameters, context, ok, &ids );
   }
   return aggregate( calculation, fieldOrExpression, parameters, context, ok );
@@ -4490,6 +4494,17 @@ void QgsVectorLayer::invalidateSymbolCountedFlag()
   mSymbolFeatureCounted = false;
 }
 
+void QgsVectorLayer::onFeatureCounterCompleted()	
+{	
+  onSymbolsCounted();	
+  mFeatureCounter = nullptr;	
+}	
+
+ void QgsVectorLayer::onFeatureCounterTerminated()	
+{	
+  mFeatureCounter = nullptr;	
+}
+
 void QgsVectorLayer::onJoinedFieldsChanged()
 {
   // some of the fields of joined layers have changed -> we need to update this layer's fields too
@@ -4516,6 +4531,8 @@ void QgsVectorLayer::onSymbolsCounted()
   if ( mFeatureCounter )
   {
     mSymbolFeatureCounted = true;
+    mSymbolFeatureCountMap = mFeatureCounter->symbolFeatureCountMap();
+    mSymbolFeatureFidMap = mFeatureCounter->symbolFeatureIdMap();
     emit symbolFeatureCountMapChanged();
   }
 }
