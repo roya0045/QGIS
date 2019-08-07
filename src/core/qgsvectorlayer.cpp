@@ -3952,7 +3952,7 @@ QVariant QgsVectorLayer::aggregate( QgsAggregateCalculator::Aggregate calculatio
 {
   if ( ! symbolId.isEmpty() && mFeatureCounter )
   {
-    QgsFeatureIds ids = mSymbolFeatureFidMap.value( symbolId, QgsFeatureIds() );
+    QgsFeatureIds ids = mSymbolFeatureIdMap.value( symbolId, QgsFeatureIds() );
     return aggregate( calculation, fieldOrExpression, parameters, context, ok, &ids );
   }
   return aggregate( calculation, fieldOrExpression, parameters, context, ok );
@@ -4494,15 +4494,15 @@ void QgsVectorLayer::invalidateSymbolCountedFlag()
   mSymbolFeatureCounted = false;
 }
 
-void QgsVectorLayer::onFeatureCounterCompleted()	
-{	
-  onSymbolsCounted();	
-  mFeatureCounter = nullptr;	
-}	
+void QgsVectorLayer::onFeatureCounterCompleted()
+{
+  onSymbolsCounted();
+  mFeatureCounter = nullptr;
+}
 
- void QgsVectorLayer::onFeatureCounterTerminated()	
-{	
-  mFeatureCounter = nullptr;	
+ void QgsVectorLayer::onFeatureCounterTerminated()
+{
+  mFeatureCounter = nullptr;
 }
 
 void QgsVectorLayer::onJoinedFieldsChanged()
