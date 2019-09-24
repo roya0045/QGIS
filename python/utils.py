@@ -677,6 +677,11 @@ using the "mod_spatialite" extension (python3)"""
             break
     if not found:
         raise RuntimeError("Cannot find any suitable spatialite module")
+    if any( ['.gpkg' in arg for arg in args ] ):
+        try:
+            cur.execute("SELECT EnableGpkgAmphibiousMode()")
+        except sqlite3.OperationalError:
+            print("Could not enable geopackage amphibious mode")
     cur.close()
     con.enable_load_extension(False)
     con.create_function("regexp", 2, fcnRegexp)
