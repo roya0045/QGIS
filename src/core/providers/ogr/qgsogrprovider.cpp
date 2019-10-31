@@ -4418,6 +4418,9 @@ void QgsOgrProvider::open( OpenMode mode )
 
     QgsDebugMsg( "OGR opened using Driver " + mGDALDriverName );
 
+    if ( mGDALDriverName == "GPKG" )
+      QgsGeoPackageProviderConnection::enableAmphibiousMode( mFilePath.split( '|' ).at( 0 ) );
+
     mOgrLayer = mOgrOrigLayer.get();
 
     // check that the initial encoding setting is fit for this layer

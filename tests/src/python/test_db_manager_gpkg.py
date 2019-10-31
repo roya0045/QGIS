@@ -444,6 +444,32 @@ class TestPyQgsDBManagerGpkg(unittest.TestCase):
 
         connection.remove()
 
+    def testAmphibiousMode(self,):
+        connectionName = 'geopack1'
+        plugin = createDbPlugin('gpkg')
+        uri = QgsDataSourceUri()
+        test_gpkg = os.path.join(self.basetestpath, 'test_amphibiousGpkg.gpkg')
+        ds = ogr.GetDriverByName('GPKG').CreateDataSource(test_gpkg)
+        lyr = ds.CreateLayer('testLayer', geom_type=ogr.wkbPolygon,)
+        f = ogr.Feature(lyr.GetLayerDefn())
+        f.SetGeometry(ogr.CreateGeometryFromWkt('POLYGON ((0 0,0 1,1 1,2 2,3 4,1 0,0 0))'))
+        lyr.CreateFeature(f)
+        f = ogr.Feature(lyr.GetLayerDefn())
+        f.SetGeometry(ogr.CreateGeometryFromWkt('POLYGON ((0 0,-1 -2, -4 -5,2 2,0 0))'))
+        lyr.CreateFeature(f)
+        ds = None
+        f = None
+
+        uri.setDatabase(test_gpkg)
+        plugin.addConnection(connectionName, uri)
+        connection = createDbPlugin('gpkg', connectionName)
+        connection.connect()
+        db = connection.database()
+        res = db.connector._execute(None, "SELECT St_area({}) from testLayer".format(db.tables()[0].fields()[1].name))
+        results = [row for row in res]
+        self.assertTrue(results == [(1.5,), (0.5,)])
+        connection.remove()
+
 
 if __name__ == '__main__':
     unittest.main()
