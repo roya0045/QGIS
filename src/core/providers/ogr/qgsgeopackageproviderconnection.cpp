@@ -269,6 +269,7 @@ void QgsGeoPackageProviderConnection::enableAmphibiousMode( const QString &uri )
 {
   if ( uri.isEmpty() )
     return;
+  qDebug() << uri.toUtf8();
   gdal::ogr_datasource_unique_ptr hDS( GDALOpenEx( uri.toUtf8().constData(), GDAL_OF_VECTOR | GDAL_OF_UPDATE, nullptr, nullptr, nullptr ) );
   if ( hDS )
   {
