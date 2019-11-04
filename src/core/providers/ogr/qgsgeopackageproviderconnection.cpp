@@ -273,7 +273,9 @@ void QgsGeoPackageProviderConnection::enableAmphibiousMode( const QString &uri )
   gdal::ogr_datasource_unique_ptr hDS( GDALOpenEx( uri.toUtf8().constData(), GDAL_OF_VECTOR | GDAL_OF_UPDATE, nullptr, nullptr, nullptr ) );
   if ( hDS )
   {
-    GDALDatasetExecuteSQL( hDS.get(), QStringLiteral( "SELECT EnableGpkgAmphibiousMode()" ).toUtf8().constData(), nullptr, nullptr );
+    OGRLayerH ogrLayer( GDALDatasetExecuteSQL( hDS.get(), QStringLiteral( "SELECT EnableGpkgAmphibiousMode()" ).toUtf8().constData(), nullptr, nullptr ) );
+    if ( ogrLayer )
+      GDALDatasetReleaseResultSet( hDS.get(), ogrLayer );
     QString errCause = CPLGetLastErrorMsg();
     if ( ! errCause.isEmpty() )
       QgsMessageLog::logMessage( QObject::tr( "Could not enable Amphibious Mode. Error: %1" ).arg( errCause ), QStringLiteral( "OGR" ), Qgis::Info );
