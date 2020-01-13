@@ -24,6 +24,8 @@ from qgis.core import (
     QgsFeature,
     QgsGeometry,
     QgsWkbTypes
+    QgsFeature
+    QgsAggregateCalculator
 )
 
 from qgis.PyQt.QtCore import QDate, QTime, QDateTime, QVariant
@@ -625,6 +627,23 @@ class TestPyQgsOracleProvider(unittest.TestCase, ProviderTestCase):
         # clean up
         features = [f for f in vl.getFeatures()]
         vl.dataProvider().deleteFeatures([features[-1].id()])
+    def test_iterator(self):
+        vl = self.getSource()
+        field = "cnt"
+        qexc = vl.createExpressionContext()
+        DefaultFR = QgsAggregateCalculator(vl)
+        StackedFR = QgsAggregateCalculator(vl)
+        DefaultFR.setFidsFilter([1, ])
+        StackedFR.setFidsFilter([1, ])
+        DefaultFR.setFilter('1')
+        StackedFR.setFilter('1')
+
+        StackedFR.stackFilters(True)
+
+        total1 = DefaultFR.calculate(QgsAggregateCalculator.Sum, field, context=qexc)
+        total2 = StackedFR.calculate(QgsAggregateCalculator.Sum, field, context=qexc)
+        self.assertNotEqual(total1, total2)
+        self.assertNotEqual(total1, total2)
 
 
 if __name__ == '__main__':

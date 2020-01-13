@@ -39,7 +39,7 @@ QgsFeatureRequest::QgsFeatureRequest( const QgsFeatureIds &fids )
   , mFilterFids( fids )
   , mFlags( nullptr )
 {
-
+  fidsTrigger = true;
 }
 
 QgsFeatureRequest::QgsFeatureRequest( const QgsRectangle &rect )
@@ -68,6 +68,7 @@ QgsFeatureRequest &QgsFeatureRequest::operator=( const QgsFeatureRequest &rh )
   mFilterRect = rh.mFilterRect;
   mFilterFid = rh.mFilterFid;
   mFilterFids = rh.mFilterFids;
+  fidsTrigger = rh.fidsTrigger;
   if ( rh.mFilterExpression )
   {
     mFilterExpression.reset( new QgsExpression( *rh.mFilterExpression ) );
@@ -87,6 +88,7 @@ QgsFeatureRequest &QgsFeatureRequest::operator=( const QgsFeatureRequest &rh )
   mTransformErrorCallback = rh.mTransformErrorCallback;
   mTimeout = rh.mTimeout;
   mRequestMayBeNested = rh.mRequestMayBeNested;
+  mCombinationMethod = rh.mCombinationMethod;
   return *this;
 }
 
@@ -105,6 +107,7 @@ QgsFeatureRequest &QgsFeatureRequest::setFilterFid( QgsFeatureId fid )
 
 QgsFeatureRequest &QgsFeatureRequest::setFilterFids( const QgsFeatureIds &fids )
 {
+  fidsTrigger = true;
   mFilter = FilterFids;
   mFilterFids = fids;
   return *this;
@@ -335,6 +338,16 @@ QgsFeatureRequest &QgsFeatureRequest::setRequestMayBeNested( bool requestMayBeNe
   return *this;
 }
 
+void QgsFeatureRequest::setFilterHandling( FilterCombination handlingMethod )
+{
+  mCombinationMethod = handlingMethod;
+}
+
+QgsFeatureRequest::FilterCombination QgsFeatureRequest::filterHandling() const
+{
+  return mCombinationMethod;
+}
+
 
 #include "qgsfeatureiterator.h"
 #include "qgslogger.h"
@@ -525,4 +538,30 @@ QString QgsFeatureRequest::OrderBy::dump() const
   }
 
   return results.join( QStringLiteral( ", " ) );
+}
+
+bool QgsFeatureRequest::hasValidFilter( FilterType filterType ) const
+{
+  if ( mCombinationMethod != UseLast )
+  {
+    switch ( filterType )
+    {
+      case ( FilterNone ):
+        return true ;
+
+      case ( FilterFid ):
+        return filterFid() != -1 ;
+
+      case ( FilterExpression ):
+        if ( filterExpression() )
+          return filterExpression()->isValid();
+        else
+          return false;
+
+      case ( FilterFids ):
+        return fidsTrigger;
+    }
+  }
+  else
+    return mFilter == filterType;
 }
