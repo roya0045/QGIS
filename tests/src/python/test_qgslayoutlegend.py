@@ -408,15 +408,15 @@ class TestQgsLayoutItemLegend(unittest.TestCase, LayoutItemTestCase):
         self.assertEqual(label2, '"Class" = \'Biplane\'')
         #self.assertEqual(label3, '12')
 
-        legendlayer.setLabelExpression("Concat(@symbol_label, @symbol_id)")
+        legendlayer.setLabelExpression("Concat(@symbol_label, @symbol_id, sum(\"Pilots\", symbol_id:=@symbol_id) )")
 
         label1 = legendnodes[0].evaluateLabel()
         label2 = legendnodes[1].evaluateLabel()
         label3 = legendnodes[2].evaluateLabel()
 
-        self.assertEqual(label1, ' @symbol_id 0')
-        #self.assertEqual(label2, '@symbol_count 1')
-        #self.assertEqual(label3, 'sum("Pilots") 2')
+        self.assertEqual(label1, ' @symbol_id 07')
+        self.assertEqual(label2, ' @symbol_count 115')
+        self.assertEqual(label3, ' count("Pilots", symbol_id:=@symbol_id) 212')
 
         QgsProject.instance().clear()
 
@@ -457,19 +457,21 @@ class TestQgsLayoutItemLegend(unittest.TestCase, LayoutItemTestCase):
 
         group = legend.model().rootGroup().addGroup("Group [% 1 + 5 %] [% @layout_name %]")
         layer_tree_layer = group.addLayer(point_layer)
-        counterTask = point_layer.countSymbolFeatures()
+        counterTask = point_layer.countSymbolFeatures(True)
         counterTask.waitForFinished()
         layer_tree_layer.setCustomProperty("legend/title-label", 'bbbb [% 1+2 %] xx [% @layout_name %] [% @layer_name %]')
         QgsMapLayerLegendUtils.setLegendNodeUserLabel(layer_tree_layer, 0, 'xxxx')
         legend.model().refreshLayerLegend(layer_tree_layer)
-        layer_tree_layer.setLabelExpression('Concat(@symbol_id, @symbol_label, count("Class", filter:=@symbol_expression))')
+        layer_tree_layer.setLabelExpression('Concat(@symbol_id, @symbol_label, sum(\"Pilots\", symbol_id:=@symbol_id) )')
         legend.model().layerLegendNodes(layer_tree_layer)[0].setUserLabel(' sym 1')
         legend.model().layerLegendNodes(layer_tree_layer)[1].setUserLabel('[%@symbol_count %]')
         legend.model().layerLegendNodes(layer_tree_layer)[2].setUserLabel('[% count("Class") %]')
         layout.addLayoutItem(legend)
         legend.setLinkedMap(map)
         legend.updateLegend()
-        print(layer_tree_layer.labelExpression())
+        count = point_layer.countSymbolFeatures(True)
+        count.waitForFinished()
+        point_layer.onSymbolsCounted()
         map.setExtent(QgsRectangle(-102.51, 41.16, -102.36, 41.30))
         checker = QgsLayoutChecker(
             'composer_legend_symbol_expression', layout)
