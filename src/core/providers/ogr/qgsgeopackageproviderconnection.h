@@ -43,6 +43,13 @@ class QgsGeoPackageProviderConnection : public QgsAbstractDatabaseProviderConnec
     QList<QgsAbstractDatabaseProviderConnection::TableProperty> tables( const QString &schema = QString(),
         const TableFlags &flags = nullptr ) const override;
 
+    /**
+     * Attempts to activate geopackage amphibious mode.
+     * \param uri Uri of the geopackage.
+     * \since QGIS 3.12
+     */
+    static void enableAmphibiousMode( const QString &uri = QString() );
+
   private:
 
     void setDefaultCapabilities();

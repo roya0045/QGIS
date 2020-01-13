@@ -30,6 +30,7 @@ QgsGeoPackageProviderConnection::QgsGeoPackageProviderConnection( const QString 
   settings.beginGroup( QStringLiteral( "connections" ) );
   settings.beginGroup( name );
   setUri( settings.value( QStringLiteral( "path" ) ).toString() );
+  enableAmphibiousMode( uri() );
 }
 
 QgsGeoPackageProviderConnection::QgsGeoPackageProviderConnection( const QString &uri, const QVariantMap &configuration ):
@@ -41,6 +42,7 @@ QgsGeoPackageProviderConnection::QgsGeoPackageProviderConnection( const QString 
     setUri( uri.left( uri.indexOf( '|' ) ).trimmed() );
   }
   setDefaultCapabilities();
+  enableAmphibiousMode( uri );
 }
 
 void QgsGeoPackageProviderConnection::store( const QString &name ) const
@@ -278,6 +280,23 @@ void QgsGeoPackageProviderConnection::setDefaultCapabilities()
 #if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(2,4,0)
   mCapabilities |= Capability::DropRasterTable;
 #endif
+}
+
+void QgsGeoPackageProviderConnection::enableAmphibiousMode( const QString &uri )
+{
+  if ( uri.isEmpty() )
+    return;
+  qDebug() << uri.toUtf8();
+  gdal::ogr_datasource_unique_ptr hDS( GDALOpenEx( uri.toUtf8().constData(), GDAL_OF_VECTOR | GDAL_OF_UPDATE, nullptr, nullptr, nullptr ) );
+  if ( hDS )
+  {
+    OGRLayerH ogrLayer( GDALDatasetExecuteSQL( hDS.get(), QStringLiteral( "SELECT EnableGpkgAmphibiousMode()" ).toUtf8().constData(), nullptr, nullptr ) );
+    if ( ogrLayer )
+      GDALDatasetReleaseResultSet( hDS.get(), ogrLayer );
+    QString errCause = CPLGetLastErrorMsg();
+    if ( ! errCause.isEmpty() )
+      QgsMessageLog::logMessage( QObject::tr( "Could not enable Amphibious Mode. Error: %1" ).arg( errCause ), QStringLiteral( "OGR" ), Qgis::Info );
+  }
 }
 
 QList<QVariantList> QgsGeoPackageProviderConnection::executeGdalSqlPrivate( const QString &sql ) const
