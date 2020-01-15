@@ -4160,6 +4160,9 @@ QVariant QgsVectorLayer::aggregate( QgsAggregateCalculator::Aggregate aggregate,
 {
   if ( ok )
     *ok = false;
+  QgsAggregateCalculator::AggregateParameters paramCopy = QgsAggregateCalculator::AggregateParameters(parameters); 
+  if ( paramCopy.filter.contains( "var('symbol_expression')" ) )
+    paramCopy.filter = paramCopy.filter.replace( "var('symbol_expression')",  QgsExpression::replaceExpressionText( "[% ( @symbol_expression ) %]", context ) );
 
   if ( !mDataProvider )
   {
@@ -4180,7 +4183,7 @@ QVariant QgsVectorLayer::aggregate( QgsAggregateCalculator::Aggregate aggregate,
     if ( origin == QgsFields::OriginProvider )
     {
       bool providerOk = false;
-      QVariant val = mDataProvider->aggregate( aggregate, attrIndex, parameters, context, providerOk, fids );
+      QVariant val = mDataProvider->aggregate( aggregate, attrIndex, paramCopy, context, providerOk, fids );
       if ( providerOk )
       {
         // provider handled calculation
@@ -4199,7 +4202,7 @@ QVariant QgsVectorLayer::aggregate( QgsAggregateCalculator::Aggregate aggregate,
     c.setFidsFilter( *fids );
     c.stackFilters( stack );
   }
-  c.setParameters( parameters );
+  c.setParameters( paramCopy );
   return c.calculate( aggregate, fieldOrExpression, context, ok );
 }
 
