@@ -685,7 +685,7 @@ void QgsSymbolLegendNode::updateLabel()
   emit dataChanged();
 }
 
-QString QgsSymbolLegendNode::evaluateLabel( const QgsExpressionContext &context, QString &label )
+QString QgsSymbolLegendNode::evaluateLabel( const QgsExpressionContext &context, const QString &label )
 {
   if ( !mLayerNode )
     return QString();
@@ -698,27 +698,20 @@ QString QgsSymbolLegendNode::evaluateLabel( const QgsExpressionContext &context,
     QgsExpressionContextScope *symbolScope = createSymbolScope();
     contextCopy.appendScope( symbolScope );
     contextCopy.appendScope( vl->createExpressionContextScope() );
-    QString nodeExpression = mLayerNode->labelExpression();
-    if ( nodeExpression.contains("filter:=") && nodeExpression.contains("@symbol_expression") )
-      nodeExpression = nodeExpression.replace("@symbol_expression", QgsExpression::replaceExpressionText( "[% @symbol_expression %]", &contextCopy ) );
+
     if ( label.isEmpty() )
     {
-
       if ( ! mLayerNode->labelExpression().isEmpty() )
         mLabel = QgsExpression::replaceExpressionText( "[%" + mLayerNode->labelExpression() + "%]", &contextCopy );
       else if ( mLabel.contains( "[%" ) )
       {
-        QString symLabel = symbolLabel();
-        if ( symLabel.contains("filter:=") && symLabel.contains("@symbol_expression") )
-          symLabel = symLabel.replace("@symbol_expression", QgsExpression::replaceExpressionText( "[% @symbol_expression %]", &contextCopy ) );
+        const QString symLabel = symbolLabel();
         mLabel = QgsExpression::replaceExpressionText( symLabel, &contextCopy );
       }
       return mLabel;
     }
     else
     {
-      if ( label.contains("filter:=") && label.contains("@symbol_expression") )
-        label = label.replace("@symbol_expression", QgsExpression::replaceExpressionText( "[% @symbol_expression %]", &contextCopy ) );
       QString eLabel;
       if ( ! mLayerNode->labelExpression().isEmpty() )
         eLabel = QgsExpression::replaceExpressionText( label + "[%" + mLayerNode->labelExpression() + "%]", &contextCopy );
