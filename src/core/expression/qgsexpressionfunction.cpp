@@ -645,7 +645,7 @@ static QVariant fcnAggregate( const QVariantList &values, const QgsExpressionCon
     {
       cacheKey = QStringLiteral( "aggfcn:%1:%2:%3:%4:%5:%6" ).arg( vl->id(), QString::number( aggregate ), subExpression, parameters.filter, symbolId, orderBy );
     }
-
+    qDebug() << cacheKey;
     if ( context && context->hasCachedValue( cacheKey ) )
       return context->cachedValue( cacheKey );
 
