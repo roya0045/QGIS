@@ -943,10 +943,11 @@ QVariant QgsLegendModel::data( const QModelIndex &index, int role ) const
       const QList<QgsLayerTreeModelLegendNode *> legendnodes = layerLegendNodes( nodeLayer, false );
       if ( legendnodes.count() > 1 ) // evaluate all existing legend nodes but leave the name for the legend evaluator
       {
+        bool skipper = false;
         for ( QgsLayerTreeModelLegendNode *treenode : legendnodes )
         {
           if ( QgsSymbolLegendNode *symnode = qobject_cast<QgsSymbolLegendNode *>( treenode ) )
-            symnode->evaluateLabel( expressionContext );
+            symnode->evaluateLabel( expressionContext, &skipper );
         }
       }
       else if ( QgsSymbolLegendNode *symnode = qobject_cast<QgsSymbolLegendNode *>( legendnodes.first() ) )

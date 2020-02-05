@@ -336,12 +336,20 @@ class CORE_EXPORT QgsSymbolLegendNode : public QgsLayerTreeModelLegendNode
     QString symbolLabel() const;
 
     /**
-     * Evaluates  and returns the text label of the current node
+     * Evaluates  and returns the text label of the current node or a provided string
      * \param context extra QgsExpressionContext to use for evaluating the expression
      * \param label text to evaluate instead of the layer layertree string
      * \since QGIS 3.10
      */
     QString evaluateLabel( const QgsExpressionContext &context = QgsExpressionContext(), const QString &label = QString() );
+
+    /**
+     * Evaluates and returns the text label of the current node, can be used to validate if the expression was evaluated.
+     * \param context extra QgsExpressionContext to use for evaluating the expression
+     * \param skip pointer to validate the need to skip
+     * \since QGIS 3.12
+     */
+    QString evaluateLabel( const QgsExpressionContext &context, bool *skip );
 
   public slots:
 
@@ -378,6 +386,7 @@ class CORE_EXPORT QgsSymbolLegendNode : public QgsLayerTreeModelLegendNode
     QString mLabel;
     bool mSymbolUsesMapUnits;
     QSize mIconSize;
+    QString mLabelExpression = "";
 
     QString mTextOnSymbolLabel;
     QgsTextFormat mTextOnSymbolTextFormat;

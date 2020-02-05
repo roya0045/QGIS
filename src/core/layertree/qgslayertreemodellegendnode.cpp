@@ -703,8 +703,10 @@ QString QgsSymbolLegendNode::evaluateLabel( const QgsExpressionContext &context,
       nodeExpression = nodeExpression.replace( "@symbol_expression", QgsExpression::replaceExpressionText( "[% @symbol_expression %]", &contextCopy ) );
     if ( label.isEmpty() )
     {
-      if ( ! mLayerNode->labelExpression().isEmpty() )
+      if ( ! nodeExpression.isEmpty() )
+      {
         mLabel = QgsExpression::replaceExpressionText( "[%" + nodeExpression + "%]", &contextCopy );
+      }
       else if ( mLabel.contains( "[%" ) )
       {
         QString symLabel = symbolLabel();
@@ -719,12 +721,60 @@ QString QgsSymbolLegendNode::evaluateLabel( const QgsExpressionContext &context,
       QString eLabel = QString( label );
       if ( label.contains( "filter:=" ) && label.contains( "@symbol_expression" ) )
         eLabel = eLabel.replace( "@symbol_expression", QgsExpression::replaceExpressionText( "[% @symbol_expression %]", &contextCopy ) );
-      if ( ! mLayerNode->labelExpression().isEmpty() )
+      if ( ! nodeExpression.isEmpty() )
         eLabel = QgsExpression::replaceExpressionText( eLabel + "[%" + nodeExpression + "%]", &contextCopy );
       else if ( label.contains( "[%" ) )
         eLabel = QgsExpression::replaceExpressionText( eLabel, &contextCopy );
       return eLabel;
     }
+  }
+  return mLabel;
+}
+
+
+QString QgsSymbolLegendNode::evaluateLabel( const QgsExpressionContext &context, bool *skip )
+{
+  if ( !mLayerNode )
+    return QString();
+
+  if ( skip )
+    return mLabel;
+
+  QgsVectorLayer *vl = qobject_cast<QgsVectorLayer *>( mLayerNode->layer() );
+
+  if ( vl )
+  {
+    QgsExpressionContext contextCopy = QgsExpressionContext( context );
+    QgsExpressionContextScope *symbolScope = createSymbolScope();
+
+    contextCopy.appendScope( symbolScope );
+    contextCopy.appendScope( vl->createExpressionContextScope() );
+    QString expression = mLayerNode->labelExpression();
+    QString eval;
+    if ( ! expression.isEmpty() )
+    {
+      if ( expression.contains( "filter:=" ) && expression.contains( "@symbol_expression" ) )
+        expression = expression.replace( "@symbol_expression", QgsExpression::replaceExpressionText( "[% @symbol_expression %]", &contextCopy ) );
+      eval = QgsExpression::replaceExpressionText( "[%" + expression + "%]", &contextCopy );
+    }
+    else if ( mLabel.contains( "[%" ) )
+    {
+      QString symLabel = symbolLabel();
+      if ( symLabel.contains( "filter:=" ) && symLabel.contains( "@symbol_expression" ) )
+        symLabel = symLabel.replace( "@symbol_expression", QgsExpression::replaceExpressionText( "[% @symbol_expression %]", &contextCopy ) );
+      eval = QgsExpression::replaceExpressionText( symLabel, &contextCopy );
+    }
+    if ( expression == mLabelExpression && mLabel == eval )
+    {
+      *skip = true;
+      return mLabel;
+    }
+    else
+    {
+      mLabelExpression = expression;
+      *skip = false;
+    }
+    mLabel = eval;
   }
   return mLabel;
 }
