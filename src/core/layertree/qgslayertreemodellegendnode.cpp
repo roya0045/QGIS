@@ -669,7 +669,11 @@ void QgsSymbolLegendNode::invalidateMapBasedData()
 
 void QgsSymbolLegendNode::updateLabel()
 {
+  qDebug() << "update label";
   if ( !mLayerNode )
+    return;
+
+  if ( ! mLabelExpression.isEmpty() )
     return;
 
   bool showFeatureCount = mLayerNode->customProperty( QStringLiteral( "showFeatureCount" ), 0 ).toBool();
@@ -736,14 +740,15 @@ QString QgsSymbolLegendNode::evaluateLabel( const QgsExpressionContext &context,
 {
   if ( !mLayerNode )
     return QString();
-
-  if ( skip )
+  qDebug() << "layernode";
+  if ( *skip )
     return mLabel;
-
+  qDebug()<< "noskip";
   QgsVectorLayer *vl = qobject_cast<QgsVectorLayer *>( mLayerNode->layer() );
 
   if ( vl )
   {
+    qDebug() << "vl";
     QgsExpressionContext contextCopy = QgsExpressionContext( context );
     QgsExpressionContextScope *symbolScope = createSymbolScope();
 
@@ -764,6 +769,7 @@ QString QgsSymbolLegendNode::evaluateLabel( const QgsExpressionContext &context,
         symLabel = symLabel.replace( "@symbol_expression", QgsExpression::replaceExpressionText( "[% @symbol_expression %]", &contextCopy ) );
       eval = QgsExpression::replaceExpressionText( symLabel, &contextCopy );
     }
+    qDebug() << expression << mLabelExpression << mLabel << eval;
     if ( expression == mLabelExpression && mLabel == eval )
     {
       *skip = true;

@@ -898,7 +898,7 @@ QgsLegendModel::QgsLegendModel( QgsLayerTree *rootNode,  QgsLayoutItemLegend *la
 QVariant QgsLegendModel::data( const QModelIndex &index, int role ) const
 {
   // handle custom layer node labels
-
+  qDebug()<< "data "<<QString::number(index.row())<<QString::number(index.column())<<"idx"<<QString::number(role);
   QgsLayerTreeNode *node = index2node( index );
   QgsLayerTreeLayer *nodeLayer = QgsLayerTree::isLayer( node ) ? QgsLayerTree::toLayer( node ) : nullptr;
   if ( nodeLayer && ( role == Qt::DisplayRole || role == Qt::EditRole ) )
@@ -944,10 +944,13 @@ QVariant QgsLegendModel::data( const QModelIndex &index, int role ) const
       if ( legendnodes.count() > 1 ) // evaluate all existing legend nodes but leave the name for the legend evaluator
       {
         bool skipper = false;
+        int count = 0;
         for ( QgsLayerTreeModelLegendNode *treenode : legendnodes )
         {
           if ( QgsSymbolLegendNode *symnode = qobject_cast<QgsSymbolLegendNode *>( treenode ) )
             symnode->evaluateLabel( expressionContext, &skipper );
+          qDebug()<<"eval:"<< QString::number(count) << QString(skipper ? " ture" : " false");
+          count ++;
         }
       }
       else if ( QgsSymbolLegendNode *symnode = qobject_cast<QgsSymbolLegendNode *>( legendnodes.first() ) )
