@@ -100,6 +100,9 @@ class TestQgsProcessingAlgs: public QObject
     void layerToBookmarks();
 
     void repairShapefile();
+    void renameField();
+
+    void compareDatasets();
 
   private:
 
@@ -217,10 +220,12 @@ void TestQgsProcessingAlgs::packageAlg()
   QVERIFY( pointLayer->isValid() );
   QCOMPARE( pointLayer->wkbType(), mPointsLayer->wkbType() );
   QCOMPARE( pointLayer->featureCount(), mPointsLayer->featureCount() );
+  pointLayer.reset();
   std::unique_ptr< QgsVectorLayer > polygonLayer = qgis::make_unique< QgsVectorLayer >( outputGpkg + "|layername=polygons", "polygons", "ogr" );
   QVERIFY( polygonLayer->isValid() );
   QCOMPARE( polygonLayer->wkbType(), mPolygonLayer->wkbType() );
   QCOMPARE( polygonLayer->featureCount(), mPolygonLayer->featureCount() );
+  polygonLayer.reset();
 
   std::unique_ptr<QgsVectorLayer> rectangles = qgis::make_unique<QgsVectorLayer>( QStringLiteral( TEST_DATA_DIR ) + "/rectangles.shp",
       QStringLiteral( "rectangles" ), QStringLiteral( "ogr" ) );
@@ -235,9 +240,11 @@ void TestQgsProcessingAlgs::packageAlg()
   QVERIFY( rectanglesPackagedLayer->isValid() );
   QCOMPARE( rectanglesPackagedLayer->wkbType(), rectanglesPackagedLayer->wkbType() );
   QCOMPARE( rectanglesPackagedLayer->featureCount(), rectangles->featureCount() );
+  rectanglesPackagedLayer.reset();
 
   pointLayer = qgis::make_unique< QgsVectorLayer >( outputGpkg + "|layername=points", "points", "ogr" );
   QVERIFY( pointLayer->isValid() );
+  pointLayer.reset();
 
   // And finally, test with overwrite enabled
   QVariantMap results3 = pkgAlg( QStringList() << rectangles->id(), outputGpkg, true, &ok );
@@ -1030,7 +1037,7 @@ void TestQgsProcessingAlgs::lineDensity()
       {
         double expectedValue = expectedRasterBlock->value( row, column );
         double outputValue = outputRasterBlock->value( row, column );
-        QCOMPARE( outputValue, expectedValue );
+        QGSCOMPARENEAR( outputValue, expectedValue, 0.000000000015 );
       }
     }
   }
@@ -1815,6 +1822,235 @@ void TestQgsProcessingAlgs::repairShapefile()
 
   layer = qgis::make_unique< QgsVectorLayer >( tmpPath.filePath( QStringLiteral( "points.shp" ) ) );
   QVERIFY( layer->isValid() );
+}
+
+void TestQgsProcessingAlgs::renameField()
+{
+  QgsProject p;
+  QgsVectorLayer *layer = new QgsVectorLayer( QStringLiteral( "Point?crs=epsg:4326&field=pk:int&field=col1:string" ), QStringLiteral( "vl2" ), QStringLiteral( "memory" ) );
+  QVERIFY( layer->isValid() );
+  p.addMapLayer( layer );
+
+  std::unique_ptr< QgsProcessingAlgorithm > alg( QgsApplication::processingRegistry()->createAlgorithmById( QStringLiteral( "native:renametablefield" ) ) );
+  QVERIFY( alg != nullptr );
+
+  QVariantMap parameters;
+  parameters.insert( QStringLiteral( "INPUT" ), QVariant::fromValue( layer ) );
+  parameters.insert( QStringLiteral( "FIELD" ), QStringLiteral( "doesntexist" ) );
+  parameters.insert( QStringLiteral( "NEW_NAME" ), QStringLiteral( "newname" ) );
+
+  bool ok = false;
+  QgsProcessingFeedback feedback;
+  std::unique_ptr< QgsProcessingContext > context = qgis::make_unique< QgsProcessingContext >();
+
+  QVariantMap results;
+  results = alg->run( parameters, *context, &feedback, &ok );
+  // field doesn't exist
+  QVERIFY( !ok );
+
+  parameters.insert( QStringLiteral( "FIELD" ), QStringLiteral( "col1" ) );
+  parameters.insert( QStringLiteral( "NEW_NAME" ), QStringLiteral( "pk" ) );
+
+  ok = false;
+  results = alg->run( parameters, *context, &feedback, &ok );
+  // already a field with this name
+  QVERIFY( !ok );
+
+  parameters.insert( QStringLiteral( "NEW_NAME" ), QStringLiteral( "newname" ) );
+  parameters.insert( QStringLiteral( "OUTPUT" ), QgsProcessing::TEMPORARY_OUTPUT );
+  results = alg->run( parameters, *context, &feedback, &ok );
+  QVERIFY( ok );
+
+  QCOMPARE( qobject_cast< QgsVectorLayer * >( context->getMapLayer( results.value( QStringLiteral( "OUTPUT" ) ).toString() ) )->fields().at( 1 ).name(), QStringLiteral( "newname" ) );
+
+}
+
+void TestQgsProcessingAlgs::compareDatasets()
+{
+  QgsProject p;
+  QgsVectorLayer *pointLayer = new QgsVectorLayer( QStringLiteral( "Point?crs=epsg:4326&field=pk:int&field=col1:string" ), QStringLiteral( "vl2" ), QStringLiteral( "memory" ) );
+  QVERIFY( pointLayer->isValid() );
+  p.addMapLayer( pointLayer );
+  QgsVectorLayer *originalLayer = new QgsVectorLayer( QStringLiteral( "LineString?crs=epsg:4326&field=pk:int&field=col1:string&field=col2:string" ), QStringLiteral( "vl2" ), QStringLiteral( "memory" ) );
+  QVERIFY( originalLayer->isValid() );
+  p.addMapLayer( originalLayer );
+  QgsVectorLayer *revisedLayer = new QgsVectorLayer( QStringLiteral( "LineString?crs=epsg:4326&field=pk:int&field=col1:string&field=col2:string" ), QStringLiteral( "vl2" ), QStringLiteral( "memory" ) );
+  QVERIFY( revisedLayer->isValid() );
+  p.addMapLayer( revisedLayer );
+  QgsVectorLayer *differentAttrs = new QgsVectorLayer( QStringLiteral( "LineString?crs=epsg:4326&field=pk:int&field=col3:string&field=col2:string" ), QStringLiteral( "vl2" ), QStringLiteral( "memory" ) );
+  QVERIFY( differentAttrs->isValid() );
+  p.addMapLayer( differentAttrs );
+
+  std::unique_ptr< QgsProcessingAlgorithm > alg( QgsApplication::processingRegistry()->createAlgorithmById( QStringLiteral( "native:detectvectorchanges" ) ) );
+  QVERIFY( alg != nullptr );
+
+  QVariantMap parameters;
+  // differing geometry types - alg should fail
+  parameters.insert( QStringLiteral( "ORIGINAL" ), QVariant::fromValue( pointLayer ) );
+  parameters.insert( QStringLiteral( "REVISED" ), QVariant::fromValue( originalLayer ) );
+
+  bool ok = false;
+  QgsProcessingFeedback feedback;
+  std::unique_ptr< QgsProcessingContext > context = qgis::make_unique< QgsProcessingContext >();
+
+  QVariantMap results;
+  results = alg->run( parameters, *context, &feedback, &ok );
+  QVERIFY( !ok );
+
+  // differing fields - alg should fail
+  parameters.insert( QStringLiteral( "ORIGINAL" ), QVariant::fromValue( originalLayer ) );
+  parameters.insert( QStringLiteral( "REVISED" ), QVariant::fromValue( differentAttrs ) );
+  parameters.insert( QStringLiteral( "COMPARE_ATTRIBUTES" ), QStringLiteral( "col1;col2" ) );
+  results = alg->run( parameters, *context, &feedback, &ok );
+  QVERIFY( !ok );
+
+  // yet if we aren't comparing the field, we shouldn't fail...
+  parameters.insert( QStringLiteral( "COMPARE_ATTRIBUTES" ), QStringLiteral( "col2" ) );
+  results = alg->run( parameters, *context, &feedback, &ok );
+  QVERIFY( ok );
+
+  // no features, no outputs
+  parameters.insert( QStringLiteral( "ORIGINAL" ), QVariant::fromValue( originalLayer ) );
+  parameters.insert( QStringLiteral( "REVISED" ), QVariant::fromValue( revisedLayer ) );
+  results = alg->run( parameters, *context, &feedback, &ok );
+  QVERIFY( ok );
+  QCOMPARE( results.value( QStringLiteral( "UNCHANGED_COUNT" ) ).toLongLong(), 0LL );
+  QCOMPARE( results.value( QStringLiteral( "ADDED_COUNT" ) ).toLongLong(), 0LL );
+  QCOMPARE( results.value( QStringLiteral( "DELETED_COUNT" ) ).toLongLong(), 0LL );
+
+  parameters.insert( QStringLiteral( "UNCHANGED" ), QgsProcessing::TEMPORARY_OUTPUT );
+  parameters.insert( QStringLiteral( "ADDED" ), QgsProcessing::TEMPORARY_OUTPUT );
+  parameters.insert( QStringLiteral( "DELETED" ), QgsProcessing::TEMPORARY_OUTPUT );
+
+  // add two features to original
+  QgsFeature f;
+  f.setAttributes( QgsAttributes() << 5 << QStringLiteral( "b1" ) << QStringLiteral( "g1" ) );
+  f.setGeometry( QgsGeometry::fromWkt( QStringLiteral( "LineString (0 0, 10 0)" ) ) );
+  originalLayer->dataProvider()->addFeature( f );
+  f.setAttributes( QgsAttributes() << 5 << QStringLiteral( "c1" ) << QStringLiteral( "g1" ) );
+  f.setGeometry( QgsGeometry::fromWkt( QStringLiteral( "LineString (0 0, 10 0)" ) ) );
+  originalLayer->dataProvider()->addFeature( f );
+
+  // just compare two columns
+  parameters.insert( QStringLiteral( "COMPARE_ATTRIBUTES" ), QStringLiteral( "col1;col2" ) );
+
+  results = alg->run( parameters, *context, &feedback, &ok );
+  QVERIFY( ok );
+  QCOMPARE( results.value( QStringLiteral( "UNCHANGED_COUNT" ) ).toLongLong(), 0LL );
+  QCOMPARE( qobject_cast< QgsVectorLayer * >( context->getMapLayer( results.value( QStringLiteral( "UNCHANGED" ) ).toString() ) )->featureCount(), 0L );
+  QCOMPARE( results.value( QStringLiteral( "ADDED_COUNT" ) ).toLongLong(), 0LL );
+  QCOMPARE( qobject_cast< QgsVectorLayer * >( context->getMapLayer( results.value( QStringLiteral( "ADDED" ) ).toString() ) )->featureCount(), 0L );
+  QCOMPARE( results.value( QStringLiteral( "DELETED_COUNT" ) ).toLongLong(), 2LL );
+  QCOMPARE( qobject_cast< QgsVectorLayer * >( context->getMapLayer( results.value( QStringLiteral( "DELETED" ) ).toString() ) )->featureCount(), 2L );
+
+  // add one same to revised - note that the first attributes differs here, but we aren't considering that
+  f.setAttributes( QgsAttributes() << 55 << QStringLiteral( "b1" ) << QStringLiteral( "g1" ) );
+  f.setGeometry( QgsGeometry::fromWkt( QStringLiteral( "LineString (0 0, 10 0)" ) ) );
+  revisedLayer->dataProvider()->addFeature( f );
+
+  results = alg->run( parameters, *context, &feedback, &ok );
+  QVERIFY( ok );
+  QCOMPARE( results.value( QStringLiteral( "UNCHANGED_COUNT" ) ).toLongLong(), 1LL );
+  QCOMPARE( qobject_cast< QgsVectorLayer * >( context->getMapLayer( results.value( QStringLiteral( "UNCHANGED" ) ).toString() ) )->featureCount(), 1L );
+  QCOMPARE( results.value( QStringLiteral( "ADDED_COUNT" ) ).toLongLong(), 0LL );
+  QCOMPARE( qobject_cast< QgsVectorLayer * >( context->getMapLayer( results.value( QStringLiteral( "ADDED" ) ).toString() ) )->featureCount(), 0L );
+  QCOMPARE( results.value( QStringLiteral( "DELETED_COUNT" ) ).toLongLong(), 1LL );
+  QCOMPARE( qobject_cast< QgsVectorLayer * >( context->getMapLayer( results.value( QStringLiteral( "DELETED" ) ).toString() ) )->featureCount(), 1L );
+
+  // ok, let's compare the differing attribute too
+  parameters.insert( QStringLiteral( "COMPARE_ATTRIBUTES" ), QStringLiteral( "col1;col2;pk" ) );
+  results = alg->run( parameters, *context, &feedback, &ok );
+  QVERIFY( ok );
+  QCOMPARE( results.value( QStringLiteral( "UNCHANGED_COUNT" ) ).toLongLong(), 0LL );
+  QCOMPARE( results.value( QStringLiteral( "ADDED_COUNT" ) ).toLongLong(), 1LL );
+  QCOMPARE( results.value( QStringLiteral( "DELETED_COUNT" ) ).toLongLong(), 2LL );
+
+  parameters.insert( QStringLiteral( "COMPARE_ATTRIBUTES" ), QStringLiteral( "col1;col2" ) );
+  // similar to the second feature, but geometry differs
+  f.setAttributes( QgsAttributes() << 55 << QStringLiteral( "c1" ) << QStringLiteral( "g1" ) );
+  f.setGeometry( QgsGeometry::fromWkt( QStringLiteral( "LineString (0 0, 11 0)" ) ) );
+  revisedLayer->dataProvider()->addFeature( f );
+  results = alg->run( parameters, *context, &feedback, &ok );
+  QVERIFY( ok );
+  QCOMPARE( results.value( QStringLiteral( "UNCHANGED_COUNT" ) ).toLongLong(), 1LL );
+  QCOMPARE( qobject_cast< QgsVectorLayer * >( context->getMapLayer( results.value( QStringLiteral( "UNCHANGED" ) ).toString() ) )->featureCount(), 1L );
+  QCOMPARE( results.value( QStringLiteral( "ADDED_COUNT" ) ).toLongLong(), 1LL );
+  QCOMPARE( qobject_cast< QgsVectorLayer * >( context->getMapLayer( results.value( QStringLiteral( "ADDED" ) ).toString() ) )->featureCount(), 1L );
+  QCOMPARE( results.value( QStringLiteral( "DELETED_COUNT" ) ).toLongLong(), 1LL );
+  QCOMPARE( qobject_cast< QgsVectorLayer * >( context->getMapLayer( results.value( QStringLiteral( "DELETED" ) ).toString() ) )->featureCount(), 1L );
+  // note - we skip the featureCount checks after this -- we can be confident at this stage that all sinks are correctly being populated
+
+
+  // add another which is identical to first, must be considered as another "added" feature (i.e.
+  // don't match to same original feature multiple times)
+  f.setAttributes( QgsAttributes() << 555 << QStringLiteral( "b1" ) << QStringLiteral( "g1" ) );
+  f.setGeometry( QgsGeometry::fromWkt( QStringLiteral( "LineString (0 0, 10 0)" ) ) );
+  revisedLayer->dataProvider()->addFeature( f );
+  results = alg->run( parameters, *context, &feedback, &ok );
+  QVERIFY( ok );
+  QCOMPARE( results.value( QStringLiteral( "UNCHANGED_COUNT" ) ).toLongLong(), 1LL );
+  QCOMPARE( results.value( QStringLiteral( "ADDED_COUNT" ) ).toLongLong(), 2LL );
+  QCOMPARE( results.value( QStringLiteral( "DELETED_COUNT" ) ).toLongLong(), 1LL );
+
+  // add a match for the second feature
+  f.setAttributes( QgsAttributes() << 5 << QStringLiteral( "c1" ) << QStringLiteral( "g1" ) );
+  f.setGeometry( QgsGeometry::fromWkt( QStringLiteral( "LineString (0 0, 10 0)" ) ) );
+  revisedLayer->dataProvider()->addFeature( f );
+  results = alg->run( parameters, *context, &feedback, &ok );
+  QVERIFY( ok );
+  QCOMPARE( results.value( QStringLiteral( "UNCHANGED_COUNT" ) ).toLongLong(), 2LL );
+  QCOMPARE( results.value( QStringLiteral( "ADDED_COUNT" ) ).toLongLong(), 2LL );
+  QCOMPARE( results.value( QStringLiteral( "DELETED_COUNT" ) ).toLongLong(), 0LL );
+
+  // test topological match (different number of vertices)
+  f.setAttributes( QgsAttributes() << 5 << QStringLiteral( "c1" ) << QStringLiteral( "g1" ) );
+  f.setGeometry( QgsGeometry::fromWkt( QStringLiteral( "LineString (0 10, 5 10, 10 10)" ) ) );
+  originalLayer->dataProvider()->addFeature( f );
+  f.setGeometry( QgsGeometry::fromWkt( QStringLiteral( "LineString (0 10, 1 10, 5 10, 10 10)" ) ) );
+  revisedLayer->dataProvider()->addFeature( f );
+
+  // exact match shouldn't equate the two
+  parameters.insert( QStringLiteral( "MATCH_TYPE" ), 0 );
+  results = alg->run( parameters, *context, &feedback, &ok );
+  QVERIFY( ok );
+  QCOMPARE( results.value( QStringLiteral( "UNCHANGED_COUNT" ) ).toLongLong(), 2LL );
+  QCOMPARE( results.value( QStringLiteral( "ADDED_COUNT" ) ).toLongLong(), 3LL );
+  QCOMPARE( results.value( QStringLiteral( "DELETED_COUNT" ) ).toLongLong(), 1LL );
+
+  // but topological match should
+  parameters.insert( QStringLiteral( "MATCH_TYPE" ), 1 );
+  results = alg->run( parameters, *context, &feedback, &ok );
+  QVERIFY( ok );
+  QCOMPARE( results.value( QStringLiteral( "UNCHANGED_COUNT" ) ).toLongLong(), 3LL );
+  QCOMPARE( results.value( QStringLiteral( "ADDED_COUNT" ) ).toLongLong(), 2LL );
+  QCOMPARE( results.value( QStringLiteral( "DELETED_COUNT" ) ).toLongLong(), 0LL );
+
+  // null geometry comparisons
+  f.setAttributes( QgsAttributes() << 5 << QStringLiteral( "d1" ) << QStringLiteral( "g1" ) );
+  f.clearGeometry();
+  originalLayer->dataProvider()->addFeature( f );
+  results = alg->run( parameters, *context, &feedback, &ok );
+  QVERIFY( ok );
+  QCOMPARE( results.value( QStringLiteral( "UNCHANGED_COUNT" ) ).toLongLong(), 3LL );
+  QCOMPARE( results.value( QStringLiteral( "ADDED_COUNT" ) ).toLongLong(), 2LL );
+  QCOMPARE( results.value( QStringLiteral( "DELETED_COUNT" ) ).toLongLong(), 1LL );
+
+  f.setAttributes( QgsAttributes() << 5 << QStringLiteral( "e1" ) << QStringLiteral( "g1" ) );
+  originalLayer->dataProvider()->addFeature( f );
+  results = alg->run( parameters, *context, &feedback, &ok );
+  QVERIFY( ok );
+  QCOMPARE( results.value( QStringLiteral( "UNCHANGED_COUNT" ) ).toLongLong(), 3LL );
+  QCOMPARE( results.value( QStringLiteral( "ADDED_COUNT" ) ).toLongLong(), 2LL );
+  QCOMPARE( results.value( QStringLiteral( "DELETED_COUNT" ) ).toLongLong(), 2LL );
+
+  f.setAttributes( QgsAttributes() << 5 << QStringLiteral( "d1" ) << QStringLiteral( "g1" ) );
+  revisedLayer->dataProvider()->addFeature( f );
+  results = alg->run( parameters, *context, &feedback, &ok );
+  QVERIFY( ok );
+  QCOMPARE( results.value( QStringLiteral( "UNCHANGED_COUNT" ) ).toLongLong(), 4LL );
+  QCOMPARE( results.value( QStringLiteral( "ADDED_COUNT" ) ).toLongLong(), 2LL );
+  QCOMPARE( results.value( QStringLiteral( "DELETED_COUNT" ) ).toLongLong(), 1LL );
+
 }
 
 QGSTEST_MAIN( TestQgsProcessingAlgs )

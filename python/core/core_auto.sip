@@ -187,6 +187,7 @@
 %Include auto_generated/qgsstoredexpressionmanager.sip
 %Include auto_generated/qgsstringstatisticalsummary.sip
 %Include auto_generated/qgsstringutils.sip
+%Include auto_generated/qgstablecell.sip
 %Include auto_generated/qgstaskmanager.sip
 %Include auto_generated/qgstessellator.sip
 %Include auto_generated/qgstestutils.sip
@@ -311,6 +312,7 @@
 %Include auto_generated/gps/qgsgpsdconnection.sip
 %Include auto_generated/gps/qgsgpsdetector.sip
 %Include auto_generated/gps/qgsnmeaconnection.sip
+%Include auto_generated/labeling/qgslabeling.sip
 %Include auto_generated/labeling/qgslabelingenginesettings.sip
 %Include auto_generated/labeling/qgslabelobstaclesettings.sip
 %Include auto_generated/labeling/qgslabelsearchtree.sip
@@ -342,6 +344,7 @@
 %Include auto_generated/layout/qgslayoutitemhtml.sip
 %Include auto_generated/layout/qgslayoutitemlabel.sip
 %Include auto_generated/layout/qgslayoutitemlegend.sip
+%Include auto_generated/layout/qgslayoutitemmanualtable.sip
 %Include auto_generated/layout/qgslayoutitemmap.sip
 %Include auto_generated/layout/qgslayoutitemmapgrid.sip
 %Include auto_generated/layout/qgslayoutitemmapitem.sip

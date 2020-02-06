@@ -19,7 +19,8 @@ SCRIPTS="
 dropdb --if-exists $DB
 createdb $DB -E UTF8 -T template0 || exit 1
 for f in ${SCRIPTS}; do
-  psql -q --echo-errors -c "SET client_min_messages TO WARNING;" -f $f $DB -v ON_ERROR_STOP=1 || exit 1
+  echo "Restoring $f"
+  psql -q -tA --echo-errors -c "SET client_min_messages TO debug5;" -f $f $DB -v ON_ERROR_STOP=1 || exit 1
 done
 
 # Test existence of qgis_test service, and recommend how to set it up

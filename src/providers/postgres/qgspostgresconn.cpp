@@ -1103,9 +1103,13 @@ QString QgsPostgresConn::postgisVersion() const
 SELECT
  has_table_privilege(c.oid, 'select')
  AND has_table_privilege(f.oid, 'select')
-FROM pg_class c, pg_class f
-WHERE c.relname = 'pointcloud_columns'
+FROM pg_class c, pg_class f, pg_namespace n, pg_extension e
+WHERE c.relnamespace = n.oid
+  AND c.relname = 'pointcloud_columns'
+  AND f.relnamespace = n.oid
   AND f.relname = 'pointcloud_formats'
+  AND n.oid = e.extnamespace
+  AND e.extname = 'pointcloud'
     )" ), false );
     if ( result.PQntuples() >= 1 && result.PQgetvalue( 0, 0 ) == QLatin1String( "t" ) )
     {
@@ -1221,7 +1225,16 @@ QString QgsPostgresConn::quotedJsonValue( const QVariant &value )
 {
   if ( value.isNull() || !value.isValid() )
     return QStringLiteral( "null" );
-  const auto j { QgsJsonUtils::jsonFromVariant( value ) };
+// where json is a string literal just construct it from that rather than dump
+  if ( value.type() == QVariant::String )
+  {
+    QString valueStr = value.toString();
+    if ( valueStr.at( 0 ) == "\"" && valueStr.at( valueStr.size() - 1 ) == "\"" )
+    {
+      return quotedString( value.toString() );
+    }
+  }
+  const auto j = QgsJsonUtils::jsonFromVariant( value );
   return quotedString( QString::fromStdString( j.dump() ) );
 }
 
@@ -1682,12 +1695,44 @@ void QgsPostgresConn::retrieveLayerTypes( QVector<QgsPostgresLayerProperty *> &l
 
     if ( layerProperty.isRaster )
     {
-      QString sql = QStringLiteral( "SELECT %3, "
-                                    "array_agg(DISTINCT 'RASTER:' || ST_SRID( %1 ))"
-                                    " FROM %2" )
-                    .arg( quotedIdentifier( layerProperty.geometryColName ) )
-                    .arg( table )
-                    .arg( i - 1 );
+      QString sql;
+
+      int srid = layerProperty.srids.value( 0, std::numeric_limits<int>::min() );
+      // SRID is already known
+      if ( srid != std::numeric_limits<int>::min() )
+      {
+        sql += QStringLiteral( "SELECT %1, array_agg( '%2:RASTER'::text )" )
+               .arg( i - 1 )
+               .arg( srid );
+      }
+      else
+      {
+        if ( useEstimatedMetadata )
+        {
+          sql = QStringLiteral( "SELECT %1, "
+                                "array_agg( srid || ':RASTER') "
+                                "FROM raster_columns "
+                                "WHERE r_raster_column = %2 AND r_table_schema = %3 AND r_table_name = %4" )
+                .arg( i - 1 )
+                .arg( quotedValue( layerProperty.geometryColName ) )
+                .arg( quotedValue( layerProperty.schemaName ) )
+                .arg( quotedValue( layerProperty.tableName ) );
+        }
+        else
+        {
+          sql = QStringLiteral( "SELECT %1, "
+                                "array_agg( DISTINCT ST_SRID( %2 ) || ':RASTER' ) "
+                                "FROM %3 "
+                                "%2 IS NOT NULL "
+                                "%4 "   // SQL clause
+                                "LIMIT %5" )
+                .arg( i - 1 )
+                .arg( quotedIdentifier( layerProperty.geometryColName ) )
+                .arg( table )
+                .arg( layerProperty.sql.isEmpty() ? QString() : QStringLiteral( " AND %1" ).arg( layerProperty.sql ) )
+                .arg( GEOM_TYPE_SELECT_LIMIT );
+        }
+      }
 
       QgsDebugMsg( "Raster srids query: " + sql );
       query += sql;
@@ -1697,11 +1742,10 @@ void QgsPostgresConn::retrieveLayerTypes( QVector<QgsPostgresLayerProperty *> &l
       // our estimatation ignores that a where clause might restrict the feature type or srid
       if ( useEstimatedMetadata )
       {
-        table = QStringLiteral( "(SELECT %1 FROM %2%3 WHERE %4 IS NOT NULL LIMIT %5) AS t" )
+        table = QStringLiteral( "(SELECT %1 FROM %2%3 WHERE %1 IS NOT NULL LIMIT %4) AS t" )
                 .arg( quotedIdentifier( layerProperty.geometryColName ),
                       table,
                       layerProperty.sql.isEmpty() ? QString() : QStringLiteral( " WHERE %1" ).arg( layerProperty.sql ) )
-                .arg( layerProperty.geometryColName )
                 .arg( GEOM_TYPE_SELECT_LIMIT );
       }
       else if ( !layerProperty.sql.isEmpty() )
@@ -1717,7 +1761,7 @@ void QgsPostgresConn::retrieveLayerTypes( QVector<QgsPostgresLayerProperty *> &l
       sql += QStringLiteral( "array_agg(DISTINCT " );
 
       int srid = layerProperty.srids.value( 0, std::numeric_limits<int>::min() );
-      if ( srid  == std::numeric_limits<int>::min() )
+      if ( srid == std::numeric_limits<int>::min() )
       {
         sql += QStringLiteral( "%1(%2%3)::text" )
                .arg( majorVersion() < 2 ? "srid" : "st_srid",

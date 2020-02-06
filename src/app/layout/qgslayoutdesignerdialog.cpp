@@ -246,7 +246,6 @@ void QgsAppLayoutDesignerInterface::showRulers( bool visible )
   mDesigner->showRulers( visible );
 }
 
-
 static bool cmpByText_( QAction *a, QAction *b )
 {
   return QString::localeAwareCompare( a->text(), b->text() ) < 0;
@@ -809,7 +808,7 @@ QgsLayoutDesignerDialog::QgsLayoutDesignerDialog( QWidget *parent, Qt::WindowFla
   mPanelsMenu->addAction( mItemsDock->toggleViewAction() );
 
   //items tree widget
-  mItemsTreeView = new QgsLayoutItemsListView( mItemsDock, this );
+  mItemsTreeView = new QgsLayoutItemsListView( mItemsDock, iface() );
   mItemsDock->setWidget( mItemsTreeView );
 
   mAtlasDock = new QgsDockWidget( tr( "Atlas" ), this );
@@ -1560,7 +1559,7 @@ void QgsLayoutDesignerDialog::itemTypeAdded( int id )
 
   // update UI for new item type
   QAction *action = new QAction( tr( "Add %1" ).arg( name ), this );
-  action->setToolTip( tr( "Adds a new %1 to the layout" ).arg( name ) );
+  action->setToolTip( tr( "Add %1" ).arg( name ) );
   action->setCheckable( true );
   action->setData( id );
   action->setIcon( QgsGui::layoutItemGuiRegistry()->itemMetadata( id )->creationIcon() );

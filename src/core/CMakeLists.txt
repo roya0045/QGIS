@@ -374,6 +374,7 @@ SET(QGIS_CORE_SRCS
   qgsstoredexpressionmanager.cpp
   qgsstringstatisticalsummary.cpp
   qgsstringutils.cpp
+  qgstablecell.cpp
   qgstaskmanager.cpp
   qgstessellator.cpp
   qgstextrenderer.cpp
@@ -440,6 +441,7 @@ SET(QGIS_CORE_SRCS
   layout/qgslayoutitemhtml.cpp
   layout/qgslayoutitemlabel.cpp
   layout/qgslayoutitemlegend.cpp
+  layout/qgslayoutitemmanualtable.cpp
   layout/qgslayoutitemmap.cpp
   layout/qgslayoutitemmapgrid.cpp
   layout/qgslayoutitemmapitem.cpp
@@ -882,6 +884,7 @@ SET(QGIS_CORE_HDRS
   qgsstoredexpressionmanager.h
   qgsstringstatisticalsummary.h
   qgsstringutils.h
+  qgstablecell.h
   qgstaskmanager.h
   qgstessellator.h
   qgstestutils.h
@@ -1037,6 +1040,7 @@ SET(QGIS_CORE_HDRS
   gps/qgsnmeaconnection.h
 
   labeling/qgslabelfeature.h
+  labeling/qgslabeling.h
   labeling/qgslabelingengine.h
   labeling/qgslabelingenginesettings.h
   labeling/qgslabelobstaclesettings.h
@@ -1075,6 +1079,7 @@ SET(QGIS_CORE_HDRS
   layout/qgslayoutitemhtml.h
   layout/qgslayoutitemlabel.h
   layout/qgslayoutitemlegend.h
+  layout/qgslayoutitemmanualtable.h
   layout/qgslayoutitemmap.h
   layout/qgslayoutitemmapgrid.h
   layout/qgslayoutitemmapitem.h
@@ -1218,6 +1223,7 @@ SET(QGIS_CORE_HDRS
   raster/qgsrasterpyramid.h
   raster/qgsrasterrange.h
   raster/qgsrasterrenderer.h
+  raster/qgsrasterrendererregistry.h
   raster/qgsrasterresamplefilter.h
   raster/qgsrasterresampler.h
   raster/qgsrastershader.h

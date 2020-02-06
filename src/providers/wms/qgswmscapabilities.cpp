@@ -53,7 +53,8 @@ bool QgsWmsSettings::parseUri( const QString &uriString )
   mAuth.mReferer = uri.param( QStringLiteral( "referer" ) );
   mXyz = false;  // assume WMS / WMTS
 
-  if ( uri.param( QStringLiteral( "type" ) ) == QLatin1String( "xyz" ) )
+  if ( uri.param( QStringLiteral( "type" ) ) == QLatin1String( "xyz" ) ||
+       uri.param( QStringLiteral( "type" ) ) == QLatin1String( "mbtiles" ) )
   {
     // for XYZ tiles most of the things do not apply
     mTiled = true;
@@ -75,6 +76,9 @@ bool QgsWmsSettings::parseUri( const QString &uriString )
     mImageMimeType.clear();
     mCrsId = QStringLiteral( "EPSG:3857" );
     mEnableContextualLegend = false;
+
+    mIsMBTiles = uri.param( QStringLiteral( "type" ) ) == QLatin1String( "mbtiles" );
+
     return true;
   }
 
@@ -1566,6 +1570,20 @@ void QgsWmsCapabilities::parseWMTSContents( const QDomElement &element )
         legendURL.href     = thirdChildElement.firstChildElement( QStringLiteral( "href" ) ).text();
         legendURL.width    = thirdChildElement.firstChildElement( QStringLiteral( "width" ) ).text().toInt();
         legendURL.height   = thirdChildElement.firstChildElement( QStringLiteral( "height" ) ).text().toInt();
+
+        style.legendURLs << legendURL;
+      }
+      QDomElement thirdChildElement = secondChildElement.firstChildElement( QStringLiteral( "LegendURL" ) );
+      if ( !thirdChildElement.isNull() )
+      {
+        QgsWmtsLegendURL legendURL;
+
+        legendURL.format   = thirdChildElement.attribute( QStringLiteral( "format" ) );
+        legendURL.minScale = thirdChildElement.attribute( QStringLiteral( "minScaleDenominator" ) ).toDouble();
+        legendURL.maxScale = thirdChildElement.attribute( QStringLiteral( "maxScaleDenominator" ) ).toDouble();
+        legendURL.href     = thirdChildElement.attribute( QStringLiteral( "xlink:href" ) );
+        legendURL.width    = thirdChildElement.attribute( QStringLiteral( "width" ) ).toInt();
+        legendURL.height   = thirdChildElement.attribute( QStringLiteral( "height" ) ).toInt();
 
         style.legendURLs << legendURL;
       }

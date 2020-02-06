@@ -46,6 +46,7 @@ SET(QGIS_APP_SRCS
   qgsdisplayangle.cpp
   qgsfieldcalculator.cpp
   qgsfirstrundialog.cpp
+  qgsfixattributedialog.cpp
   qgsgeometryvalidationservice.cpp
   qgsgeometryvalidationdock.cpp
   qgsgeometryvalidationmodel.cpp
@@ -192,36 +193,10 @@ SET(QGIS_APP_SRCS
   labeling/qgsmaptoolrotatelabel.cpp
   labeling/qgsrulebasedlabelingwidget.cpp
 
-  layout/qgsgeopdflayertreemodel.cpp
-  layout/qgslayoutaddpagesdialog.cpp
-  layout/qgslayoutapputils.cpp
-  layout/qgslayoutatlaswidget.cpp
-  layout/qgslayoutattributeselectiondialog.cpp
-  layout/qgslayoutattributetablewidget.cpp
-  layout/qgslayoutdesignerdialog.cpp
-  layout/qgslayoutguidewidget.cpp
-  layout/qgslayouthtmlwidget.cpp
-  layout/qgslayoutimagedrophandler.cpp
-  layout/qgslayoutimageexportoptionsdialog.cpp
-  layout/qgslayoutitemslistview.cpp
   layout/qgslayoutappmenuprovider.cpp
-  layout/qgslayoutlabelwidget.cpp
-  layout/qgslayoutlegendlayersdialog.cpp
-  layout/qgslayoutlegendwidget.cpp
+  layout/qgslayoutdesignerdialog.cpp
+  layout/qgslayoutimagedrophandler.cpp
   layout/qgslayoutmanagerdialog.cpp
-  layout/qgslayoutmapwidget.cpp
-  layout/qgslayoutmapgridwidget.cpp
-  layout/qgslayoutpagepropertieswidget.cpp
-  layout/qgslayoutpdfexportoptionsdialog.cpp
-  layout/qgslayoutpicturewidget.cpp
-  layout/qgslayoutpolygonwidget.cpp
-  layout/qgslayoutpolylinewidget.cpp
-  layout/qgslayoutpropertieswidget.cpp
-  layout/qgslayoutqptdrophandler.cpp
-  layout/qgslayoutscalebarwidget.cpp
-  layout/qgslayoutshapewidget.cpp
-  layout/qgslayouttablebackgroundcolorsdialog.cpp
-  layout/qgslayoutvaliditychecks.cpp
   layout/qgsreportfieldgroupsectionwidget.cpp
   layout/qgsreportlayoutsectionwidget.cpp
   layout/qgsreportorganizerwidget.cpp
@@ -283,6 +258,7 @@ IF (WITH_3D)
     3d/qgsphongmaterialwidget.cpp
     3d/qgsrulebased3drendererwidget.cpp
     3d/qgssymbol3dwidget.cpp
+    3d/qgsvectorlayer3dpropertieswidget.cpp
     3d/qgsvectorlayer3drendererwidget.cpp
     3d/qgsmeshlayer3drendererwidget.cpp
     layout/qgslayout3dmapwidget.cpp
@@ -483,6 +459,7 @@ IF (WITH_3D)
     ${CMAKE_SOURCE_DIR}/src/core/3d
     ${CMAKE_SOURCE_DIR}/src/3d
     ${CMAKE_SOURCE_DIR}/src/3d/symbols
+    ${CMAKE_SOURCE_DIR}/src/3d/mesh
     ${CMAKE_SOURCE_DIR}/src/3d/terrain
     ${CMAKE_SOURCE_DIR}/src/3d/chunks
     ${CMAKE_BINARY_DIR}/src/3d
@@ -522,12 +499,14 @@ INCLUDE_DIRECTORIES(
   ../gui/symbology
   ../gui/attributetable
   ../gui/auth
+  ../gui/effects
   ../gui/ogr
   ../gui/raster
   ../gui/editorwidgets
   ../gui/editorwidgets/core
   ../gui/layertree
   ../gui/layout
+  ../gui/tableeditor
   ../plugins
   ../python
   gps

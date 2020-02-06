@@ -2407,7 +2407,7 @@ bool QgsVectorLayer::readStyle( const QDomNode &node, QString &errorMessage,
       }
     }
 
-    // get and set the layer transparency if it exists
+    // get and set the layer transparency and scale visibility if they exists
     if ( categories.testFlag( Rendering ) )
     {
       QDomNode layerTransparencyNode = node.namedItem( QStringLiteral( "layerTransparency" ) );
@@ -2421,6 +2421,20 @@ bool QgsVectorLayer::readStyle( const QDomNode &node, QString &errorMessage,
       {
         QDomElement e = layerOpacityNode.toElement();
         setOpacity( e.text().toDouble() );
+      }
+
+      const bool hasScaleBasedVisibiliy { node.attributes().namedItem( QStringLiteral( "hasScaleBasedVisibilityFlag" ) ).nodeValue() == '1' };
+      setScaleBasedVisibility( hasScaleBasedVisibiliy );
+      bool ok;
+      const double maxScale { node.attributes().namedItem( QStringLiteral( "maxScale" ) ).nodeValue().toDouble( &ok ) };
+      if ( ok )
+      {
+        setMaximumScale( maxScale );
+      }
+      const double minScale { node.attributes().namedItem( QStringLiteral( "minScale" ) ).nodeValue().toDouble( &ok ) };
+      if ( ok )
+      {
+        setMinimumScale( minScale );
       }
     }
 
@@ -2807,13 +2821,16 @@ bool QgsVectorLayer::writeStyle( QDomNode &node, QDomDocument &doc, QString &err
       node.appendChild( featureBlendModeElem );
     }
 
-    // add the layer opacity
+    // add the layer opacity and scale visibility
     if ( categories.testFlag( Rendering ) )
     {
       QDomElement layerOpacityElem  = doc.createElement( QStringLiteral( "layerOpacity" ) );
       QDomText layerOpacityText = doc.createTextNode( QString::number( opacity() ) );
       layerOpacityElem.appendChild( layerOpacityText );
       node.appendChild( layerOpacityElem );
+      mapLayerNode.setAttribute( QStringLiteral( "hasScaleBasedVisibilityFlag" ), hasScaleBasedVisibility() ? 1 : 0 );
+      mapLayerNode.setAttribute( QStringLiteral( "maxScale" ), maximumScale() );
+      mapLayerNode.setAttribute( QStringLiteral( "minScale" ), minimumScale() );
     }
 
     if ( categories.testFlag( Diagrams ) && mDiagramRenderer )
@@ -4164,6 +4181,11 @@ QVariant QgsVectorLayer::aggregate( QgsAggregateCalculator::Aggregate aggregate,
   if ( paramCopy.filter.contains( "var('symbol_expression')" ) )
     paramCopy.filter = paramCopy.filter.replace( "var('symbol_expression')",  QgsExpression::replaceExpressionText( "[% ( @symbol_expression ) %]", context ) );
 
+  //make a copy or make the param not const
+  QgsAggregateCalculator::AggregateParameters paramCopy = QgsAggregateCalculator::AggregateParameters( parameters );
+  if ( paramCopy.filter.contains( "var('symbol_expression')" ) )
+    paramCopy.filter = paramCopy.filter.replace( "var('symbol_expression')",  QgsExpression::replaceExpressionText( "[% ( @symbol_expression ) %]", context ) );
+
   if ( !mDataProvider )
   {
     return QVariant();
@@ -4495,8 +4517,15 @@ bool QgsVectorLayer::readSldTextSymbolizer( const QDomNode &node, QgsPalLayerSet
     return false;
   }
 
+  QgsUnitTypes::RenderUnit sldUnitSize = QgsUnitTypes::RenderPixels;
+  if ( textSymbolizerElem.hasAttribute( QStringLiteral( "uom" ) ) )
+  {
+    sldUnitSize = QgsSymbolLayerUtils::decodeSldUom( textSymbolizerElem.attribute( QStringLiteral( "uom" ) ) );
+  }
+
   QString fontFamily = QStringLiteral( "Sans-Serif" );
   int fontPointSize = 10;
+  QgsUnitTypes::RenderUnit fontUnitSize = QgsUnitTypes::RenderPoints;
   int fontWeight = -1;
   bool fontItalic = false;
   bool fontUnderline = false;
@@ -4523,7 +4552,10 @@ bool QgsVectorLayer::readSldTextSymbolizer( const QDomNode &node, QgsPalLayerSet
         bool ok;
         int fontSize = it.value().toInt( &ok );
         if ( ok )
+        {
           fontPointSize = fontSize;
+          fontUnitSize = sldUnitSize;
+        }
       }
       else if ( it.key() == QLatin1String( "font-weight" ) )
       {
@@ -4542,6 +4574,7 @@ bool QgsVectorLayer::readSldTextSymbolizer( const QDomNode &node, QgsPalLayerSet
   font.setUnderline( fontUnderline );
   format.setFont( font );
   format.setSize( fontPointSize );
+  format.setSizeUnit( fontUnitSize );
 
   // Fill
   QDomElement fillElem = textSymbolizerElem.firstChildElement( QStringLiteral( "Fill" ) );
@@ -4571,6 +4604,7 @@ bool QgsVectorLayer::readSldTextSymbolizer( const QDomNode &node, QgsPalLayerSet
       if ( ok )
       {
         bufferSettings.setSize( bufferSize );
+        bufferSettings.setSizeUnit( sldUnitSize );
       }
     }
 
@@ -4606,6 +4640,7 @@ bool QgsVectorLayer::readSldTextSymbolizer( const QDomNode &node, QgsPalLayerSet
           if ( ok )
           {
             settings.xOffset = xOffset;
+            settings.offsetUnits = sldUnitSize;
           }
         }
         QDomElement displacementYElem = displacementElem.firstChildElement( QStringLiteral( "DisplacementY" ) );
@@ -4616,6 +4651,7 @@ bool QgsVectorLayer::readSldTextSymbolizer( const QDomNode &node, QgsPalLayerSet
           if ( ok )
           {
             settings.yOffset = yOffset;
+            settings.offsetUnits = sldUnitSize;
           }
         }
       }
@@ -4630,6 +4666,7 @@ bool QgsVectorLayer::readSldTextSymbolizer( const QDomNode &node, QgsPalLayerSet
           if ( ok )
           {
             settings.xOffset = xOffset;
+            settings.offsetUnits = sldUnitSize;
           }
         }
         QDomElement anchorPointYElem = anchorPointElem.firstChildElement( QStringLiteral( "AnchorPointY" ) );
@@ -4640,6 +4677,7 @@ bool QgsVectorLayer::readSldTextSymbolizer( const QDomNode &node, QgsPalLayerSet
           if ( ok )
           {
             settings.yOffset = yOffset;
+            settings.offsetUnits = sldUnitSize;
           }
         }
       }
@@ -4653,6 +4691,97 @@ bool QgsVectorLayer::readSldTextSymbolizer( const QDomNode &node, QgsPalLayerSet
         {
           settings.angleOffset = 360 - rotation;
         }
+      }
+    }
+  }
+
+  // read vendor options
+  QgsStringMap vendorOptions;
+  QDomElement vendorOptionElem = textSymbolizerElem.firstChildElement( QStringLiteral( "VendorOption" ) );
+  while ( !vendorOptionElem.isNull() && vendorOptionElem.localName() == QLatin1String( "VendorOption" ) )
+  {
+    QString optionName = vendorOptionElem.attribute( QStringLiteral( "name" ) );
+    QString optionValue;
+    if ( vendorOptionElem.firstChild().nodeType() == QDomNode::TextNode )
+    {
+      optionValue = vendorOptionElem.firstChild().nodeValue();
+    }
+    else
+    {
+      if ( vendorOptionElem.firstChild().nodeType() == QDomNode::ElementNode &&
+           vendorOptionElem.firstChild().localName() == QLatin1String( "Literal" ) )
+      {
+        QgsDebugMsg( vendorOptionElem.firstChild().localName() );
+        optionValue = vendorOptionElem.firstChild().firstChild().nodeValue();
+      }
+      else
+      {
+        QgsDebugMsg( QStringLiteral( "unexpected child of %1 named %2" ).arg( vendorOptionElem.localName(), optionName ) );
+      }
+    }
+
+    if ( !optionName.isEmpty() && !optionValue.isEmpty() )
+    {
+      vendorOptions[ optionName ] = optionValue;
+    }
+
+    vendorOptionElem = vendorOptionElem.nextSiblingElement();
+  }
+  if ( !vendorOptions.isEmpty() )
+  {
+    for ( QgsStringMap::iterator it = vendorOptions.begin(); it != vendorOptions.end(); ++it )
+    {
+      if ( it.key() == QLatin1String( "underlineText" ) && it.value() == QLatin1String( "true" ) )
+      {
+        font.setUnderline( true );
+        format.setFont( font );
+      }
+      else if ( it.key() == QLatin1String( "strikethroughText" ) && it.value() == QLatin1String( "true" ) )
+      {
+        font.setStrikeOut( true );
+        format.setFont( font );
+      }
+      else if ( it.key() == QLatin1String( "maxDisplacement" ) )
+      {
+        settings.placement = QgsPalLayerSettings::AroundPoint;
+      }
+      else if ( it.key() == QLatin1String( "followLine" ) && it.value() == QLatin1String( "true" ) )
+      {
+        if ( geometryType() == QgsWkbTypes::PolygonGeometry )
+        {
+          settings.placement = QgsPalLayerSettings::PerimeterCurved;
+        }
+        else
+        {
+          settings.placement = QgsPalLayerSettings::Curved;
+        }
+      }
+      else if ( it.key() == QLatin1String( "maxAngleDelta" ) )
+      {
+        bool ok;
+        double angle = it.value().toDouble( &ok );
+        if ( ok )
+        {
+          settings.maxCurvedCharAngleIn = angle;
+          settings.maxCurvedCharAngleOut = angle;
+        }
+      }
+      // miscellaneous options
+      else if ( it.key() == QLatin1String( "conflictResolution" ) && it.value() == QLatin1String( "false" ) )
+      {
+        settings.displayAll = true;
+      }
+      else if ( it.key() == QLatin1String( "forceLeftToRight" ) && it.value() == QLatin1String( "false" ) )
+      {
+        settings.upsidedownLabels = QgsPalLayerSettings::ShowAll;
+      }
+      else if ( it.key() == QLatin1String( "group" ) && it.value() == QLatin1String( "yes" ) )
+      {
+        settings.mergeLines = true;
+      }
+      else if ( it.key() == QLatin1String( "labelAllGroup" ) && it.value() == QLatin1String( "true" ) )
+      {
+        settings.mergeLines = true;
       }
     }
   }
@@ -5090,6 +5219,8 @@ void QgsVectorLayer::emitDataChanged()
 {
   if ( mDataChangedFired )
     return;
+
+  updateExtents(); // reset cached extent to reflect data changes
 
   mDataChangedFired = true;
   emit dataChanged();

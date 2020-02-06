@@ -31,6 +31,7 @@ from qgis.core import (NULL,
                        QgsWkbTypes,
                        QgsAggregateCalculator,
                        QgsFeatureRequest,
+                       QgsDataSourceUri
                        )
 from qgis.testing import (start_app,
                           unittest
@@ -426,6 +427,14 @@ class TestPyQgsAFSProvider(unittest.TestCase, ProviderTestCase):
         uri = self.vl.source()
         parts = QgsProviderRegistry.instance().decodeUri(self.vl.dataProvider().name(), uri)
         self.assertEqual(parts, {'url': 'http://' + self.basetestpath + '/fake_qgis_http_endpoint'})
+
+    def testEncodeUri(self):
+        """
+        Test encoding an AFS uri
+        """
+        parts = {'url': self.vl.source()}
+        uri = QgsProviderRegistry.instance().encodeUri(self.vl.dataProvider().name(), parts)
+        self.assertEqual(QgsDataSourceUri(uri).param('url'), self.vl.source())
 
     def testObjectIdDifferentName(self):
         """ Test that object id fields not named OBJECTID work correctly """
