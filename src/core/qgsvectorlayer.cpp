@@ -4181,11 +4181,6 @@ QVariant QgsVectorLayer::aggregate( QgsAggregateCalculator::Aggregate aggregate,
   if ( paramCopy.filter.contains( "var('symbol_expression')" ) )
     paramCopy.filter = paramCopy.filter.replace( "var('symbol_expression')",  QgsExpression::replaceExpressionText( "[% ( @symbol_expression ) %]", context ) );
 
-  //make a copy or make the param not const
-  QgsAggregateCalculator::AggregateParameters paramCopy = QgsAggregateCalculator::AggregateParameters( parameters );
-  if ( paramCopy.filter.contains( "var('symbol_expression')" ) )
-    paramCopy.filter = paramCopy.filter.replace( "var('symbol_expression')",  QgsExpression::replaceExpressionText( "[% ( @symbol_expression ) %]", context ) );
-
   if ( !mDataProvider )
   {
     return QVariant();
