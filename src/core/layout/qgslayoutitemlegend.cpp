@@ -916,16 +916,16 @@ QVariant QgsLegendModel::data( const QModelIndex &index, int role ) const
 
     //finding the first label that is stored
     name = nodeLayer->customProperty( QStringLiteral( "legend/title-label" ) ).toString();
-    qDebug() << name;
+    qDebug() << name << "919";
     if ( name.isEmpty() )
       name = nodeLayer->name();
-    qDebug() << nodeLayer->name();
+    qDebug() << nodeLayer->name() << "922";
     if ( name.isEmpty() )
       name = node->customProperty( QStringLiteral( "legend/title-label" ) ).toString();
-    qDebug() << node->customProperty( QStringLiteral( "legend/title-label" ) ).toString();
+    qDebug() << node->customProperty( QStringLiteral( "legend/title-label" ) ).toString()  << "925";
     if ( name.isEmpty() )
       name = node->name();
-    qDebug() << node->name();
+    qDebug() << node->name()  << "928";
     if ( nodeLayer->customProperty( QStringLiteral( "showFeatureCount" ), 0 ).toInt() )
     {
       if ( vlayer && vlayer->featureCount() >= 0 )
@@ -940,6 +940,7 @@ QVariant QgsLegendModel::data( const QModelIndex &index, int role ) const
       if ( QgsSymbolLegendNode *symnode = qobject_cast<QgsSymbolLegendNode *>( legendnodes.first() ) ) // evaluate all existing legend nodes but leave the name for the legend evaluator
         name = symnode->data( role ).toString();
     }
+    qDebug() << name << "943"
     return name;
   }
   return QgsLayerTreeModel::data( index, role );
@@ -970,8 +971,10 @@ QString QgsLegendModel::evaluateLayerExpressions( QgsLayerTreeLayer *nodeLayer )
     return name;
   //finding the first label that is stored
   name = nodeLayer->customProperty( QStringLiteral( "legend/title-label" ) ).toString();
+  qDebug() << name << "973";
   if ( name.isEmpty() )
     name = nodeLayer->name();
+    qDebug() << nodeLayer->name()<<"976";
 
   if ( nodeLayer->customProperty( QStringLiteral( "showFeatureCount" ), 0 ).toInt() )
   {
@@ -987,12 +990,9 @@ QString QgsLegendModel::evaluateLayerExpressions( QgsLayerTreeLayer *nodeLayer )
   if ( evaluate || name.contains( "[%" ) )
   {
     QgsExpressionContext expressionContext;
-    if ( vlayer )
-    {
-      connect( vlayer, &QgsVectorLayer::symbolFeatureCountMapChanged, this, &QgsLegendModel::forceRefresh, Qt::UniqueConnection );
-      // counting is done here to ensure that a valid vector layer needs to be evaluated, count is used to validate previous count or update the count if invalidated
-      vlayer->countSymbolFeatures();
-    }
+    connect( vlayer, &QgsVectorLayer::symbolFeatureCountMapChanged, this, &QgsLegendModel::forceRefresh, Qt::UniqueConnection );
+    // counting is done here to ensure that a valid vector layer needs to be evaluated, count is used to validate previous count or update the count if invalidated
+    vlayer->countSymbolFeatures();
 
     if ( mLayoutLegend )
       expressionContext = mLayoutLegend->createExpressionContext();
