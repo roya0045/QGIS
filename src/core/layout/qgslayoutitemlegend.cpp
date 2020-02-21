@@ -940,7 +940,7 @@ QVariant QgsLegendModel::data( const QModelIndex &index, int role ) const
       if ( QgsSymbolLegendNode *symnode = qobject_cast<QgsSymbolLegendNode *>( legendnodes.first() ) ) // evaluate all existing legend nodes but leave the name for the legend evaluator
         name = symnode->data( role ).toString();
     }
-    qDebug() << name << "943"
+    qDebug() << name << "943";
     return name;
   }
   return QgsLayerTreeModel::data( index, role );
