@@ -423,11 +423,9 @@ QString QgsOracleUtils::whereClause( QgsFeatureId featureId, const QgsFields &fi
     case PktRowId:
     case PktFidMap:
     {
-      QVariant pkValsVariant = sharedData->lookupKey( featureId );
-      if ( !pkValsVariant.isNull() )
+      QVariantList pkVals = sharedData->lookupKey( featureId );
+      if ( !pkVals.isEmpty() )
       {
-        QList<QVariant> pkVals = pkValsVariant.toList();
-
         if ( primaryKeyType == PktFidMap )
         {
           Q_ASSERT( pkVals.size() == primaryKeyAttrs.size() );
@@ -1688,7 +1686,7 @@ bool QgsOracleProvider::deleteAttributes( const QgsAttributeIds &ids )
     qry.finish();
 
     QList<int> idsList = ids.values();
-    std::sort( idsList.begin(), idsList.end(), qGreater<int>() );
+    std::sort( idsList.begin(), idsList.end(), std::greater<int>() );
 
     const auto constIdsList = idsList;
     for ( int id : constIdsList )

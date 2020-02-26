@@ -208,6 +208,14 @@ class TestPyQgsProviderConnectionPostgres(unittest.TestCase, TestPyQgsProviderCo
         self.assertEqual(conn.executeSql('SELECT NULL::text'), [[None]])
         self.assertEqual(conn.executeSql('SELECT NULL::bytea'), [[None]])
 
+    def test_pk_cols_order(self):
+        """Test that PKs are returned in consistent order: see GH #34167"""
+
+        md = QgsProviderRegistry.instance().providerMetadata(self.providerKey)
+        conn = md.createConnection(self.uri, {})
+        self.assertEqual(conn.table('qgis_test', 'bikes_view').primaryKeyColumns(), ['pk', 'name'])
+        self.assertEqual(conn.table('qgis_test', 'some_poly_data_view').primaryKeyColumns(), ['pk', 'geom'])
+
 
 if __name__ == '__main__':
     unittest.main()

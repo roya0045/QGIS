@@ -156,15 +156,15 @@ void QgsSourceFieldsProperties::attributeAdded( int idx )
     {
       case QgsFields::OriginExpression:
         if ( i == 7 ) continue;
-        mFieldsList->item( row, i )->setBackgroundColor( QColor( 200, 200, 255 ) );
+        mFieldsList->item( row, i )->setBackground( QColor( 200, 200, 255 ) );
         break;
 
       case QgsFields::OriginJoin:
-        mFieldsList->item( row, i )->setBackgroundColor( QColor( 200, 255, 200 ) );
+        mFieldsList->item( row, i )->setBackground( QColor( 200, 255, 200 ) );
         break;
 
       default:
-        mFieldsList->item( row, i )->setBackgroundColor( QColor( 255, 255, 200 ) );
+        mFieldsList->item( row, i )->setBackground( QColor( 255, 255, 200 ) );
         break;
     }
   }
@@ -410,8 +410,10 @@ void QgsSourceFieldsProperties::attributesListCellPressed( int /*row*/, int /*co
 //NICE FUNCTIONS
 void QgsSourceFieldsProperties::updateButtons()
 {
-
-  int cap = mLayer->dataProvider()->capabilities();
+  QgsVectorDataProvider *provider = mLayer->dataProvider();
+  if ( !provider )
+    return;
+  const int cap = provider->capabilities();
 
   mToggleEditingButton->setEnabled( ( cap & QgsVectorDataProvider::ChangeAttributeValues ) && !mLayer->readOnly() );
 

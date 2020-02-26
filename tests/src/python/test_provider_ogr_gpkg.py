@@ -1547,6 +1547,35 @@ class TestPyQgsOGRProviderGpkg(unittest.TestCase):
         total2 = StackedFilter.calculate(QgsAggregateCalculator.Sum, field, context=qexc)
         if not((int(total1[0]) + int(total2[0])) == 0):
             self.assertNotEqual(total1, total2)
+    def testExporterWithFIDColumn(self):
+        """Test issue GH #34333, a memory layer with FID is not exported correctly to GPKG"""
+
+        vl = QgsVectorLayer(
+            'Point?crs=epsg:4326&field=FID:integer(0)&field=name:string(20)',
+            'test',
+            'memory')
+
+        self.assertTrue(vl.isValid(), 'Provider not initialized')
+
+        ft = QgsFeature(vl.fields())
+        ft.setAttributes([123, 'text1'])
+        ft.setGeometry(QgsGeometry.fromWkt('Point(2 49)'))
+        myResult, myFeatures = vl.dataProvider().addFeatures([ft])
+        self.assertTrue(myResult)
+        self.assertTrue(myFeatures)
+
+        dest_file_name = tempfile.mktemp('.gpkg')
+        err = QgsVectorLayerExporter.exportLayer(vl, dest_file_name, "ogr", vl.crs(), False)
+        self.assertEqual(err[0], QgsVectorLayerExporter.NoError,
+                         'unexpected import error {0}'.format(err))
+
+        # Open result and check
+        created_layer = QgsVectorLayer(dest_file_name, 'test', 'ogr')
+        self.assertTrue(created_layer.isValid())
+        f = next(created_layer.getFeatures())
+        self.assertEqual(f.geometry().asWkt(), 'Point (2 49)')
+        self.assertEqual(f.attributes(), [123, 'text1'])
+        self.assertEqual(f.id(), 123)
 
 
 if __name__ == '__main__':

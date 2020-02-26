@@ -93,9 +93,11 @@ class TestDBManagerPostgisPlugin(unittest.TestCase):
 
             # We need to make sure a database is created with at
             # least one raster table !
-            self.assertTrue(raster_tables_count > 1)
+            self.assertGreaterEqual(raster_tables_count, 1)
 
         obj = QObject() # needs to be kept alive
+        obj.connectionName = lambda: 'fake'
+        obj.providerName = lambda: 'postgres'
 
         # Test for empty URI
         # See https://github.com/qgis/QGIS/issues/24525
@@ -134,6 +136,8 @@ class TestDBManagerPostgisPlugin(unittest.TestCase):
     def test_unicodeInQuery(self):
         os.environ['PGDATABASE'] = self.testdb
         obj = QObject() # needs to be kept alive
+        obj.connectionName = lambda: 'fake'
+        obj.providerName = lambda: 'postgres'
         database = PGDatabase(obj, QgsDataSourceUri())
         self.assertIsInstance(database, PGDatabase)
         # SQL as string literal

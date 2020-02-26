@@ -4913,6 +4913,18 @@ void TestQgsProcessing::parameterField()
   fields = QgsProcessingParameters::parameterAsFields( def.get(), params, context );
   QCOMPARE( fields, QStringList() << "def" );
 
+  // optional with string list default
+  def.reset( new QgsProcessingParameterField( "optional", QString(), QStringList() << QStringLiteral( "def" ) << QStringLiteral( "abc" ), QString(), QgsProcessingParameterField::Any, true, true ) );
+  QVERIFY( def->checkValueIsAcceptable( QStringList() << "a" << "b" ) );
+  fields = QgsProcessingParameters::parameterAsFields( def.get(), params, context );
+  QCOMPARE( fields, QStringList() << "def" << "abc" );
+  params.insert( "optional",  QVariantList() << "f" << "h" );
+  fields = QgsProcessingParameters::parameterAsFields( def.get(), params, context );
+  QCOMPARE( fields, QStringList() << "f" << "h" );
+  params.insert( "optional",  QStringList() << "g" << "h" );
+  fields = QgsProcessingParameters::parameterAsFields( def.get(), params, context );
+  QCOMPARE( fields, QStringList() << "g" << "h" );
+
   // optional, no default
   def.reset( new QgsProcessingParameterField( "optional", QString(), QVariant(), QString(), QgsProcessingParameterField::Any, false, true ) );
   params.insert( "optional",  QVariant() );
@@ -8536,12 +8548,16 @@ void TestQgsProcessing::tempUtils()
   QVERIFY( tempFile3.startsWith( tempFolder ) );
 
   // change temp folder in the settings
+  std::unique_ptr< QTemporaryDir > dir = qgis::make_unique< QTemporaryDir >();
+  const QString tempDirPath = dir->path();
+  dir.reset();
+
   QgsSettings settings;
-  QString alternative_tempFolder1 = QStringLiteral( TEST_DATA_DIR ) + QStringLiteral( "/alternative_temp_test_one" );
-  settings.setValue( QStringLiteral( "Processing/Configuration/TEMP_PATH" ), alternative_tempFolder1 );
+  QString alternative_tempFolder1 = tempDirPath + QStringLiteral( "/alternative_temp_test_one" );
+  settings.setValue( QStringLiteral( "Processing/Configuration/TEMP_PATH2" ), alternative_tempFolder1 );
   // check folder and if it's constant with alternative temp folder 1
   tempFolder = QgsProcessingUtils::tempFolder();
-  QVERIFY( tempFolder.startsWith( alternative_tempFolder1 ) );
+  QCOMPARE( tempFolder.left( alternative_tempFolder1.length() ), alternative_tempFolder1 );
   QCOMPARE( QgsProcessingUtils::tempFolder(), tempFolder );
   // create file
   QString alternativeTempFile1 = QgsProcessingUtils::generateTempFilename( "alternative_temptest.txt" );
@@ -8549,17 +8565,19 @@ void TestQgsProcessing::tempUtils()
   QVERIFY( alternativeTempFile1.startsWith( tempFolder ) );
   QVERIFY( alternativeTempFile1.startsWith( alternative_tempFolder1 ) );
   // change temp folder in the settings again
-  QString alternative_tempFolder2 = QStringLiteral( TEST_DATA_DIR ) + QStringLiteral( "/alternative_temp_test_two" );
-  settings.setValue( QStringLiteral( "Processing/Configuration/TEMP_PATH" ), alternative_tempFolder2 );
+  QString alternative_tempFolder2 =  tempDirPath + QStringLiteral( "/alternative_temp_test_two" );
+  settings.setValue( QStringLiteral( "Processing/Configuration/TEMP_PATH2" ), alternative_tempFolder2 );
   // check folder and if it's constant constant with alternative temp folder 2
   tempFolder = QgsProcessingUtils::tempFolder();
-  QVERIFY( tempFolder.startsWith( alternative_tempFolder2 ) );
+  QCOMPARE( tempFolder.left( alternative_tempFolder2.length() ), alternative_tempFolder2 );
   QCOMPARE( QgsProcessingUtils::tempFolder(), tempFolder );
   // create file
   QString alternativeTempFile2 = QgsProcessingUtils::generateTempFilename( "alternative_temptest.txt" );
   QVERIFY( alternativeTempFile2.endsWith( "alternative_temptest.txt" ) );
   QVERIFY( alternativeTempFile2.startsWith( tempFolder ) );
   QVERIFY( alternativeTempFile2.startsWith( alternative_tempFolder2 ) );
+  settings.setValue( QStringLiteral( "Processing/Configuration/TEMP_PATH2" ), QString() );
+
 }
 
 void TestQgsProcessing::convertCompatible()

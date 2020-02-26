@@ -23,6 +23,8 @@
 #include <QFileDialog>
 #include <QMessageBox>
 
+///@cond PRIVATE
+
 QgsInstallGridShiftFileDialog::QgsInstallGridShiftFileDialog( const QString &gridName, QWidget *parent )
   : QDialog( parent )
   , mGridName( gridName )
@@ -49,7 +51,7 @@ void QgsInstallGridShiftFileDialog::installFromFile()
 {
   QgsSettings settings;
   const QString initialDir = settings.value( QStringLiteral( "lastTransformGridFolder" ), QDir::homePath(), QgsSettings::App ).toString();
-  const QString gridFilePath = QFileDialog::getOpenFileName( nullptr, tr( "Install %1" ).arg( mGridName ), initialDir, QStringLiteral( "%1 (%1);;" ).arg( mGridName ) + tr( "Grid Shift Files" ) + QStringLiteral( " (*.gsb *.GSB);;" ) + QObject::tr( "All files" ) + " (*)" );
+  const QString gridFilePath = QFileDialog::getOpenFileName( nullptr, tr( "Install %1" ).arg( mGridName ), initialDir, QStringLiteral( "%1 (%1);;" ).arg( mGridName ) + tr( "Grid Shift Files" ) + QStringLiteral( " (*.gsb *.GSB *.tif);;" ) + QObject::tr( "All files" ) + " (*)" );
 
   if ( gridFilePath.isEmpty() )
   {
@@ -75,3 +77,5 @@ void QgsInstallGridShiftFileDialog::installFromFile()
     QMessageBox::critical( this, tr( "Install Grid File" ), tr( "Could not copy %1 to %2. Please check folder permissions and retry." ).arg( mGridName, destPath ) );
   }
 }
+
+///@endcond

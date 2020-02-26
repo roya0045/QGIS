@@ -28,11 +28,6 @@ qgis:boundary: >
 qgis:boxplot: >
   This algorithm creates a box plot from a category and a layer field.
 
-qgis:buildvirtualvector: >
-  This algorithm creates a virtual layer that contains a set of vector layer.
-
-  The output virtual layer will not be open in the current project.
-
 qgis:centroids: >
   This algorithm creates a new point layer, with points representing the centroid of the geometries in an input layer.
 
@@ -71,9 +66,9 @@ qgis:createpointslayerfromtable: >
   This algorithm creates points layer from a table with columns that contain coordinates fields. Besides X and Y coordinates you can also specify Z and M fields.
 
 qgis:definecurrentprojection: >
-  This algorithm sets an existing layer's projection to the provided CRS. Contrary to the "Assign projection" algorithm, it will not output a new layer.
+  This algorithm sets an existing Shapefile's projection to the provided CRS. Contrary to the "Assign projection" algorithm, it will not output a new layer.
 
-  For shapefile datasets, the .prj and .qpj files will be overwritten - or created if missing - to match the provided CRS.
+  The .prj and .qpj files associated with the Shapefile will be overwritten - or created if missing - to match the provided CRS.
 
 qgis:delaunaytriangulation: >
   This algorithm creates a polygon layer with the delaunay triangulation corresponding to a points layer.
@@ -236,11 +231,6 @@ qgis:minimalenclosingcircle: >
   This algorithm takes a vector layer and generate a new one with the minimum enclosing circle that covers all the input features.
 
   As an alternative, the output layer can contain not just a single circle, but one for each input feature, representing the minimum enclosing circle that covers each of them.
-
-qgis:pointsalonglines: >
-  Creates points at regular intervals along line or polygon geometries. Created points will have new attributes added for the distance along the geometry and the angle of the line at the point.
-
-  An optional start and end offset can be specified, which controls how far from the start and end of the geometry the points should be created.
 
 qgis:pointsdisplacement: >
   Offsets nearby point features by moving nearby points by a preset amount to minimize overlapping features.

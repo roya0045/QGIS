@@ -172,15 +172,12 @@ bool QgsPostgresRasterProvider::hasSufficientPermsAndCapabilities()
       return false;
     }
 
-    bool inRecovery = false;
-
     if ( connectionRO()->pgVersion() >= 90000 )
     {
       testAccess = connectionRO()->PQexec( QStringLiteral( "SELECT pg_is_in_recovery()" ) );
       if ( testAccess.PQresultStatus() != PGRES_TUPLES_OK || testAccess.PQgetvalue( 0, 0 ) == QLatin1String( "t" ) )
       {
         QgsMessageLog::logMessage( tr( "PostgreSQL is still in recovery after a database crash\n(or you are connected to a (read-only) slave).\nWrite accesses will be denied." ), tr( "PostGIS" ) );
-        inRecovery = true;
       }
     }
   }
@@ -415,8 +412,8 @@ bool QgsPostgresRasterProvider::readBlock( int bandNo, const QgsRectangle &viewE
     const QgsRectangle &tilesExtent { tileResponse.extent };
 
     // Prepare tmp output raster
-    const int tmpWidth = static_cast<int>( tilesExtent.width() / tileResponse.tiles.first().scaleX );
-    const int tmpHeight = static_cast<int>( tilesExtent.height() / std::fabs( tileResponse.tiles.first().scaleY ) );
+    const int tmpWidth = static_cast<int>( std::round( tilesExtent.width() / tileResponse.tiles.first().scaleX ) );
+    const int tmpHeight = static_cast<int>( std::round( tilesExtent.height() / std::fabs( tileResponse.tiles.first().scaleY ) ) );
 
     GDALDataType gdalDataType { static_cast<GDALDataType>( sourceDataType( bandNo ) ) };
 
@@ -864,7 +861,7 @@ bool QgsPostgresRasterProvider::init()
         // Extent
         QgsPolygon p;
         // Strip \x
-        const QByteArray hexAscii { result.PQgetvalue( 0, 5 ).toAscii().mid( 2 ) };
+        const QByteArray hexAscii { result.PQgetvalue( 0, 5 ).toLatin1().mid( 2 ) };
         QgsConstWkbPtr ptr { QByteArray::fromHex( hexAscii ) };
 
         if ( ! p.fromWkb( ptr ) )
@@ -1004,7 +1001,7 @@ bool QgsPostgresRasterProvider::init()
     // Extent
     try
     {
-      QgsConstWkbPtr ptr { QByteArray::fromHex( result.PQgetvalue( 0, 0 ).toAscii() ) };
+      QgsConstWkbPtr ptr { QByteArray::fromHex( result.PQgetvalue( 0, 0 ).toLatin1() ) };
       if ( ! p.fromWkb( ptr ) )
       {
         QgsMessageLog::logMessage( tr( "Cannot get extent from raster" ),
