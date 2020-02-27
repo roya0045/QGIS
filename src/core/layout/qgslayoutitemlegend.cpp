@@ -84,6 +84,13 @@ void QgsLayoutItemLegend::paint( QPainter *painter, const QStyleOptionGraphicsIt
   if ( !painter )
     return;
 
+  //evaluate expressions once
+  const QList<QgsLayerTreeLayer *> layers = mLegendModel->filteredLayers();
+  for ( QgsLayerTreeLayer *nodeLayer : layers )
+  {
+    mLegendModel->evaluateLayerExpressions( nodeLayer );
+  }
+
   if ( mFilterAskedForUpdate )
   {
     mFilterAskedForUpdate = false;
@@ -178,13 +185,6 @@ void QgsLayoutItemLegend::draw( QgsLayoutItemRenderContext &context )
 
   if ( mLayout )
     mSettings.setDpi( mLayout->renderContext().dpi() );
-
-  //evaluate expressions once
-  const QList<QgsLayerTreeLayer *> layers = mLegendModel->filteredLayers();
-  for ( QgsLayerTreeLayer *nodeLayer : layers )
-  {
-    mLegendModel->evaluateLayerExpressions( nodeLayer );
-  }
 
   QgsLegendRenderer legendRenderer( mLegendModel.get(), mSettings );
   legendRenderer.setLegendSize( rect().size() );
