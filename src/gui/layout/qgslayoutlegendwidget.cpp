@@ -1078,11 +1078,11 @@ void QgsLayoutLegendWidget::mLayerExpressionButton_clicked()
   QgsExpressionBuilderDialog expressiondialog( vl, currentExpression, nullptr, QStringLiteral( "generic" ), legendContext );
   if ( expressiondialog.exec() )
     layerNode->setLabelExpression( expressiondialog.expressionText() );
-
   mLegend->beginCommand( tr( "Update Legend" ) );
   mLegend->updateLegend();
   mLegend->adjustBoxSize();
   mLegend->endCommand();
+  mLegend->refresh();
 }
 
 void QgsLayoutLegendWidget::mUpdateAllPushButton_clicked()

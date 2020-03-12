@@ -703,8 +703,8 @@ QString QgsSymbolLegendNode::evaluateLabel( const QgsExpressionContext &context,
     contextCopy.appendScope( symbolScope );
     contextCopy.appendScope( vl->createExpressionContextScope() );
     QString nodeExpression = mLayerNode->labelExpression();
-    if ( nodeExpression.contains( "filter:=" ) && nodeExpression.contains( "@symbol_expression" ) )
-      nodeExpression = nodeExpression.replace( "@symbol_expression", QgsExpression::replaceExpressionText( "[% @symbol_expression %]", &contextCopy ) );
+    //if ( nodeExpression.contains( "filter:=" ) && nodeExpression.contains( "@symbol_expression" ) )
+    //  nodeExpression = nodeExpression.replace( "@symbol_expression", QgsExpression::replaceExpressionText( "[% @symbol_expression %]", &contextCopy ) );
     if ( label.isEmpty() )
     {
       if ( ! nodeExpression.isEmpty() )

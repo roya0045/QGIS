@@ -906,26 +906,20 @@ QVariant QgsLegendModel::data( const QModelIndex &index, int role ) const
   // handle custom layer node labels
   QString name;
 
-  qDebug()<< "data "<<QString::number(index.row())<<QString::number(index.column())<<"idx"<<QString::number(role);
   QgsLayerTreeNode *node = index2node( index );
   QgsLayerTreeLayer *nodeLayer = QgsLayerTree::isLayer( node ) ? QgsLayerTree::toLayer( node ) : nullptr;
   if ( nodeLayer && ( role == Qt::DisplayRole || role == Qt::EditRole ) )
   {
-
     QgsVectorLayer *vlayer = qobject_cast<QgsVectorLayer *>( nodeLayer->layer() );
 
     //finding the first label that is stored
     name = nodeLayer->customProperty( QStringLiteral( "legend/title-label" ) ).toString();
-    qDebug() << name << "919";
     if ( name.isEmpty() )
       name = nodeLayer->name();
-    qDebug() << nodeLayer->name() << "922";
     if ( name.isEmpty() )
       name = node->customProperty( QStringLiteral( "legend/title-label" ) ).toString();
-    qDebug() << node->customProperty( QStringLiteral( "legend/title-label" ) ).toString()  << "925";
     if ( name.isEmpty() )
       name = node->name();
-    qDebug() << node->name()  << "928";
     if ( nodeLayer->customProperty( QStringLiteral( "showFeatureCount" ), 0 ).toInt() )
     {
       connect( vlayer, &QgsVectorLayer::symbolFeatureCountMapChanged, this, &QgsLegendModel::forceRefresh, Qt::UniqueConnection );
@@ -942,7 +936,6 @@ QVariant QgsLegendModel::data( const QModelIndex &index, int role ) const
       if ( QgsSymbolLegendNode *symnode = qobject_cast<QgsSymbolLegendNode *>( legendnodes.first() ) ) // evaluate all existing legend nodes but leave the name for the legend evaluator
         name = symnode->data( role ).toString();
     }
-    qDebug() << name << "943";
     return name;
   }
   return QgsLayerTreeModel::data( index, role );

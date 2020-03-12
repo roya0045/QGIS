@@ -4196,8 +4196,13 @@ QVariant QgsVectorLayer::aggregate( QgsAggregateCalculator::Aggregate aggregate,
     *ok = false;
   QgsAggregateCalculator::AggregateParameters paramCopy = QgsAggregateCalculator::AggregateParameters(parameters); 
   if ( paramCopy.filter.contains( "var('symbol_expression')" ) )
-    paramCopy.filter = paramCopy.filter.replace( "var('symbol_expression')",  QgsExpression::replaceExpressionText( "[% ( @symbol_expression ) %]", context ) );
-
+  {
+    QString symbEx = QgsExpression::replaceExpressionText( "[% ( @symbol_expression ) %]", context );
+    if ( symbEx.isEmpty() )
+      symbEx = "True";
+    paramCopy.filter = paramCopy.filter.replace( "var('symbol_expression')",  symbEx );
+  }
+  qDebug() << "4200" << paramCopy.filter;
   if ( !mDataProvider )
   {
     return QVariant();

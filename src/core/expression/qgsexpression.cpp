@@ -442,7 +442,7 @@ QString QgsExpression::replaceExpressionText( const QString &action, const QgsEx
     QgsExpression exp( toReplace );
     if ( exp.hasParserError() )
     {
-      QgsDebugMsg( "Expression parser error: " + exp.parserErrorString() );
+      QgsDebugMsg( "Expression parser error: " + exp.parserErrorString() + toReplace );
       expr_action += action.midRef( start, index - start );
       continue;
     }
