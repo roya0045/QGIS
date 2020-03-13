@@ -85,17 +85,17 @@ void QgsLayoutItemLegend::paint( QPainter *painter, const QStyleOptionGraphicsIt
     return;
   qDebug() << "PAINT";
 
+  if ( mFilterAskedForUpdate )
+  {
+    mFilterAskedForUpdate = false;
+    doUpdateFilterByMap();
+  }
+
   //evaluate expressions once
   const QList<QgsLayerTreeLayer *> layers = mLegendModel->filteredLayers();
   for ( QgsLayerTreeLayer *nodeLayer : layers )
   {
     mLegendModel->evaluateLayerExpressions( nodeLayer );
-  }
-
-  if ( mFilterAskedForUpdate )
-  {
-    mFilterAskedForUpdate = false;
-    doUpdateFilterByMap();
   }
 
   int dpi = painter->device()->logicalDpiX();
