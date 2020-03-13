@@ -83,6 +83,7 @@ void QgsLayoutItemLegend::paint( QPainter *painter, const QStyleOptionGraphicsIt
 {
   if ( !painter )
     return;
+  qDebug() << "PAINT";
 
   //evaluate expressions once
   const QList<QgsLayerTreeLayer *> layers = mLegendModel->filteredLayers();
@@ -148,7 +149,7 @@ void QgsLayoutItemLegend::paint( QPainter *painter, const QStyleOptionGraphicsIt
       attemptResize( newSize );
     }
   }
-
+  qDebug() << " call paint";
   QgsLayoutItem::paint( painter, itemStyle, pWidget );
 }
 
@@ -162,12 +163,14 @@ void QgsLayoutItemLegend::finalizeRestoreFromXml()
 
 void QgsLayoutItemLegend::refresh()
 {
+  qDebug() << "REFRESH";
   QgsLayoutItem::refresh();
   onAtlasFeature();
 }
 
 void QgsLayoutItemLegend::draw( QgsLayoutItemRenderContext &context )
 {
+  qDebug() << "DRAW";
   QPainter *painter = context.renderContext().painter();
   painter->save();
 
@@ -788,7 +791,7 @@ void QgsLayoutItemLegend::updateFilterByMap( bool redraw )
   // ask for update
   // the actual update will take place before the redraw.
   // This is to avoid multiple calls to the filter
-  mFilterAskedForUpdate = true;
+  mFilterAskedForUpdate = redraw;
   if ( redraw )
     update();
 }

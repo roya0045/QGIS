@@ -193,6 +193,7 @@ void QgsLayerTreeLayer::layerNameChanged()
 
 void QgsLayerTreeLayer::setLabelExpression( const QString &expression )
 {
+  qDebug() << "setting label expression 196";
   mLabelExpression = expression;
 }
 

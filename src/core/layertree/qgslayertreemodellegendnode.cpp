@@ -223,7 +223,7 @@ QgsSymbolLegendNode::QgsSymbolLegendNode( QgsLayerTreeLayer *nodeLayer, const Qg
 {
   const int iconSize = QgsLayerTreeModel::scaleIconSize( 16 );
   mIconSize = QSize( iconSize, iconSize );
-
+  qDebug() << "New node";
   updateLabel();
   connect( qobject_cast<QgsVectorLayer *>( nodeLayer->layer() ), &QgsVectorLayer::symbolFeatureCountMapChanged, this, &QgsSymbolLegendNode::updateLabel );
   connect( qobject_cast<QgsVectorLayer *>( nodeLayer->layer() ), &QgsVectorLayer::rendererChanged, nodeLayer, &QgsLayerTreeLayer::updateSymbolExpressions );
@@ -669,17 +669,28 @@ void QgsSymbolLegendNode::invalidateMapBasedData()
 
 void QgsSymbolLegendNode::updateLabel()
 {
-  qDebug() << "update label";
+  qDebug() << "update label" <<mLayerNode->layer()->name();
   if ( !mLayerNode )
     return;
+  qDebug() << "expression is:" << mLayerNode->labelExpression();
+  if ( ! mLabel.isEmpty() )
+  {
+    if ( ! mLayerNode->labelExpression().isEmpty() )
+      return;
 
-  if ( ! mLabelExpression.isEmpty() )
-    return;
+    if ( ! mLabelExpression.isEmpty()  )
+    {
+      qDebug() << " expression is not empty";
+      return;
+    }
+  }
+
 
   bool showFeatureCount = mLayerNode->customProperty( QStringLiteral( "showFeatureCount" ), 0 ).toBool();
   QgsVectorLayer *vl = qobject_cast<QgsVectorLayer *>( mLayerNode->layer() );
+  qDebug() << "symbol label1" << mLabel;
   mLabel = symbolLabel();
-
+  qDebug() << "symbol label2" << mLabel;
   if ( showFeatureCount && vl )
   {
     qlonglong count = mEmbeddedInParent ? vl->featureCount() : vl->featureCount( mItem.ruleKey() ) ;
