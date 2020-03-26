@@ -143,6 +143,19 @@ class CORE_EXPORT QgsMapLayerStyleManager : public QObject
      * \since QGIS 3.14
      */
     void copyStylesFrom( QgsMapLayerStyleManager *other );
+    /**
+     * Import all layer styles from another layer without altering or renaming the current styles.
+     *
+     * \since QGIS 3.14
+     */
+    void importAllLayerStyles( QgsMapLayer *layer );
+
+    /**
+     * Remove all layer styles and import all layer styles from another layer.
+     *
+     * \since QGIS 3.14
+     */
+    void replaceAllLayerStyles( QgsMapLayer *layer );
 
   signals:
     //! Emitted when a new style has been added

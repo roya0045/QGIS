@@ -518,6 +518,7 @@ set(QGIS_GUI_SRCS
   qgsmaptoolzoom.cpp
   qgsmaplayerconfigwidget.cpp
   qgsmaterialsettingswidget.cpp
+  qgsmatchinglayersdialog.cpp
   qgsmenuheader.cpp
   qgsmessagebar.cpp
   qgsmessagebaritem.cpp
