@@ -34,6 +34,7 @@
 #include "qgslayoutmanager.h"
 #include "qgsprintlayout.h"
 #include "qgslayoutatlas.h"
+#include "qgslayoutattributeselectiondialog.h"
 
 #include <QObject>
 #include "qgstest.h"
@@ -1580,6 +1581,24 @@ void TestQgsLayoutTable::wrappedText()
   QString wrapText = t->wrappedText( sourceText, 101 /*columnWidth*/, f );
   //there should be no line break before the last word (bug #20546)
   QVERIFY( !wrapText.endsWith( "\naliqua" ) );
+}
+
+void TestQgsLayoutTable::testSorts()
+{
+  QgsLayout l( QgsProject::instance() );
+  l.initializeDefaults();
+  QgsLayoutItemAttributeTable *table = new QgsLayoutItemAttributeTable( &l );
+  table->setVectorLayer( mVectorLayer );
+  table->setDisplayOnlyVisibleFeatures( false );
+  table->setMaximumNumberOfFeatures( 1 );
+  
+  QgsLayoutAttributeTableColumnModel sorter( table );
+
+  QgsLayoutTableContents testContents;
+  QgsLayoutTableRow row1;
+  row1 << QVariant( QStringLiteral( "string 1" ) ) << QVariant( 2 ) << QVariant( 1.5 ) << QVariant( QStringLiteral( "string 2" ) );
+  QgsLayoutTableRow row2;
+  
 }
 
 QGSTEST_MAIN( TestQgsLayoutTable )
