@@ -35,7 +35,7 @@
 // Version constants
 //
 
-QCoreApplication::setAttribute(Qt::AA_DontUseNativeDialogs)
+QCoreApplication::setAttribute(Qt::AA_DontUseNativeDialogs);
 
 // development version
 const char *Qgis::QGIS_DEV_VERSION = QGSVERSION;
