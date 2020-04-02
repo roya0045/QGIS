@@ -815,6 +815,8 @@ QgisApp::QgisApp( QSplashScreen *splash, bool restorePlugins, bool skipVersionCh
       tr( "Multiple instances of QGIS application object detected.\nPlease contact the developers.\n" ) );
     abort();
   }
+  
+  QCoreApplication::setAttribute(Qt::AA_DontUseNativeDialogs);
 
   sInstance = this;
   QgsRuntimeProfiler *profiler = QgsApplication::profiler();
