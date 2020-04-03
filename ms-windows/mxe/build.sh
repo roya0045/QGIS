@@ -7,5 +7,5 @@ docker  run  \
     -v $(pwd):$(pwd) \
     -w $(pwd) --rm  \
     --user $(id -u):$(id -g) \
-    qgis/master \
+    qgis/qgis3-build-deps \
     ${DIR}/build-mxe.sh
