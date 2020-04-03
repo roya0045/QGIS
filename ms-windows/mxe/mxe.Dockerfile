@@ -2,7 +2,7 @@ FROM buildpack-deps:stretch
 
 RUN chown root:root /tmp && chmod ugo+rwXt /tmp
 RUN apt-get update
-RUN apt-get install -y --no-install-recommends autopoint bison flex gperf libtool ruby scons unzip p7zip-full intltool libtool libtool-bin nsis lzip zip libprotobuf
+RUN apt-get install -y --no-install-recommends autopoint bison flex gperf libtool ruby scons unzip p7zip-full intltool libtool libtool-bin nsis lzip zip libprotobuf protobuf-compiler
 
 WORKDIR /mxe
 
@@ -18,7 +18,6 @@ RUN make MXE_TARGETS=x86_64-w64-mingw32.shared.posix -j 16 \
     qtwebkit \
     qtwinextras \
     libzip \
-    protobuf-compiler \
     gsl \
     libspatialindex \
     exiv2
