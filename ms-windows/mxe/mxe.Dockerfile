@@ -10,6 +10,7 @@ RUN export PKG_CONFIG=/mxe/usr/bin/i686-w64-mingw32.static-pkg-config
 
 RUN git clone https://github.com/mxe/mxe . || git pull origin master
 RUN make MXE_TARGETS=x86_64-w64-mingw32.shared.posix -j 16 \
+    protobuf \
     qca \
     qtlocation  \
     qscintilla2  \

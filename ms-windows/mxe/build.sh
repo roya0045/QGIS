@@ -7,5 +7,5 @@ docker  run  \
     -v $(pwd):$(pwd) \
     -w $(pwd) --rm  \
     --user $(id -u):$(id -g) \
-    elpaso/mxe-qt5-builder \
+    qgis/master \
     ${DIR}/build-mxe.sh
