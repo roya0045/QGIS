@@ -643,12 +643,14 @@ SET(QGIS_CORE_SRCS
   validity/qgsvaliditycheckcontext.cpp
   validity/qgsvaliditycheckregistry.cpp
 
+  IF(Protobuf_FOUND)
   vectortile/qgsvectortilebasicrenderer.cpp
   vectortile/qgsvectortilelayer.cpp
   vectortile/qgsvectortilelayerrenderer.cpp
   vectortile/qgsvectortileloader.cpp
   vectortile/qgsvectortilemvtdecoder.cpp
   vectortile/qgsvectortileutils.cpp
+  ENDIF(Protobuf_FOUND)
 
   ${CMAKE_CURRENT_BINARY_DIR}/qgsexpression_texts.cpp
 
@@ -1343,6 +1345,7 @@ SET(QGIS_CORE_HDRS
   validity/qgsvaliditycheckcontext.h
   validity/qgsvaliditycheckregistry.h
 
+  IF(Protobuf_FOUND)
   vectortile/qgsvectortilebasicrenderer.h
   vectortile/qgsvectortilelayer.h
   vectortile/qgsvectortilelayerrenderer.h
@@ -1350,6 +1353,7 @@ SET(QGIS_CORE_HDRS
   vectortile/qgsvectortilemvtdecoder.h
   vectortile/qgsvectortilerenderer.h
   vectortile/qgsvectortileutils.h
+  ENDIF(Protobuf_FOUND)
 )
 
 SET(QGIS_CORE_PRIVATE_HDRS
@@ -1392,7 +1396,7 @@ IF(NOT MSVC)
     SET_SOURCE_FILES_PROPERTIES(qgscoordinatereferencesystem.cpp PROPERTIES COMPILE_FLAGS "-mllvm -inline-threshold=128")
   ENDIF ()
 ENDIF(NOT MSVC)
-
+IF(Protobuf_FOUND)
 # Generate cpp+header file from .proto file using "protoc" tool (to support MVT encoding of vector tiles)
 protobuf_generate_cpp(VECTOR_TILE_PROTO_SRCS VECTOR_TILE_PROTO_HDRS vectortile/vector_tile.proto)
 SET(QGIS_CORE_SRCS ${QGIS_CORE_SRCS} ${VECTOR_TILE_PROTO_SRCS})
@@ -1403,6 +1407,7 @@ ELSE (MSVC)
   # automatically generated file produces warnings (unused-parameter, unused-variable, misleading-indentation)
   SET_SOURCE_FILES_PROPERTIES(${VECTOR_TILE_PROTO_SRCS} PROPERTIES COMPILE_FLAGS -w)
 ENDIF (MSVC)
+ENDIF(Protobuf_FOUND)
 
 
 # install headers
