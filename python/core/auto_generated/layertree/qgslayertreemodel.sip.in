@@ -320,6 +320,12 @@ displays.
 
 .. versionadded:: 3.6
 %End
+   QList<QgsLayerTreeLayer *> filteredLayers() const;
+%Docstring
+Returns a list of filtered layers in the legend.
+
+.. versionadded:: 3.14
+%End
 
   signals:
 

@@ -53,24 +53,34 @@ class CORE_EXPORT QgsLegendModel : public QgsLayerTreeModel
 
     QVariant data( const QModelIndex &index, int role ) const override;
 
+    /**
+     * Similar to data but will also evaluate expressions instead of returning the label.
+     * \since QGIS 3.14
+     */
+    QVariant evaluateData( const QModelIndex &index, int role ) const;
+
     Qt::ItemFlags flags( const QModelIndex &index ) const override;
 
     /**
      * Returns filtered list of active legend nodes attached to a particular layer node
-     * (by default it returns also legend node embedded in parent layer node (if any) unless skipNodeEmbeddedInParent is TRUE)
+     * (by default it returns also legend node embedded in parent layer node (if any) unless skipNodeEmbeddedInParent is true)
      * \note Parameter skipNodeEmbeddedInParent added in QGIS 2.18
-     * \note Not available in Python bindings
      * \see layerOriginalLegendNodes()
      * \since QGIS 3.10
      */
-    QList<QgsLayerTreeModelLegendNode *> layerLegendNodes( QgsLayerTreeLayer *nodeLayer, bool skipNodeEmbeddedInParent = false ) const SIP_SKIP;
+    QList<QgsLayerTreeModelLegendNode *> layerLegendNodes( QgsLayerTreeLayer *nodeLayer, bool skipNodeEmbeddedInParent = false ) const;
+
+    /**
+     * Evaluate the expression or symbol expressions of a given vector layer.
+     * \since QIS 3.14
+     */
+    QString evaluateLayerExpressions( QgsLayerTreeLayer *nodeLayer ) const;
 
     /**
      * Clears any previously cached data for the specified \a node.
      * \since QGIS 3.14
      */
     void clearCachedData( QgsLayerTreeNode *node ) const;
-
   signals:
 
     /**
@@ -100,6 +110,7 @@ class CORE_EXPORT QgsLegendModel : public QgsLayerTreeModel
      * \since QGIS 3.14
      */
     QString evaluateLayerExpressions( QgsLayerTreeLayer *nodeLayer ) const;
+
 
 };
 
@@ -634,6 +645,9 @@ class CORE_EXPORT QgsLayoutItemLegend : public QgsLayoutItem
 
     //! Name of theme for legend -- usually the theme associated with the linked map.
     QString mThemeName;
+
+    //! Check if there are expressions to be evaluated and evaluate them as a standalone step
+    void evaluateLegendExpressions();
 
     friend class QgsCompositionConverter;
 
