@@ -412,7 +412,9 @@ INCLUDE_DIRECTORIES(
   ${CMAKE_SOURCE_DIR}/src/core/symbology
   ${CMAKE_SOURCE_DIR}/src/core/effects
   ${CMAKE_SOURCE_DIR}/src/core/validity
-  ${CMAKE_SOURCE_DIR}/src/core/vectortile
+  IF(Protobuf_FOUND)
+    ${CMAKE_SOURCE_DIR}/src/core/vectortile
+  ENDIF(Protobuf_FOUND)
   ${CMAKE_SOURCE_DIR}/src/gui
   ${CMAKE_SOURCE_DIR}/src/gui/attributeformconfig
   ${CMAKE_SOURCE_DIR}/src/gui/symbology
