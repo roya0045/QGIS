@@ -1560,5 +1560,10 @@ void QgsProcessingModelAlgorithm::setVariables( const QVariantMap &variables )
   mVariables = variables;
 }
 
+void QgsProcessingModelAlgorithm::addVariabele( const QVariantMap &variables )
+{
+  mVariables = mVariables.unite( variables );
+}
+
 ///@endcond
 
