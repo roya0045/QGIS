@@ -1547,7 +1547,7 @@ QgsExpressionContext QgsProcessingModelAlgorithm::createExpressionContext( const
       paramMap.insert( name + iter.key() , iter.value() );
     }
   }
-  addVarialbles( paramMap );
+  addVariables( paramMap );
 
   QgsExpressionContext res = QgsProcessingAlgorithm::createExpressionContext( parameters, context, source );
   res << QgsExpressionContextUtils::processingModelAlgorithmScope( this, parameters, context );
