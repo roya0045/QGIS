@@ -398,6 +398,17 @@ class CORE_EXPORT QgsProcessingModelAlgorithm : public QgsProcessingAlgorithm
      */
     void setVariables( const QVariantMap &variables );
 
+    /**
+     * Add one or more variable to the variables of the model.
+     *
+     * These variables are added to the model's expression context scope, allowing for preset
+     * "constant" expression variables to be utilized within the model.
+     *
+     * \see variables()
+     * \since QGIS 3.14
+     */
+    void addVariabele( const QVariantMap &variables )
+
   protected:
 
     QgsProcessingAlgorithm *createInstance() const override SIP_FACTORY;
