@@ -407,7 +407,7 @@ class CORE_EXPORT QgsProcessingModelAlgorithm : public QgsProcessingAlgorithm
      * \see variables()
      * \since QGIS 3.14
      */
-    void addVariabele( const QVariantMap &variables )
+    void addVariabele( const QVariantMap &variables );
 
   protected:
 
