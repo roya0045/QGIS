@@ -1574,7 +1574,7 @@ void QgsProcessingModelAlgorithm::setVariables( const QVariantMap &variables )
   mVariables = variables;
 }
 
-void QgsProcessingModelAlgorithm::addVariabele( const QVariantMap &variables )
+void QgsProcessingModelAlgorithm::addVariables( const QVariantMap &variables )
 {
   mVariables = mVariables.unite( variables );
 }
