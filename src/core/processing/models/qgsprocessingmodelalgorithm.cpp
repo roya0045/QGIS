@@ -1536,8 +1536,22 @@ QString QgsProcessingModelAlgorithm::asPythonCommand( const QVariantMap &paramet
 
 QgsExpressionContext QgsProcessingModelAlgorithm::createExpressionContext( const QVariantMap &parameters, QgsProcessingContext &context, QgsProcessingFeatureSource *source ) const
 {
+  QVariantMap paramMap;
+  const auto params = parameterDefinitions();
+  for ( const QgsProcessingParameterDefinition *def : params )
+  {
+    QVariantMap params_values = def->toVariant();
+    QString name = params_values.value( QStringLiteral( "name" ) );
+    for ( QVariantMap::const_iterator iter = params_values.begin(); iter != params_values.end(); ++iter)
+    {
+      paramMap.insert( name + iter.key() , iter.value() );
+    }
+  }
+  addVarialbles( paramMap );
+
   QgsExpressionContext res = QgsProcessingAlgorithm::createExpressionContext( parameters, context, source );
   res << QgsExpressionContextUtils::processingModelAlgorithmScope( this, parameters, context );
+
   return res;
 }
 
