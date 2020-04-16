@@ -1541,7 +1541,7 @@ QgsExpressionContext QgsProcessingModelAlgorithm::createExpressionContext( const
   for ( const QgsProcessingParameterDefinition *def : params )
   {
     QVariantMap params_values = def->toVariant();
-    QString name = params_values.value( QStringLiteral( "name" ) );
+    QString name = params_values.value( QStringLiteral( "name" ) ).toString();
     for ( QVariantMap::const_iterator iter = params_values.begin(); iter != params_values.end(); ++iter)
     {
       paramMap.insert( name + iter.key() , iter.value() );
