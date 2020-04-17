@@ -374,7 +374,7 @@ class CORE_EXPORT QgsProcessingModelAlgorithm : public QgsProcessingAlgorithm
      * \see variablesForChildAlgorithm()
      */
     QgsExpressionContextScope *createExpressionContextScopeForChildAlgorithm( const QString &childId, QgsProcessingContext &context, const QVariantMap &modelParameters = QVariantMap(),
-        const QVariantMap &results = QVariantMap() ) const SIP_FACTORY;
+        const QVariantMap &results = QVariantMap() ) SIP_FACTORY;
 
     /**
      * Returns the map of custom expression context variables defined for this model.
