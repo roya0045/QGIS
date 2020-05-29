@@ -32,6 +32,7 @@
 #include "qgslayertreeutils.h"
 #include "qgslayoututils.h"
 #include "qgsmapthemecollection.h"
+#include "qgsstyleentityvisitor.h"
 #include <QDomDocument>
 #include <QDomElement>
 #include <QPainter>
@@ -96,19 +97,29 @@ void QgsLayoutItemLegend::paint( QPainter *painter, const QStyleOptionGraphicsIt
 
   if ( mLayout )
   {
+    Q_NOWARN_DEPRECATED_PUSH
+    // no longer required, but left set for api stability
     mSettings.setUseAdvancedEffects( mLayout->renderContext().flags() & QgsLayoutRenderContext::FlagUseAdvancedEffects );
     mSettings.setDpi( dpi );
+    Q_NOWARN_DEPRECATED_POP
   }
   if ( mMap && mLayout )
   {
+    Q_NOWARN_DEPRECATED_PUSH
+    // no longer required, but left set for api stability
     mSettings.setMmPerMapUnit( mLayout->convertFromLayoutUnits( mMap->mapUnitsToLayoutUnits(), QgsUnitTypes::LayoutMillimeters ).length() );
+    Q_NOWARN_DEPRECATED_POP
 
     // use a temporary QgsMapSettings to find out real map scale
     QSizeF mapSizePixels = QSizeF( mMap->rect().width() * dotsPerMM, mMap->rect().height() * dotsPerMM );
     QgsRectangle mapExtent = mMap->extent();
 
     QgsMapSettings ms = mMap->mapSettings( mapExtent, mapSizePixels, dpi, false );
+
+    // no longer required, but left set for api stability
+    Q_NOWARN_DEPRECATED_PUSH
     mSettings.setMapScale( ms.scale() );
+    Q_NOWARN_DEPRECATED_POP
   }
   mInitialMapScaleCalculated = true;
 
@@ -157,6 +168,7 @@ void QgsLayoutItemLegend::finalizeRestoreFromXml()
 void QgsLayoutItemLegend::refresh()
 {
   QgsLayoutItem::refresh();
+  clearLegendCachedData();
   onAtlasFeature();
 }
 
@@ -178,7 +190,12 @@ void QgsLayoutItemLegend::draw( QgsLayoutItemRenderContext &context )
   }
 
   if ( mLayout )
+  {
+    // no longer required, but left for API compatibility
+    Q_NOWARN_DEPRECATED_PUSH
     mSettings.setDpi( mLayout->renderContext().dpi() );
+    Q_NOWARN_DEPRECATED_POP
+  }
 
   QgsLegendRenderer legendRenderer( mLegendModel.get(), mSettings );
   legendRenderer.setLegendSize( rect().size() );
@@ -576,7 +593,7 @@ bool QgsLayoutItemLegend::readPropertiesFromElement( const QDomElement &itemElem
     {
       QDomElement styleElem = stylesNode.childNodes().at( i ).toElement();
       QgsLegendStyle style;
-      style.readXml( styleElem, doc );
+      style.readXml( styleElem, doc, context );
       QString name = styleElem.attribute( QStringLiteral( "name" ) );
       QgsLegendStyle::Style s;
       if ( name == QLatin1String( "title" ) ) s = QgsLegendStyle::Title;
@@ -764,6 +781,26 @@ void QgsLayoutItemLegend::setModelStyleOverrides( const QMap<QString, QString> &
 
 }
 
+void QgsLayoutItemLegend::clearLegendCachedData()
+{
+  std::function< void( QgsLayerTreeNode * ) > clearNodeCache;
+  clearNodeCache = [&]( QgsLayerTreeNode * node )
+  {
+    mLegendModel->clearCachedData( node );
+    if ( QgsLayerTree::isGroup( node ) )
+    {
+      QgsLayerTreeGroup *group = QgsLayerTree::toGroup( node );
+      const QList< QgsLayerTreeNode * > children = group->children();
+      for ( QgsLayerTreeNode *child : children )
+      {
+        clearNodeCache( child );
+      }
+    }
+  };
+
+  clearNodeCache( mLegendModel->rootGroup() );
+}
+
 void QgsLayoutItemLegend::mapLayerStyleOverridesChanged()
 {
   if ( !mMap )
@@ -932,6 +969,50 @@ QgsLayoutItem::ExportLayerBehavior QgsLayoutItemLegend::exportLayerBehavior() co
   return MustPlaceInOwnLayer;
 }
 
+bool QgsLayoutItemLegend::accept( QgsStyleEntityVisitorInterface *visitor ) const
+{
+  std::function<bool( QgsLayerTreeGroup *group ) >visit;
+
+  visit = [ =, &visit]( QgsLayerTreeGroup * group ) -> bool
+  {
+    const QList<QgsLayerTreeNode *> childNodes = group->children();
+    for ( QgsLayerTreeNode *node : childNodes )
+    {
+      if ( QgsLayerTree::isGroup( node ) )
+      {
+        QgsLayerTreeGroup *nodeGroup = QgsLayerTree::toGroup( node );
+        if ( !visit( nodeGroup ) )
+          return false;
+      }
+      else if ( QgsLayerTree::isLayer( node ) )
+      {
+        QgsLayerTreeLayer *nodeLayer = QgsLayerTree::toLayer( node );
+        if ( !nodeLayer->patchShape().isNull() )
+        {
+          QgsStyleLegendPatchShapeEntity entity( nodeLayer->patchShape() );
+          if ( !visitor->visit( QgsStyleEntityVisitorInterface::StyleLeaf( &entity, uuid(), displayName() ) ) )
+            return false;
+        }
+        const QList<QgsLayerTreeModelLegendNode *> legendNodes = mLegendModel->layerLegendNodes( nodeLayer );
+        for ( QgsLayerTreeModelLegendNode *legendNode : legendNodes )
+        {
+          if ( QgsSymbolLegendNode *symbolNode = dynamic_cast< QgsSymbolLegendNode * >( legendNode ) )
+          {
+            if ( !symbolNode->patchShape().isNull() )
+            {
+              QgsStyleLegendPatchShapeEntity entity( symbolNode->patchShape() );
+              if ( !visitor->visit( QgsStyleEntityVisitorInterface::StyleLeaf( &entity, uuid(), displayName() ) ) )
+                return false;
+            }
+          }
+        }
+      }
+    }
+    return true;
+  };
+  return visit( mLegendModel->rootGroup( ) );
+}
+
 
 // -------------------------------------------------------------------------
 #include "qgslayertreemodellegendnode.h"
@@ -962,7 +1043,10 @@ QVariant QgsLegendModel::data( const QModelIndex &index, int role ) const
   QgsLayerTreeLayer *nodeLayer = QgsLayerTree::isLayer( node ) ? QgsLayerTree::toLayer( node ) : nullptr;
   if ( nodeLayer && ( role == Qt::DisplayRole || role == Qt::EditRole ) )
   {
-    QString name;
+    QString name = node->customProperty( QStringLiteral( "cached_name" ) ).toString();
+    if ( !name.isEmpty() )
+      return name;
+
     QgsVectorLayer *vlayer = qobject_cast<QgsVectorLayer *>( nodeLayer->layer() );
 
     //finding the first label that is stored
@@ -978,13 +1062,13 @@ QVariant QgsLegendModel::data( const QModelIndex &index, int role ) const
       if ( vlayer && vlayer->featureCount() >= 0 )
       {
         name += QStringLiteral( " [%1]" ).arg( vlayer->featureCount() );
+        node->setCustomProperty( QStringLiteral( "cached_name" ), name );
         return name;
       }
     }
 
-    bool evaluate = vlayer ? !nodeLayer->labelExpression().isEmpty() : false;
-
-    if ( evaluate || name.contains( "[%" ) )
+    const bool evaluate = ( vlayer && !nodeLayer->labelExpression().isEmpty() ) || name.contains( "[%" );
+    if ( evaluate )
     {
       QgsExpressionContext expressionContext;
       if ( vlayer )
@@ -996,8 +1080,6 @@ QVariant QgsLegendModel::data( const QModelIndex &index, int role ) const
 
       if ( mLayoutLegend )
         expressionContext = mLayoutLegend->createExpressionContext();
-      else
-        expressionContext = QgsExpressionContext();
 
       const QList<QgsLayerTreeModelLegendNode *> legendnodes = layerLegendNodes( nodeLayer, false );
       if ( legendnodes.count() > 1 ) // evaluate all existing legend nodes but leave the name for the legend evaluator
@@ -1011,6 +1093,7 @@ QVariant QgsLegendModel::data( const QModelIndex &index, int role ) const
       else if ( QgsSymbolLegendNode *symnode = qobject_cast<QgsSymbolLegendNode *>( legendnodes.first() ) )
         name = symnode->evaluateLabel( expressionContext );
     }
+    node->setCustomProperty( QStringLiteral( "cached_name" ), name );
     return name;
   }
   return QgsLayerTreeModel::data( index, role );
@@ -1037,9 +1120,13 @@ QList<QgsLayerTreeModelLegendNode *> QgsLegendModel::layerLegendNodes( QgsLayerT
   return lst;
 }
 
+void QgsLegendModel::clearCachedData( QgsLayerTreeNode *node ) const
+{
+  node->removeCustomProperty( QStringLiteral( "cached_name" ) );
+}
+
 void QgsLegendModel::forceRefresh()
 {
   emit refreshLegend();
 }
-
 
