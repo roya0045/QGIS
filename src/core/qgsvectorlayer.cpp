@@ -4269,6 +4269,15 @@ QVariant QgsVectorLayer::aggregate( QgsAggregateCalculator::Aggregate aggregate,
   if ( ok )
     *ok = false;
 
+  //make a copy or make the param not const
+  QgsAggregateCalculator::AggregateParameters paramCopy = QgsAggregateCalculator::AggregateParameters( parameters );
+  if ( paramCopy.filter.contains( "var('symbol_expression')" ) )
+  {
+    QString symbEx = QgsExpression::replaceExpressionText( "[% ( @symbol_expression ) %]", context );
+    if ( symbEx.isEmpty() )
+      symbEx = "True";
+    paramCopy.filter = paramCopy.filter.replace( "var('symbol_expression')",  symbEx );
+  }
   if ( !mDataProvider )
   {
     return QVariant();
@@ -4284,7 +4293,7 @@ QVariant QgsVectorLayer::aggregate( QgsAggregateCalculator::Aggregate aggregate,
     if ( origin == QgsFields::OriginProvider )
     {
       bool providerOk = false;
-      QVariant val = mDataProvider->aggregate( aggregate, attrIndex, parameters, context, providerOk, fids );
+      QVariant val = mDataProvider->aggregate( aggregate, attrIndex, paramCopy, context, providerOk, fids );
       if ( providerOk )
       {
         // provider handled calculation
@@ -4299,7 +4308,7 @@ QVariant QgsVectorLayer::aggregate( QgsAggregateCalculator::Aggregate aggregate,
   QgsAggregateCalculator c( this );
   if ( fids )
     c.setFidsFilter( *fids );
-  c.setParameters( parameters );
+  c.setParameters( paramCopy );
   return c.calculate( aggregate, fieldOrExpression, context, ok );
 }
 
