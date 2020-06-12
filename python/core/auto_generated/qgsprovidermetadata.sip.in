@@ -229,6 +229,7 @@ Breaks a provider data source URI into its component paths (e.g. file path, laye
 :param uri: uri string
 
 :return: map containing components. Standard components may include:
+
          - "path": file path
          - "layerName"
          - "url": base URL, for online services

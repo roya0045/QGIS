@@ -1165,7 +1165,9 @@ QgsLayoutItem::ExportLayerDetail QgsLayoutItemMap::exportLayerDetails() const
         {
           case QgsMapRendererStagedRenderJob::Symbology:
           {
-            detail.mapLayerId  = mStagedRendererJob->currentLayerId();
+            detail.mapLayerId = mStagedRendererJob->currentLayerId();
+            detail.compositionMode = mStagedRendererJob->currentLayerCompositionMode();
+            detail.opacity = mStagedRendererJob->currentLayerOpacity();
             if ( const QgsMapLayer *layer = mLayout->project()->mapLayer( detail.mapLayerId ) )
             {
               if ( !detail.mapTheme.isEmpty() )
@@ -2237,12 +2239,10 @@ void QgsLayoutItemMap::drawMapFrame( QPainter *p )
 {
   if ( frameEnabled() && p )
   {
-    p->save();
-    p->setPen( pen() );
-    p->setBrush( Qt::NoBrush );
-    p->setRenderHint( QPainter::Antialiasing, true );
-    p->drawRect( QRectF( 0, 0, rect().width(), rect().height() ) );
-    p->restore();
+    QgsRenderContext rc = QgsLayoutUtils::createRenderContextForMap( this, p );
+    rc.setExpressionContext( createExpressionContext() );
+
+    QgsLayoutItem::drawFrame( rc );
   }
 }
 
@@ -2250,12 +2250,10 @@ void QgsLayoutItemMap::drawMapBackground( QPainter *p )
 {
   if ( hasBackground() && p )
   {
-    p->save();
-    p->setBrush( brush() );//this causes a problem in atlas generation
-    p->setPen( Qt::NoPen );
-    p->setRenderHint( QPainter::Antialiasing, true );
-    p->drawRect( QRectF( 0, 0, rect().width(), rect().height() ) );
-    p->restore();
+    QgsRenderContext rc = QgsLayoutUtils::createRenderContextForMap( this, p );
+    rc.setExpressionContext( createExpressionContext() );
+
+    QgsLayoutItem::drawBackground( rc );
   }
 }
 

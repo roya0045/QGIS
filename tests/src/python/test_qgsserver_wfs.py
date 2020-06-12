@@ -213,14 +213,11 @@ class TestQgsServerWFS(QgsServerTestBase):
         self.result_compare(
             'wfs_getfeature_{}.txt'.format(requestid),
             "GetFeature in POST for '{}' failed.".format(requestid),
-            header,
-            body
+            header, body,
         )
 
-    @unittest.expectedFailure("Issue #36398: QGIS Server: WFS Request does not use SrsName on the geometry")
     def test_getfeature_post(self):
         tests = []
-        expectNotEqualTests = []
 
         template = """<?xml version="1.0" encoding="UTF-8"?>
 <wfs:GetFeature service="WFS" version="1.0.0" {} xmlns:wfs="http://www.opengis.net/wfs" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.opengis.net/wfs http://schemas.opengis.net/wfs/1.1.0/wfs.xsd">
@@ -261,7 +258,7 @@ class TestQgsServerWFS(QgsServerTestBase):
         tests.append(('srsname_post', srsTemplate.format("")))
 
         # Issue https://github.com/qgis/QGIS/issues/36398
-        # Check get feature within linear ring with srsName=EPSG:4326
+        # Check get feature within polygon having srsName=EPSG:4326 (same as the project/layer)
         within4326FilterTemplate = """<?xml version="1.0" encoding="UTF-8"?>
 <wfs:GetFeature service="WFS" version="1.0.0" {} xmlns:wfs="http://www.opengis.net/wfs" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.opengis.net/wfs http://schemas.opengis.net/wfs/1.1.0/wfs.xsd">
   <wfs:Query typeName="testlayer" srsName="EPSG:4326" xmlns:feature="http://www.qgis.org/gml">
@@ -270,13 +267,13 @@ class TestQgsServerWFS(QgsServerTestBase):
         <PropertyName>geometry</PropertyName>
         <Polygon xmlns="http://www.opengis.net/gml" srsName="EPSG:4326">
           <exterior>
-            <LinearRing srsName="EPSG:4326">
+            <LinearRing>
               <posList srsDimension="2">
-                8 44
-                9 44
-                9 45
-                8 45
-                8 44
+                8.20344131 44.90137909
+                8.20347748 44.90137909
+                8.20347748 44.90141005
+                8.20344131 44.90141005
+                8.20344131 44.90137909
               </posList>
             </LinearRing>
           </exterior>
@@ -288,50 +285,23 @@ class TestQgsServerWFS(QgsServerTestBase):
 """
         tests.append(('within4326FilterTemplate_post', within4326FilterTemplate.format("")))
 
-        # Keep the coordinate in 4326, but change the srsName to 3857 (should returns different result)
-        # The reference file (withinFake3857FilterTemplate_post.txt) is copied from within4326FilterTemplate_post.txt
-        withinFake3857FilterTemplate = """<?xml version="1.0" encoding="UTF-8"?>
-<wfs:GetFeature service="WFS" version="1.0.0" {} xmlns:wfs="http://www.opengis.net/wfs" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.opengis.net/wfs http://schemas.opengis.net/wfs/1.1.0/wfs.xsd">
-  <wfs:Query typeName="testlayer" srsName="EPSG:4326" xmlns:feature="http://www.qgis.org/gml">
-    <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
-      <Within>
-        <PropertyName>geometry</PropertyName>
-        <Polygon xmlns="http://www.opengis.net/gml" srsName="EPSG:4326">
-          <exterior>
-            <LinearRing srsName="EPSG:3857">
-              <posList srsDimension="2">
-                8 44
-                9 44
-                9 45
-                8 45
-                8 44
-              </posList>
-            </LinearRing>
-          </exterior>
-        </Polygon>
-      </Within>
-    </ogc:Filter>
-  </wfs:Query>
-</wfs:GetFeature>
-"""
-        expectNotEqualTests.append(('withinFake3857FilterTemplate_post', withinFake3857FilterTemplate.format("")))
-
-        # Now test with EPSG 3857 and proper 3857 coordinates
+        # Check get feature within polygon having srsName=EPSG:3857 (different from the project/layer)
+        # The coordinates are converted from the one in 4326
         within3857FilterTemplate = """<?xml version="1.0" encoding="UTF-8"?>
 <wfs:GetFeature service="WFS" version="1.0.0" {} xmlns:wfs="http://www.opengis.net/wfs" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.opengis.net/wfs http://schemas.opengis.net/wfs/1.1.0/wfs.xsd">
-  <wfs:Query typeName="testlayer" srsName="EPSG:4326" xmlns:feature="http://www.qgis.org/gml">
+  <wfs:Query typeName="testlayer" srsName="EPSG:3857" xmlns:feature="http://www.qgis.org/gml">
     <ogc:Filter xmlns:ogc="http://www.opengis.net/ogc">
       <Within>
         <PropertyName>geometry</PropertyName>
-        <Polygon xmlns="http://www.opengis.net/gml" srsName="EPSG:4326">
+        <Polygon xmlns="http://www.opengis.net/gml" srsName="EPSG:3857">
           <exterior>
-            <LinearRing srsName="EPSG:3857">
+            <LinearRing>
               <posList srsDimension="2">
-                890555.93 5465442.18
-                1001875.42, 5465442.18
-                1001875.42, 5621521.49
-                890555.93, 5621521.49
-                890555.93 5465442.18
+              913202.90938171 5606008.98136456
+              913206.93580769 5606008.98136456
+              913206.93580769 5606013.84701639
+              913202.90938171 5606013.84701639
+              913202.90938171 5606008.98136456
               </posList>
             </LinearRing>
           </exterior>
@@ -475,11 +445,6 @@ class TestQgsServerWFS(QgsServerTestBase):
 </wfs:GetFeature>
 """
         tests.append(('nobbox_post', template.format("")))
-
-        for id, req in expectNotEqualTests:
-            errorMsg = 'Expect different XML response for %s' % id
-            with self.assertRaises(AssertionError, msg=errorMsg):
-                self.wfs_getfeature_post_compare(id, req)
 
         for id, req in tests:
             self.wfs_getfeature_post_compare(id, req)

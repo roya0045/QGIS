@@ -24,10 +24,10 @@ where "type" key determines the type of the destination container,
 the "url" key is normally the path. Currently supported types:
 
 - "xyz" - tile data written as local files, using a template where {x},{y},{z}
-are replaced by the actual tile column, row and zoom level numbers, e.g.:
-file:///home/qgis/tiles/{z}/{x}/{y}.pbf
+  are replaced by the actual tile column, row and zoom level numbers, e.g.:
+  file:///home/qgis/tiles/{z}/{x}/{y}.pbf
 - "mbtiles" - tile data written to a new MBTiles file, the "url" key should
-be ordinary file system path, e.g.: /home/qgis/output.mbtiles
+  be ordinary file system path, e.g.: /home/qgis/output.mbtiles
 
 Currently the writer only support MVT encoding of data.
 
@@ -36,6 +36,7 @@ is backend dependent. Currently only "mbtiles" source type supports writing
 of metadata. The key-value pairs will be written to the "metadata" table
 in the MBTiles file. Some useful metadata keys listed here, but see MBTiles spec
 for more details:
+
 - "name" - human-readable name of the tileset
 - "bounds" - extent in WGS 84: "minlon,minlat,maxlon,maxlat"
 - "center" - default view of the map: "longitude,latitude,zoomlevel"
@@ -45,6 +46,7 @@ for more details:
 - "description" - descriptions of the content
 - "type" - whether this is an overlay or a basemap
 - "version" - version of the tileset
+
 Vector tile writer always writes "format" and "json" metadata. If not specified
 in metadata by the client, tile writer also writes "name", "bounds", "minzoom"
 and "maxzoom".

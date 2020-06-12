@@ -2004,8 +2004,12 @@ tests:
       VALUE_FORWARD: ''
     results:
       OUTPUT:
-        name: expected/service_area_from_layer_nodes_bounds.gml
+        name: expected/service_area_from_layer_nodes_bounds.shp
         type: vector
+        compare:
+          ignore_crs_check: true
+          geometry:
+            precision: 2
 
   - algorithm: native:serviceareafromlayer
     name: Service area from layer (shortest, lines)

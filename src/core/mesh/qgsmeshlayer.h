@@ -21,6 +21,7 @@
 #include <memory>
 
 #include "qgis_core.h"
+#include "qgsinterval.h"
 #include "qgsmaplayer.h"
 #include "qgsmeshdataprovider.h"
 #include "qgsmeshrenderersettings.h"
@@ -436,6 +437,7 @@ class CORE_EXPORT QgsMeshLayer : public QgsMapLayer
     /**
       * Sets the root items of the dataset group tree item.
       * Changes active dataset groups if those one are not enabled anymore :
+      *
       * - new active scalar dataset group is the first root item enabled child
       * - new active vector dataset group is none
       *
@@ -453,6 +455,13 @@ class CORE_EXPORT QgsMeshLayer : public QgsMapLayer
      * \since QGIS 3.14
      */
     void resetDatasetGroupTreeItem();
+
+    /**
+     * Returns the first valid time step of the dataset groups, invalid QgInterval if no time step is present
+     *
+     * \since QGIS 3.14
+     */
+    QgsInterval firstValidTimeStep() const;
 
   public slots:
 

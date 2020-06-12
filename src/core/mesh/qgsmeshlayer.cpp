@@ -417,7 +417,6 @@ QgsMeshDatasetValue QgsMeshLayer::dataset1dValue( const QgsMeshDatasetIndex &ind
     }
   }
 
-
   return value;
 }
 
@@ -734,6 +733,21 @@ void QgsMeshLayer::resetDatasetGroupTreeItem()
     metadataList.append( mDataProvider->datasetGroupMetadata( i ) );
   QgsMeshLayerUtils::createDatasetGroupTreeItems( metadataList, mDatasetGroupTreeRootItem.get(), 0 );
   updateActiveDatasetGroups();
+}
+
+QgsInterval QgsMeshLayer::firstValidTimeStep() const
+{
+  if ( !mDataProvider )
+    return QgsInterval();
+  int groupCount = mDataProvider->datasetGroupCount();
+  for ( int i = 0; i < groupCount; ++i )
+  {
+    qint64 timeStep = mDataProvider->temporalCapabilities()->firstTimeStepDuration( i );
+    if ( timeStep > 0 )
+      return QgsInterval( timeStep, QgsUnitTypes::TemporalMilliseconds );
+  }
+
+  return QgsInterval();
 }
 
 void QgsMeshLayer::updateActiveDatasetGroups()
