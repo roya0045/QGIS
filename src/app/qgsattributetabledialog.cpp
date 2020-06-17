@@ -79,7 +79,7 @@ void QgsAttributeTableDialog::updateMultiEditButtonState()
 
   mActionToggleMultiEdit->setEnabled( mLayer->isEditable() );
 
-  if ( !mLayer->isEditable() || ( mLayer->isEditable() && mMainView->view() != QgsDualView::AttributeEditor ) )
+  if ( !mLayer->isEditable() || mMainView->view() != QgsDualView::AttributeEditor )
   {
     mActionToggleMultiEdit->setChecked( false );
   }
@@ -636,7 +636,7 @@ void QgsAttributeTableDialog::mActionCopySelectedRows_triggered()
     }
     featureStore.setFields( fields );
 
-    QgsFeatureIterator it = mLayer->getFeatures( QgsFeatureRequest( featureIds.toSet() )
+    QgsFeatureIterator it = mLayer->getFeatures( QgsFeatureRequest( qgis::listToSet( featureIds ) )
                             .setSubsetOfAttributes( fieldNames, mLayer->fields() ) );
     QgsFeatureMap featureMap;
     QgsFeature feature;

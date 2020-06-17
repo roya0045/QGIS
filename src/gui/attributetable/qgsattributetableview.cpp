@@ -108,6 +108,8 @@ void QgsAttributeTableView::setAttributeTableConfig( const QgsAttributeTableConf
     i++;
   }
   mConfig = config;
+  if ( config.sortExpression().isEmpty() )
+    horizontalHeader()->setSortIndicatorShown( false );
 }
 
 QList<QgsFeatureId> QgsAttributeTableView::selectedFeaturesIds() const
@@ -237,7 +239,7 @@ QWidget *QgsAttributeTableView::createActionWidget( QgsFeatureId fid )
     action->setData( "map_layer_action" );
     action->setToolTip( mapLayerAction->text() );
     action->setProperty( "fid", fid );
-    action->setProperty( "action", qVariantFromValue( qobject_cast<QObject *>( mapLayerAction ) ) );
+    action->setProperty( "action", QVariant::fromValue( qobject_cast<QObject *>( mapLayerAction ) ) );
     connect( action, &QAction::triggered, this, &QgsAttributeTableView::actionTriggered );
     actionList << action;
 

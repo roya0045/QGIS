@@ -449,7 +449,8 @@ class CORE_EXPORT QgsGeometry
      * \warning The iterator returns a copy of individual vertices, and accordingly geometries cannot be
      * modified using the iterator. See transformVertices() for a safe method to modify vertices "in-place".
      *
-     * * Example:
+     * ### Example
+     *
      * \code{.py}
      *   # print the x and y coordinate for each vertex in a LineString
      *   geometry = QgsGeometry.fromWkt( 'LineString( 0 0, 1 1, 2 2)' )
@@ -517,7 +518,8 @@ class CORE_EXPORT QgsGeometry
      * This method forces a detach. Use constParts() to avoid the detach
      * if the parts are not going to be modified.
      *
-     * * Example:
+     * ### Example
+     *
      * \code{.py}
      *   # print the WKT representation of each part in a multi-point geometry
      *   geometry = QgsGeometry.fromWkt( 'MultiPoint( 0 0, 1 1, 2 2)' )
@@ -555,7 +557,8 @@ class CORE_EXPORT QgsGeometry
      * Unlike parts(), this method does not force a detach and is more efficient if read-only
      * iteration only is required.
      *
-     * * Example:
+     * ### Example
+     *
      * \code{.py}
      *   # print the WKT representation of each part in a multi-point geometry
      *   geometry = QgsGeometry.fromWkt( 'MultiPoint( 0 0, 1 1, 2 2)' )
@@ -660,9 +663,9 @@ class CORE_EXPORT QgsGeometry
      *
      * This function takes into account the following factors:
      *
-     * 1. If the given vertex index is at the end of a linestring,
+     * # If the given vertex index is at the end of a linestring,
      *    the adjacent index will be -1 (for "no adjacent vertex")
-     * 2. If the given vertex index is at the end of a linear ring
+     * # If the given vertex index is at the end of a linear ring
      *    (such as in a polygon), the adjacent index will take into
      *    account the first vertex is equal to the last vertex (and will
      *    skip equal vertex positions).
@@ -890,12 +893,21 @@ class CORE_EXPORT QgsGeometry
     /**
      * Splits this geometry according to a given line.
      * \param splitLine the line that splits the geometry
-     * \param[out] newGeometries list of new geometries that have been created with the split
+     * \param[out] newGeometries list of new geometries that have been created with the ``splitLine``. If the geometry is 3D, a linear interpolation of the z value is performed on the geometry at split points, see example.
      * \param topological TRUE if topological editing is enabled
      * \param[out] topologyTestPoints points that need to be tested for topological completeness in the dataset
      * \param splitFeature Set to True if you want to split a feature, otherwise set to False to split parts
      * fix this bug?
      * \returns OperationResult a result code: success or reason of failure
+     *
+     * * Example:
+     * \code{.py}
+     *  geometry = QgsGeometry.fromWkt('CompoundCurveZ ((2749546.2003820720128715 1262904.45356595050543547 100, 2749557.82053794478997588 1262920.05570670193992555 200))')
+     *  split_line = [QgsPoint(2749544.19, 1262914.79), QgsPoint(2749557.64, 1262897.30)]
+     *  result, new_geometries, point_xy = geometry.splitGeometry(split_line, False)
+     *  print(geometry.asWkt(2))
+     *  > LineStringZ (2749549.12 1262908.38 125.14, 2749557.82 1262920.06 200)
+     * \endcode
      */
     OperationResult splitGeometry( const QgsPointSequence &splitLine, QVector<QgsGeometry> &newGeometries SIP_OUT, bool topological, QgsPointSequence &topologyTestPoints SIP_OUT, bool splitFeature = true );
 
@@ -1266,7 +1278,7 @@ class CORE_EXPORT QgsGeometry
      * If the input is a NULL geometry, the output will also be a NULL geometry.
      *
      * If an error was encountered while creating the result, more information can be retrieved
-     * by calling `error()` on the returned geometry.
+     * by calling lastError() on the returned geometry.
      *
      * \note for line based geometries, the center point of the line is returned,
      * and for point based geometries, the point itself is returned
@@ -1283,7 +1295,7 @@ class CORE_EXPORT QgsGeometry
      * If the input is a NULL geometry, the output will also be a NULL geometry.
      *
      * If an error was encountered while creating the result, more information can be retrieved
-     * by calling `error()` on the returned geometry.
+     * by calling lastError() on the returned geometry.
      *
      * \see centroid()
      * \see poleOfInaccessibility()
@@ -1310,7 +1322,7 @@ class CORE_EXPORT QgsGeometry
      * If the input is a NULL geometry, the output will also be a NULL geometry.
      *
      * If an error was encountered while creating the result, more information can be retrieved
-     * by calling `error()` on the returned geometry.
+     * by calling lastError() on the returned geometry.
      */
     QgsGeometry convexHull() const;
 
@@ -1357,7 +1369,7 @@ class CORE_EXPORT QgsGeometry
      * If the input is a NULL geometry, the output will also be a NULL geometry.
      *
      * If an error was encountered while creating the result, more information can be retrieved
-     * by calling `error()` on the returned geometry.
+     * by calling lastError() on the returned geometry.
      *
      * \since QGIS 3.0
      */
@@ -1410,7 +1422,7 @@ class CORE_EXPORT QgsGeometry
      * If the input is a NULL geometry, the output will also be a NULL geometry.
      *
      * If an error was encountered while creating the result, more information can be retrieved
-     * by calling `error()` on the returned geometry.
+     * by calling lastError() on the returned geometry.
      */
     QgsGeometry intersection( const QgsGeometry &geometry ) const;
 
@@ -1430,7 +1442,7 @@ class CORE_EXPORT QgsGeometry
      * If the input is a NULL geometry, the output will also be a NULL geometry.
      *
      * If an error was encountered while creating the result, more information can be retrieved
-     * by calling `error()` on the returned geometry.
+     * by calling lastError() on the returned geometry.
      *
      * \note this operation is not called union since its a reserved word in C++.
      */
@@ -1452,7 +1464,7 @@ class CORE_EXPORT QgsGeometry
      * If the input is a NULL geometry, the output will also be a NULL geometry.
      *
      * If an error was encountered while creating the result, more information can be retrieved
-     * by calling `error()` on the returned geometry.
+     * by calling lastError() on the returned geometry.
      */
     QgsGeometry difference( const QgsGeometry &geometry ) const;
 
@@ -1462,7 +1474,7 @@ class CORE_EXPORT QgsGeometry
      * If the input is a NULL geometry, the output will also be a NULL geometry.
      *
      * If an error was encountered while creating the result, more information can be retrieved
-     * by calling `error()` on the returned geometry.
+     * by calling lastError() on the returned geometry.
      */
     QgsGeometry symDifference( const QgsGeometry &geometry ) const;
 
@@ -1977,7 +1989,7 @@ class CORE_EXPORT QgsGeometry
      * It preserves Z values, but M values will be dropped.
      *
      * If an error was encountered during the process, more information can be retrieved
-     * by calling `error()` on the returned geometry.
+     * by calling lastError() on the returned geometry.
      *
      * \returns new valid QgsGeometry or null geometry on error
      *

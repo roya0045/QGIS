@@ -185,13 +185,21 @@ sub processDoxygenLine {
     # replace nullptr with None (nullptr means nothing to Python devs)
     $line =~ s/\bnullptr\b/None/g;
 
+    # convert ### style headings
+    if ( $line =~ m/^###\s+(.*)$/) {
+      $line = "$1\n".('-' x length($1));
+    }
+    if ( $line =~ m/^##\s+(.*)$/) {
+      $line = "$1\n".('=' x length($1));
+    }
+
     if ( $line eq '*' ) {
         $line = '';
     }
 
     # handle multi-line parameters/returns/lists
     if ($line ne '') {
-        if ( $line =~ m/^\s*\-/ ){
+        if ( $line =~ m/^\s*[\-#]/ ){
             # start of a list item, ensure following lines are correctly indented
             $line = "$PREV_INDENT$line";
             $INDENT = $PREV_INDENT."  ";
@@ -300,7 +308,13 @@ sub processDoxygenLine {
                 $line =~ s/\b(Qgs[A-Z]\w+)\b(\.?$|[^\w]{2})/:py:class:`$1`$2/g;
             }
         }
-        $line =~ s/\b(Qgs[A-Z]\w+\.[a-z]\w+\(\))(\.|\b|$)/:py:func:`$1`/g;
+        $line =~ s/\b(Qgs[A-Z]\w+\.[a-z]\w+\(\))(?!\w)/:py:func:`$1`/g;
+        if ( defined $ACTUAL_CLASS && $ACTUAL_CLASS) {
+          $line =~ s/(?<!\.)\b(?:([a-z]\w+)\(\))(?!\w)/:py:func:`~$ACTUAL_CLASS.$1`/g;
+        }
+        else {
+          $line =~ s/(?<!\.)\b(?:([a-z]\w+)\(\))(?!\w)/:py:func:`~$1`/g;
+        }
     }
 
     if ( $line =~ m/[\\@]note (.*)/ ) {

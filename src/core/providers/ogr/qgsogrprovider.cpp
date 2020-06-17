@@ -1998,7 +1998,7 @@ bool QgsOgrProvider::deleteAttributes( const QgsAttributeIds &attributes )
     return false;
 
   bool res = true;
-  QList<int> attrsLst = attributes.toList();
+  QList<int> attrsLst = qgis::setToList( attributes );
   // sort in descending order
   std::sort( attrsLst.begin(), attrsLst.end(), std::greater<int>() );
   const auto constAttrsLst = attrsLst;
@@ -2516,7 +2516,7 @@ bool QgsOgrProvider::createSpatialIndex()
   return false;
 }
 
-QString createIndexName( QString tableName, QString field )
+QString QgsOgrProvider::createIndexName( QString tableName, QString field )
 {
   QRegularExpression safeExp( QStringLiteral( "[^a-zA-Z0-9]" ) );
   tableName.replace( safeExp, QStringLiteral( "_" ) );
@@ -4020,8 +4020,10 @@ GDALDatasetH QgsOgrProviderUtils::GDALOpenWrapper( const char *pszPath, bool bUp
   }
 
   QString filePath( QString::fromUtf8( pszPath ) );
+
+  bool bIsGpkg = QFileInfo( filePath ).suffix().compare( QLatin1String( "gpkg" ), Qt::CaseInsensitive ) == 0;
   bool bIsLocalGpkg = false;
-  if ( QFileInfo( filePath ).suffix().compare( QLatin1String( "gpkg" ), Qt::CaseInsensitive ) == 0 &&
+  if ( bIsGpkg &&
        IsLocalFile( filePath ) &&
        !CPLGetConfigOption( "OGR_SQLITE_JOURNAL", nullptr ) &&
        QgsSettings().value( QStringLiteral( "qgis/walForSqlite3" ), true ).toBool() )
@@ -4033,6 +4035,12 @@ GDALDatasetH QgsOgrProviderUtils::GDALOpenWrapper( const char *pszPath, bool bUp
     // on network shares
     CPLSetThreadLocalConfigOption( "OGR_SQLITE_JOURNAL", "WAL" );
     bIsLocalGpkg = true;
+  }
+  else if ( bIsGpkg )
+  {
+    // If WAL isn't set, we explicitely disable it, as it is persistent and it
+    // may have been set on a previous connection.
+    CPLSetThreadLocalConfigOption( "OGR_SQLITE_JOURNAL", "DELETE" );
   }
 
   bool modify_OGR_GPKG_FOREIGN_KEY_CHECK = !CPLGetConfigOption( "OGR_GPKG_FOREIGN_KEY_CHECK", nullptr );
@@ -4076,7 +4084,7 @@ static bool IsLocalFile( const QString &path )
   // Start with the OS specific methods since the QT >= 5.4 method just
   // return a string and not an enumerated type.
 #if defined(Q_OS_WIN)
-  if ( dirName.startsWith( "\\\\" ) )
+  if ( dirName.startsWith( "\\\\" ) || dirName.startsWith( "//" ) )
     return false;
   if ( dirName.length() >= 3 && dirName[1] == ':' &&
        ( dirName[2] == '\\' || dirName[2] == '/' ) )
