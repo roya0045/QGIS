@@ -167,6 +167,7 @@ void QgsLayoutItemLegend::finalizeRestoreFromXml()
 
 void QgsLayoutItemLegend::refresh()
 {
+  QgsApplication::messageLog()->logMessage( QObject::tr( "refreshing legend" ));
   QgsLayoutItem::refresh();
   clearLegendCachedData();
   onAtlasFeature();
@@ -788,6 +789,7 @@ void QgsLayoutItemLegend::setModelStyleOverrides( const QMap<QString, QString> &
 
 void QgsLayoutItemLegend::clearLegendCachedData()
 {
+  QgsApplication::messageLog()->logMessage( QObject::tr( "clearing cache" ));
   std::function< void( QgsLayerTreeNode * ) > clearNodeCache;
   clearNodeCache = [&]( QgsLayerTreeNode * node )
   {
@@ -874,6 +876,7 @@ void QgsLayoutItemLegend::updateFilterByMap( bool redraw )
 
 void QgsLayoutItemLegend::doUpdateFilterByMap()
 {
+  QgsApplication::messageLog()->logMessage( QObject::tr( "filter by map" ));
   if ( mMap )
   {
     if ( !mThemeName.isEmpty() )
@@ -1076,6 +1079,7 @@ QVariant QgsLegendModel::data( const QModelIndex &index, int role ) const
     const bool evaluate = ( vlayer && !nodeLayer->labelExpression().isEmpty() ) || name.contains( "[%" );
     if ( evaluate )
     {
+      QgsApplication::messageLog()->logMessage( QObject::tr( "evaluating legend layer %1" ).arg(vlayer->sourceName()));
       QgsExpressionContext expressionContext;
       if ( vlayer )
       {
