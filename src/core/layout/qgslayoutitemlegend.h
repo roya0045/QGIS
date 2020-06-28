@@ -105,13 +105,6 @@ class CORE_EXPORT QgsLegendModel : public QgsLayerTreeModel
      */
     QgsLayoutItemLegend *mLayoutLegend = nullptr;
 
-    /**
-     * Evaluate the expression or symbol expressions of a given layer node.
-     * \since QGIS 3.14
-     */
-    QString evaluateLayerExpressions( QgsLayerTreeLayer *nodeLayer ) const;
-
-
 };
 
 
