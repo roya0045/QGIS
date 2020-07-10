@@ -16,13 +16,11 @@
 #include "qgsmaplayerstylemanager.h"
 #include "qgsmaplayerstyle.h"
 #include "qgsmaplayer.h"
-#include "qgsvectorlayer.h"
 
 #include "qgslogger.h"
 
 #include <QDomElement>
 #include <QTextStream>
-#include <QtDebug>
 
 QgsMapLayerStyleManager::QgsMapLayerStyleManager( QgsMapLayer *layer )
   : mLayer( layer )

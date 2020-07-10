@@ -60,13 +60,10 @@ class GUI_EXPORT QgsMapLayerStyleManagerWidget : public QgsMapLayerConfigWidget
     void loadDefault();
     void saveStyle();
     void loadStyle();
-    void importAllStyles();
-    void replaceAllStyles();
 
   private:
     QStandardItemModel *mModel = nullptr;
     QListView *mStyleList = nullptr;
-
 };
 
 #endif // QGSMAPLAYERSTYLEMANAGERWIDGET_H
