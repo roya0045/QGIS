@@ -527,6 +527,7 @@ QString QgsHandleBadLayers::checkBasepath( const QString &layerId, const QString
 
 void QgsHandleBadLayers::autoFind()
 {
+  QgsTaskManager *manager = QgsApplication::taskManager();
   QDir::setCurrent( QgsProject::instance()->absolutePath() );
   QgsProject::instance()->layerTreeRegistryBridge()->setEnabled( true );
 
@@ -602,7 +603,13 @@ void QgsHandleBadLayers::autoFind()
 
     if ( !dataSourceChanged )
     {
-      QStringList filesFound = QgsFileUtils::findFile( fileName, basepath, 5 );
+      QStringList filesFound;
+      QgsFileSearchTask *fileutil= new QgsFileSearchTask( fileName,  basepath, 4, 4, QgsProject::instance()->absolutePath() );
+      fileutil->setDescription( "Searching for " + fileName );
+      manager->addTask( fileutil );
+      fileutil->waitForFinished();
+      filesFound = fileutil->results();
+
       if ( filesFound.length() > 1 )
       {
         bool ok;
@@ -656,10 +663,13 @@ void QgsHandleBadLayers::autoFind()
         item->setForeground( QBrush( Qt::red ) );
       }
     }
-
+    if ( progressDialog.wasCanceled() )
+      break;
   }
 
   QgsProject::instance()->layerTreeRegistryBridge()->setEnabled( false );
 
 }
+
+
 

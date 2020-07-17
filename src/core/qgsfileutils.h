@@ -19,7 +19,10 @@
 #define QGSFILEUTILS_H
 
 #include "qgis_core.h"
+#include "qgstaskmanager.h"
 #include <QString>
+
+class QgsFeedback;
 
 /**
  * \ingroup core
@@ -98,7 +101,47 @@ class CORE_EXPORT QgsFileUtils
      * \returns List of strings of the first matching path in unix format.
      * \since QGIS 3.12
      */
-    static QStringList findFile( const QString &file, const QString &basepath = QString(), int maxClimbs = 4, int searchCeiling = 4, const QString &currentDir = QString() );
+    static QStringList findFile( const QString &file, const QString &basepath = QString(), int maxClimbs = 4, int searchCeiling = 4, const QString &currentDir = QString(), QgsFeedback *feedback = nullptr );
+
+};
+
+
+/**
+ * \ingroup Core
+ * \class QgsFileSearchTask
+ * \brief Background thead handler.
+ * \since QGIS 3.16
+ */
+class CORE_EXPORT QgsFileSearchTask: public QgsTask
+{
+    Q_OBJECT
+  public:
+
+    /**
+     * Background task wrapper for findFile.
+     * \see findFile()
+     * \since QGIS 3.16
+     */
+    QgsFileSearchTask( const QString &file, const QString &basePath, int maxClimbs, int searchCeilling, const QString &currentDir );
+
+    /**
+     * Returns the result of the process.
+     * \since QGIS 3.16
+     */
+    QStringList results();
+
+  protected:
+
+    bool run() override;
+
+  private:
+    const QString &mFile;
+    const QString &mBasePath;
+    const int mMaxClimbs;
+    const int mSearchCeil;
+    const QString &mCurrentDir;
+    QStringList mResults;
+    std::unique_ptr< QgsFeedback > mFeedback;
 
 };
 
