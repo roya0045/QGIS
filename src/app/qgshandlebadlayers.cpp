@@ -607,6 +607,7 @@ void QgsHandleBadLayers::autoFind()
       QgsFileSearchTask *fileutil= new QgsFileSearchTask( fileName,  basepath, 4, 4, QgsProject::instance()->absolutePath() );
       fileutil->setDescription( "Searching for " + fileName );
       manager->addTask( fileutil );
+      fileutil->start();
       fileutil->waitForFinished();
       filesFound = fileutil->results();
 
