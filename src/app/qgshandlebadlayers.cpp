@@ -616,7 +616,7 @@ void QgsHandleBadLayers::autoFind()
       // fileutil->waitForFinished();
 
       if ( !fileutil )//invalid ptr check
-        filesFound= { "UUUUUUUUUUU", };
+        filesFound.append( "UUUUUUUUUUU" );
       else
       {
         if ( !( fileutil->isActive() ) )
