@@ -540,7 +540,6 @@ QString QgsHandleBadLayers::checkBasepath( const QString &layerId, const QString
 
 void QgsHandleBadLayers::autoFind()
 {
-  QgsTaskManager *manager = QgsApplication::taskManager();
   QDir::setCurrent( QgsProject::instance()->absolutePath() );
   QgsProject::instance()->layerTreeRegistryBridge()->setEnabled( true );
 
@@ -617,6 +616,7 @@ void QgsHandleBadLayers::autoFind()
     if ( !dataSourceChanged )
     {
       QStringList filesFound;
+      QgsTaskManager *manager = QgsApplication::taskManager();
       QgsFileSearchTask *fileutil = new QgsFileSearchTask( fileName,  basepath, 4, 4, QgsProject::instance()->absolutePath() );
       fileutil->setDescription( "Searching for " + fileName );
       manager->addTask( fileutil );
@@ -627,18 +627,8 @@ void QgsHandleBadLayers::autoFind()
           fileutil->cancel();
       }
       // fileutil->waitForFinished();
-
-      if ( !fileutil )//invalid ptr check
-        filesFound.append( "UUUUUUUUUUU" );
-      else
-      {
-        if ( !( fileutil->isActive() ) )
-          filesFound = fileutil->results();
-      }
-
-
-
-
+      if ( !( fileutil->isActive() ) )
+        filesFound = fileutil->results();
 
       if ( filesFound.length() > 1 )
       {
