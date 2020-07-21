@@ -100,7 +100,7 @@ Will check ``basepath`` in an outward spiral up to ``maxClimbs`` levels to check
 .. versionadded:: 3.12
 %End
 
-  };
+};
 
 
 class QgsFileSearchTask: QgsTask
@@ -134,7 +134,8 @@ Returns the result of the process.
 
   protected:
 
-   virtual bool run();
+    virtual bool run();
+
 
 };
 

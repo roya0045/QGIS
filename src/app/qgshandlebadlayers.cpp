@@ -604,15 +604,28 @@ void QgsHandleBadLayers::autoFind()
     if ( !dataSourceChanged )
     {
       QStringList filesFound;
-      QgsFileSearchTask *fileutil= new QgsFileSearchTask( fileName,  basepath, 4, 4, QgsProject::instance()->absolutePath() );
+      QgsFileSearchTask *fileutil = new QgsFileSearchTask( fileName,  basepath, 4, 4, QgsProject::instance()->absolutePath() );
       fileutil->setDescription( "Searching for " + fileName );
       manager->addTask( fileutil );
-      while( !( ( fileutil->status() == QgsTask::Complete ) || ( fileutil->status() == QgsTask::Terminated ) ) )
+      while ( !( ( fileutil->status() == QgsTask::Complete ) || ( fileutil->status() == QgsTask::Terminated ) ) )
       {
-            QCoreApplication::processEvents();
+        QCoreApplication::processEvents();
+        if ( progressDialog.wasCanceled() )
+          fileutil->cancel();
       }
       // fileutil->waitForFinished();
-      filesFound = fileutil->results();
+
+      if ( !fileutil )//invalid ptr check
+        filesFound= { "UUUUUUUUUUU", };
+      else
+      {
+        if ( !( fileutil->isActive() ) )
+          filesFound = fileutil->results();
+      }
+
+
+
+
 
       if ( filesFound.length() > 1 )
       {
