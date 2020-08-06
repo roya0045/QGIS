@@ -10,14 +10,14 @@ SET(QGIS_ANALYSIS_SRCS
   interpolation/qgstininterpolator.cpp
   interpolation/Bezier3D.cpp
   interpolation/CloughTocherInterpolator.cpp
-  interpolation/DualEdgeTriangulation.cpp
+  interpolation/qgsdualedgetriangulation.cpp
   interpolation/HalfEdge.cpp
   interpolation/LinTriangleInterpolator.cpp
   interpolation/MathUtils.cpp
   interpolation/NormVecDecorator.cpp
   interpolation/ParametricLine.cpp
   interpolation/TriangleInterpolator.cpp
-  interpolation/Triangulation.cpp
+  interpolation/qgstriangulation.cpp
   interpolation/TriDecorator.cpp
   interpolation/Vector3D.cpp
 
@@ -26,6 +26,7 @@ SET(QGIS_ANALYSIS_SRCS
   processing/qgsalgorithmaddxyfields.cpp
   processing/qgsalgorithmaffinetransform.cpp
   processing/qgsalgorithmaggregate.cpp
+  processing/qgsalgorithmangletonearest.cpp
   processing/qgsalgorithmapplylayerstyle.cpp
   processing/qgsalgorithmarraytranslatedfeatures.cpp
   processing/qgsalgorithmaspect.cpp
@@ -90,6 +91,7 @@ SET(QGIS_ANALYSIS_SRCS
   processing/qgsalgorithmjoinbynearest.cpp
   processing/qgsalgorithmjoinwithlines.cpp
   processing/qgsalgorithmkmeansclustering.cpp
+  processing/qgsalgorithmlayoutatlastoimage.cpp
   processing/qgsalgorithmlayouttoimage.cpp
   processing/qgsalgorithmlayouttopdf.cpp
   processing/qgsalgorithmlinedensity.cpp
@@ -126,6 +128,7 @@ SET(QGIS_ANALYSIS_SRCS
   processing/qgsalgorithmrandompointsinpolygons.cpp
   processing/qgsalgorithmrandompointsonlines.cpp
   processing/qgsalgorithmrandomraster.cpp
+  processing/qgsalgorithmrasterfrequencybycomparisonoperator.cpp
   processing/qgsalgorithmrasterlayeruniquevalues.cpp
   processing/qgsalgorithmrasterlogicalop.cpp
   processing/qgsalgorithmrasterize.cpp
@@ -271,7 +274,7 @@ SET(QGIS_ANALYSIS_HDRS
 
   interpolation/Bezier3D.h
   interpolation/CloughTocherInterpolator.h
-  interpolation/DualEdgeTriangulation.h
+  interpolation/qgsdualedgetriangulation.h
   interpolation/HalfEdge.h
   interpolation/LinTriangleInterpolator.h
   interpolation/MathUtils.h
@@ -279,7 +282,7 @@ SET(QGIS_ANALYSIS_HDRS
   interpolation/ParametricLine.h
   interpolation/TriDecorator.h
   interpolation/TriangleInterpolator.h
-  interpolation/Triangulation.h
+  interpolation/qgstriangulation.h
   interpolation/Vector3D.h
   interpolation/qgsgridfilewriter.h
   interpolation/qgsidwinterpolator.h
@@ -374,7 +377,6 @@ ADD_BISON_FILES_PREFIX(QGIS_ANALYSIS_SRCS raster raster/qgsrastercalcparser.yy)
 IF(NOT MSVC)
   SET_SOURCE_FILES_PROPERTIES(
     ${CMAKE_BINARY_DIR}/src/analysis/qgsrastercalcparser.cpp
-    ${CMAKE_BINARY_DIR}/src/analysis/qgsmeshcalcparser.cpp
     PROPERTIES COMPILE_FLAGS "-w"
   )
 ELSE(NOT MSVC)
@@ -383,7 +385,6 @@ ELSE(NOT MSVC)
     # 4702 unreachable code
     SET_SOURCE_FILES_PROPERTIES(
       ${CMAKE_BINARY_DIR}/src/analysis/qgsrastercalcparser.cpp
-      ${CMAKE_BINARY_DIR}/src/analysis/qgsmeshcalcparser.cpp
       PROPERTIES COMPILE_FLAGS "-wd4127 -wd4702"
     )
   ENDIF(PEDANTIC)

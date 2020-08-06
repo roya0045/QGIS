@@ -572,7 +572,7 @@ Qgs3DRendererRulePropsWidget::Qgs3DRendererRulePropsWidget( QgsRuleBased3DRender
     mSymbol.reset( QgsApplication::symbol3DRegistry()->defaultSymbolForGeometryType( layer->geometryType() ) );
   }
 
-  mSymbolWidget = new QgsSymbol3DWidget( this );
+  mSymbolWidget = new QgsSymbol3DWidget( layer, this );
   mSymbolWidget->setSymbol( mSymbol.get(), layer );
   QVBoxLayout *l = new QVBoxLayout;
   l->addWidget( mSymbolWidget );
@@ -648,5 +648,8 @@ void Qgs3DRendererRulePropsWidget::apply()
   QString filter = mElseRadio->isChecked() ? QStringLiteral( "ELSE" ) : editFilter->text();
   mRule->setFilterExpression( filter );
   mRule->setDescription( editDescription->text() );
-  mRule->setSymbol( groupSymbol->isChecked() ? mSymbolWidget->symbol() : nullptr );
+  std::unique_ptr< QgsAbstract3DSymbol > newSymbol;
+  if ( groupSymbol->isChecked() )
+    newSymbol = mSymbolWidget->symbol();
+  mRule->setSymbol( newSymbol.release() );
 }

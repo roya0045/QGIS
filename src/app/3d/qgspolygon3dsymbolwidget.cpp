@@ -16,7 +16,7 @@
 #include "qgspolygon3dsymbolwidget.h"
 
 #include "qgspolygon3dsymbol.h"
-
+#include "qgsphongmaterialsettings.h"
 
 QgsPolygon3DSymbolWidget::QgsPolygon3DSymbolWidget( QWidget *parent )
   : Qgs3DSymbolWidget( parent )
@@ -36,14 +36,14 @@ QgsPolygon3DSymbolWidget::QgsPolygon3DSymbolWidget( QWidget *parent )
   connect( cboRenderedFacade, static_cast<void ( QComboBox::* )( int )>( &QComboBox::currentIndexChanged ), this, &QgsPolygon3DSymbolWidget::changed );
   connect( chkAddBackFaces, &QCheckBox::clicked, this, &QgsPolygon3DSymbolWidget::changed );
   connect( chkInvertNormals, &QCheckBox::clicked, this, &QgsPolygon3DSymbolWidget::changed );
-  connect( widgetMaterial, &QgsPhongMaterialWidget::changed, this, &QgsPolygon3DSymbolWidget::changed );
+  connect( widgetMaterial, &QgsMaterialWidget::changed, this, &QgsPolygon3DSymbolWidget::changed );
   connect( btnHeightDD, &QgsPropertyOverrideButton::changed, this, &QgsPolygon3DSymbolWidget::changed );
   connect( btnExtrusionDD, &QgsPropertyOverrideButton::changed, this, &QgsPolygon3DSymbolWidget::changed );
   connect( groupEdges, &QGroupBox::clicked, this, &QgsPolygon3DSymbolWidget::changed );
   connect( btnEdgeColor, &QgsColorButton::colorChanged, this, &QgsPolygon3DSymbolWidget::changed );
   connect( spinEdgeWidth, static_cast<void ( QDoubleSpinBox::* )( double )>( &QDoubleSpinBox::valueChanged ), this, &QgsPolygon3DSymbolWidget::changed );
 
-  widgetMaterial->activateTexturingUI( true );
+  widgetMaterial->setTechnique( QgsMaterialSettingsRenderingTechnique::Triangles );
 }
 
 Qgs3DSymbolWidget *QgsPolygon3DSymbolWidget::create( QgsVectorLayer * )
@@ -66,7 +66,8 @@ void QgsPolygon3DSymbolWidget::setSymbol( const QgsAbstract3DSymbol *symbol, Qgs
 
   chkAddBackFaces->setChecked( polygonSymbol->addBackFaces() );
   chkInvertNormals->setChecked( polygonSymbol->invertNormals() );
-  widgetMaterial->setMaterial( polygonSymbol->material() );
+
+  widgetMaterial->setSettings( polygonSymbol->material(), layer );
 
   btnHeightDD->init( QgsAbstract3DSymbol::PropertyHeight, polygonSymbol->dataDefinedProperties(), QgsAbstract3DSymbol::propertyDefinitions(), layer, true );
   btnExtrusionDD->init( QgsAbstract3DSymbol::PropertyExtrusionHeight, polygonSymbol->dataDefinedProperties(), QgsAbstract3DSymbol::propertyDefinitions(), layer, true );
@@ -87,7 +88,7 @@ QgsAbstract3DSymbol *QgsPolygon3DSymbolWidget::symbol()
   sym->setRenderedFacade( cboRenderedFacade->currentIndex() );
   sym->setAddBackFaces( chkAddBackFaces->isChecked() );
   sym->setInvertNormals( chkInvertNormals->isChecked() );
-  sym->setMaterial( widgetMaterial->material() );
+  sym->setMaterial( widgetMaterial->settings() );
 
   QgsPropertyCollection ddp;
   ddp.setProperty( QgsAbstract3DSymbol::PropertyHeight, btnHeightDD->toProperty() );
@@ -99,4 +100,9 @@ QgsAbstract3DSymbol *QgsPolygon3DSymbolWidget::symbol()
   sym->setEdgeColor( btnEdgeColor->color() );
 
   return sym.release();
+}
+
+QString QgsPolygon3DSymbolWidget::symbolType() const
+{
+  return QStringLiteral( "polygon" );
 }

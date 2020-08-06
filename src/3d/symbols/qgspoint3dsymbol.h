@@ -19,11 +19,12 @@
 #include "qgis_3d.h"
 
 #include "qgsabstract3dsymbol.h"
-#include "qgsphongmaterialsettings.h"
 #include "qgs3dtypes.h"
 #include "qgssymbol.h"
 
 #include <QMatrix4x4>
+
+class QgsAbstractMaterialSettings;
 
 /**
  * \ingroup 3d
@@ -34,7 +35,7 @@
  *
  * \since QGIS 3.0
  */
-class _3D_EXPORT QgsPoint3DSymbol : public QgsAbstract3DSymbol
+class _3D_EXPORT QgsPoint3DSymbol : public QgsAbstract3DSymbol SIP_NODEFAULTCTORS
 {
   public:
     //! Constructor for QgsPoint3DSymbol with default QgsMarkerSymbol as the billboardSymbol
@@ -55,6 +56,7 @@ class _3D_EXPORT QgsPoint3DSymbol : public QgsAbstract3DSymbol
 
     void writeXml( QDomElement &elem, const QgsReadWriteContext &context ) const override;
     void readXml( const QDomElement &elem, const QgsReadWriteContext &context ) override;
+    QList< QgsWkbTypes::GeometryType > compatibleGeometryTypes() const override;
 
     //! Returns method that determines altitude (whether to clamp to feature to terrain)
     Qgs3DTypes::AltitudeClamping altitudeClamping() const { return mAltClamping; }
@@ -62,9 +64,14 @@ class _3D_EXPORT QgsPoint3DSymbol : public QgsAbstract3DSymbol
     void setAltitudeClamping( Qgs3DTypes::AltitudeClamping altClamping ) { mAltClamping = altClamping; }
 
     //! Returns material used for shading of the symbol
-    QgsPhongMaterialSettings material() const { return mMaterial; }
-    //! Sets material used for shading of the symbol
-    void setMaterial( const QgsPhongMaterialSettings &material ) { mMaterial = material; }
+    QgsAbstractMaterialSettings *material() const;
+
+    /**
+     * Sets the \a material settings used for shading of the symbol.
+     *
+     * Ownership of \a material is transferred to the symbol.
+     */
+    void setMaterial( QgsAbstractMaterialSettings *material SIP_TRANSFER );
 
     //! 3D shape types supported by the symbol
     enum Shape
@@ -108,11 +115,16 @@ class _3D_EXPORT QgsPoint3DSymbol : public QgsAbstract3DSymbol
     //! Returns transform for billboards
     QMatrix4x4 billboardTransform() const;
 
+    /**
+     * Exports the geometries contained withing the hierarchy of entity.
+     * Returns whether any objects were exported
+     */
+    bool exportGeometries( Qgs3DSceneExporter *exporter, Qt3DCore::QEntity *entity, const QString &objectNamePrefix ) const override SIP_SKIP;
   private:
     //! how to handle altitude of vector features
     Qgs3DTypes::AltitudeClamping mAltClamping = Qgs3DTypes::AltClampRelative;
 
-    QgsPhongMaterialSettings mMaterial;  //!< Defines appearance of objects
+    std::unique_ptr< QgsAbstractMaterialSettings> mMaterial;  //!< Defines appearance of objects
     Shape mShape = Cylinder;  //!< What kind of shape to use
     QVariantMap mShapeProperties;  //!< Key-value dictionary of shape's properties (different keys for each shape)
     QMatrix4x4 mTransform;  //!< Transform of individual instanced models

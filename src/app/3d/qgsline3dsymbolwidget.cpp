@@ -16,7 +16,7 @@
 #include "qgsline3dsymbolwidget.h"
 
 #include "qgsline3dsymbol.h"
-
+#include "qgsphongmaterialsettings.h"
 
 QgsLine3DSymbolWidget::QgsLine3DSymbolWidget( QWidget *parent )
   : Qgs3DSymbolWidget( parent )
@@ -37,7 +37,9 @@ QgsLine3DSymbolWidget::QgsLine3DSymbolWidget( QWidget *parent )
   connect( cboAltBinding, static_cast<void ( QComboBox::* )( int )>( &QComboBox::currentIndexChanged ), this, &QgsLine3DSymbolWidget::changed );
   connect( chkSimpleLines, &QCheckBox::clicked, this, &QgsLine3DSymbolWidget::changed );
   connect( chkSimpleLines, &QCheckBox::clicked, this, &QgsLine3DSymbolWidget::updateGuiState );
-  connect( widgetMaterial, &QgsPhongMaterialWidget::changed, this, &QgsLine3DSymbolWidget::changed );
+  connect( widgetMaterial, &QgsMaterialWidget::changed, this, &QgsLine3DSymbolWidget::changed );
+
+  widgetMaterial->setTechnique( QgsMaterialSettingsRenderingTechnique::Triangles );
 }
 
 Qgs3DSymbolWidget *QgsLine3DSymbolWidget::create( QgsVectorLayer * )
@@ -45,7 +47,7 @@ Qgs3DSymbolWidget *QgsLine3DSymbolWidget::create( QgsVectorLayer * )
   return new QgsLine3DSymbolWidget();
 }
 
-void QgsLine3DSymbolWidget::setSymbol( const QgsAbstract3DSymbol *symbol, QgsVectorLayer * )
+void QgsLine3DSymbolWidget::setSymbol( const QgsAbstract3DSymbol *symbol, QgsVectorLayer *layer )
 {
   const QgsLine3DSymbol *lineSymbol = dynamic_cast< const QgsLine3DSymbol *>( symbol );
   if ( !lineSymbol )
@@ -57,7 +59,9 @@ void QgsLine3DSymbolWidget::setSymbol( const QgsAbstract3DSymbol *symbol, QgsVec
   cboAltClamping->setCurrentIndex( static_cast<int>( lineSymbol->altitudeClamping() ) );
   cboAltBinding->setCurrentIndex( static_cast<int>( lineSymbol->altitudeBinding() ) );
   chkSimpleLines->setChecked( lineSymbol->renderAsSimpleLines() );
-  widgetMaterial->setMaterial( lineSymbol->material() );
+  widgetMaterial->setSettings( lineSymbol->material(), layer );
+  widgetMaterial->setTechnique( chkSimpleLines->isChecked() ? QgsMaterialSettingsRenderingTechnique::Lines
+                                : QgsMaterialSettingsRenderingTechnique::Triangles );
   updateGuiState();
 }
 
@@ -70,8 +74,13 @@ QgsAbstract3DSymbol *QgsLine3DSymbolWidget::symbol()
   sym->setAltitudeClamping( static_cast<Qgs3DTypes::AltitudeClamping>( cboAltClamping->currentIndex() ) );
   sym->setAltitudeBinding( static_cast<Qgs3DTypes::AltitudeBinding>( cboAltBinding->currentIndex() ) );
   sym->setRenderAsSimpleLines( chkSimpleLines->isChecked() );
-  sym->setMaterial( widgetMaterial->material() );
+  sym->setMaterial( widgetMaterial->settings() );
   return sym.release();
+}
+
+QString QgsLine3DSymbolWidget::symbolType() const
+{
+  return QStringLiteral( "line" );
 }
 
 void QgsLine3DSymbolWidget::updateGuiState()
@@ -79,5 +88,7 @@ void QgsLine3DSymbolWidget::updateGuiState()
   bool simple = chkSimpleLines->isChecked();
   //spinWidth->setEnabled( !simple );
   spinExtrusion->setEnabled( !simple );
+  widgetMaterial->setTechnique( chkSimpleLines->isChecked() ? QgsMaterialSettingsRenderingTechnique::Lines
+                                : QgsMaterialSettingsRenderingTechnique::Triangles );
 }
 

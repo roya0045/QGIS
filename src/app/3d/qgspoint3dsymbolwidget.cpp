@@ -24,6 +24,7 @@
 #include "qgssymbolbutton.h"
 #include "qgssymbollayer.h"
 #include "qgssymbollayerutils.h"
+#include "qgsphongmaterialsettings.h"
 
 QgsPoint3DSymbolWidget::QgsPoint3DSymbolWidget( QWidget *parent )
   : Qgs3DSymbolWidget( parent )
@@ -66,12 +67,14 @@ QgsPoint3DSymbolWidget::QgsPoint3DSymbolWidget( QWidget *parent )
     connect( spinBox, static_cast<void ( QDoubleSpinBox::* )( double )>( &QDoubleSpinBox::valueChanged ), this, &QgsPoint3DSymbolWidget::changed );
   connect( lineEditModel, &QgsAbstractFileContentSourceLineEdit::sourceChanged, this, &QgsPoint3DSymbolWidget::changed );
   connect( cbOverwriteMaterial, static_cast<void ( QCheckBox::* )( int )>( &QCheckBox::stateChanged ), this, &QgsPoint3DSymbolWidget::onOverwriteMaterialChecked );
-  connect( widgetMaterial, &QgsPhongMaterialWidget::changed, this, &QgsPoint3DSymbolWidget::changed );
+  connect( widgetMaterial, &QgsMaterialWidget::changed, this, &QgsPoint3DSymbolWidget::changed );
   connect( btnChangeSymbol, static_cast<void ( QgsSymbolButton::* )( )>( &QgsSymbolButton::changed ), this, &QgsPoint3DSymbolWidget::changed );
 
   // Sync between billboard height and TY
   connect( spinBillboardHeight, static_cast<void ( QDoubleSpinBox::* )( double )>( &QDoubleSpinBox::valueChanged ), spinTY,  &QDoubleSpinBox::setValue );
   connect( spinTY, static_cast<void ( QDoubleSpinBox::* )( double )>( &QDoubleSpinBox::valueChanged ), spinBillboardHeight,  &QDoubleSpinBox::setValue );
+
+  widgetMaterial->setTechnique( QgsMaterialSettingsRenderingTechnique::InstancedPoints );
 }
 
 Qgs3DSymbolWidget *QgsPoint3DSymbolWidget::create( QgsVectorLayer * )
@@ -92,7 +95,7 @@ void QgsPoint3DSymbolWidget::onOverwriteMaterialChecked( int state )
   emit changed();
 }
 
-void QgsPoint3DSymbolWidget::setSymbol( const QgsAbstract3DSymbol *symbol, QgsVectorLayer * )
+void QgsPoint3DSymbolWidget::setSymbol( const QgsAbstract3DSymbol *symbol, QgsVectorLayer *layer )
 {
   const QgsPoint3DSymbol *pointSymbol = dynamic_cast< const QgsPoint3DSymbol *>( symbol );
   if ( !pointSymbol )
@@ -104,6 +107,7 @@ void QgsPoint3DSymbolWidget::setSymbol( const QgsAbstract3DSymbol *symbol, QgsVe
   int index = cboShape->findData( pointSymbol->shape() );
   cboShape->setCurrentIndex( index != -1 ? index : 1 );  // use cylinder by default if shape is not set
   widgetMaterial->setEnabled( true );
+  QgsMaterialSettingsRenderingTechnique technique = QgsMaterialSettingsRenderingTechnique::InstancedPoints;
   switch ( cboShape->currentIndex() )
   {
     case 0:  // sphere
@@ -141,10 +145,12 @@ void QgsPoint3DSymbolWidget::setSymbol( const QgsAbstract3DSymbol *symbol, QgsVe
       {
         btnChangeSymbol->setSymbol( pointSymbol->billboardSymbol()->clone() );
       }
+      technique = QgsMaterialSettingsRenderingTechnique::Points;
       break;
   }
 
-  widgetMaterial->setMaterial( pointSymbol->material() );
+  widgetMaterial->setSettings( pointSymbol->material(), layer );
+  widgetMaterial->setTechnique( technique );
 
   // decompose the transform matrix
   // assuming the last row has values [0 0 0 1]
@@ -225,9 +231,14 @@ QgsAbstract3DSymbol *QgsPoint3DSymbolWidget::symbol()
   sym->setAltitudeClamping( static_cast<Qgs3DTypes::AltitudeClamping>( cboAltClamping->currentIndex() ) );
   sym->setShape( static_cast<QgsPoint3DSymbol::Shape>( cboShape->itemData( cboShape->currentIndex() ).toInt() ) );
   sym->setShapeProperties( vm );
-  sym->setMaterial( widgetMaterial->material() );
+  sym->setMaterial( widgetMaterial->settings() );
   sym->setTransform( tr );
   return sym.release();
+}
+
+QString QgsPoint3DSymbolWidget::symbolType() const
+{
+  return QStringLiteral( "point" );
 }
 
 void QgsPoint3DSymbolWidget::onShapeChanged()
@@ -246,6 +257,7 @@ void QgsPoint3DSymbolWidget::onShapeChanged()
   materialsGroupBox->show();
   transformationWidget->show();
   QList<QWidget *> activeWidgets;
+  QgsMaterialSettingsRenderingTechnique technique = QgsMaterialSettingsRenderingTechnique::InstancedPoints;
   switch ( cboShape->currentIndex() )
   {
     case 0:  // sphere
@@ -275,8 +287,11 @@ void QgsPoint3DSymbolWidget::onShapeChanged()
       // Always hide material and transformationwidget for billboard
       materialsGroupBox->hide();
       transformationWidget->hide();
+      technique = QgsMaterialSettingsRenderingTechnique::Points;
       break;
   }
+
+  widgetMaterial->setTechnique( technique );
 
   const auto constAllWidgets = allWidgets;
   for ( QWidget *w : constAllWidgets )
