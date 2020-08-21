@@ -676,6 +676,13 @@ class CORE_EXPORT QgsMapSettings : public QgsTemporalRangeObject
      */
     QList< QgsRenderedFeatureHandlerInterface * > renderedFeatureHandlers() const;
 
+    /**
+     * Removes a layer from the map settings
+     * \return TRUE if the layer was removed, else FALSE
+     * \since QGIS 3.16
+     */
+    bool removeLayer( QgsMapLayer *mapLayer);
+
   protected:
 
     double mDpi;

@@ -280,7 +280,7 @@ QStringList QgsMapSettings::layerIds() const
 
 QList<QgsMapLayer *> QgsMapSettings::layers() const
 {
-  return _qgis_listQPointerToRaw( mLayers );
+  return ;
 }
 
 void QgsMapSettings::setLayers( const QList<QgsMapLayer *> &layers )
@@ -305,6 +305,15 @@ void QgsMapSettings::setLayerStyleOverrides( const QMap<QString, QString> &overr
 {
   mLayerStyleOverrides = overrides;
 }
+
+bool QgsMapSettings::removeLayer( QgsMapLayer *mapLayer )
+{
+  QList<QgsMapLayer *> tLayers = _qgis_listQPointerToRaw( mLayers )
+  bool removed = tLayers.removeOne( mapLayer );
+  mLayers = _qgis_listRawToQPointer( tLayers );
+  return removed;
+}
+
 
 void QgsMapSettings::setDestinationCrs( const QgsCoordinateReferenceSystem &crs )
 {
