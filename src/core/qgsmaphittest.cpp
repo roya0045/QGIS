@@ -26,6 +26,7 @@
 #include "qgsgeometry.h"
 #include "qgsgeometryengine.h"
 #include "qgsexpressioncontextutils.h"
+#include "qgsmaplayer.h"
 
 QgsMapHitTest::QgsMapHitTest( const QgsMapSettings &settings, const QgsGeometry &polygon, const LayerFilterExpression &layerFilterExpression )
   : mSettings( settings )
@@ -59,27 +60,41 @@ void QgsMapHitTest::run()
   const auto constLayers = mSettings.layers();
   for ( QgsMapLayer *layer : constLayers )
   {
-    QgsVectorLayer *vl = qobject_cast<QgsVectorLayer *>( layer );
-    if ( !vl || !vl->renderer() )
-      continue;
-
-    if ( !mOnlyExpressions )
+    if ( layer-­>type() == QgsMapLayer::VectorLayer )
     {
-      if ( !vl->isInScaleRange( mSettings.scale() ) )
-      {
-        mHitTest[vl] = SymbolSet(); // no symbols -> will not be shown
-        mHitTestRuleKey[vl] = SymbolSet();
+      QgsVectorLayer *vl = qobject_cast<QgsVectorLayer *>( layer );
+      if ( !vl || !vl->renderer() )
         continue;
+
+      if ( !mOnlyExpressions )
+      {
+        if ( !vl->isInScaleRange( mSettings.scale() ) )
+        {
+          mHitTest[vl] = SymbolSet(); // no symbols -> will not be shown
+          mHitTestRuleKey[vl] = SymbolSet();
+          continue;
+        }
+
+        context.setCoordinateTransform( mSettings.layerTransform( vl ) );
+        context.setExtent( mSettings.outputExtentToLayerExtent( vl, mSettings.visibleExtent() ) );
       }
 
-      context.setCoordinateTransform( mSettings.layerTransform( vl ) );
-      context.setExtent( mSettings.outputExtentToLayerExtent( vl, mSettings.visibleExtent() ) );
+      context.expressionContext() << QgsExpressionContextUtils::layerScope( vl );
+      SymbolSet &usedSymbols = mHitTest[vl];
+      SymbolSet &usedSymbolsRuleKey = mHitTestRuleKey[vl];
+      runHitTestLayer( vl, usedSymbols, usedSymbolsRuleKey, context );
+    }
+    else if ( layer-­>type() == QgsMapLayer::RasterLayer )
+    {
+      continue;
+    }
+    else
+    {
+      continue;
     }
 
-    context.expressionContext() << QgsExpressionContextUtils::layerScope( vl );
-    SymbolSet &usedSymbols = mHitTest[vl];
-    SymbolSet &usedSymbolsRuleKey = mHitTestRuleKey[vl];
-    runHitTestLayer( vl, usedSymbols, usedSymbolsRuleKey, context );
+
+
   }
 
   painter.end();

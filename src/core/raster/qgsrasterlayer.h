@@ -29,6 +29,7 @@
 #include <QMap>
 #include <QPair>
 #include <QVector>
+#include <QgsRectangle>
 
 #include "qgis_sip.h"
 #include "qgsmaplayer.h"
@@ -460,6 +461,12 @@ class CORE_EXPORT QgsRasterLayer : public QgsMapLayer
     bool ignoreExtents() const;
 
     QgsMapLayerTemporalProperties *temporalProperties() override;
+
+    /**
+     * Returns QgsRectangle representing the extent of the layer.
+     * \since QGIS 3.16
+     */
+    QgsRectangle extent();
 
   public slots:
     void showStatusMessage( const QString &message );

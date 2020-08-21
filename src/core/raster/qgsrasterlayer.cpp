@@ -1002,6 +1002,11 @@ QgsMapLayerTemporalProperties *QgsRasterLayer::temporalProperties()
   return mTemporalProperties;
 }
 
+QgsRectangle QgsRasterLauer::extent()
+{
+  return mDataProvider->extent();
+}
+
 void QgsRasterLayer::setContrastEnhancement( QgsContrastEnhancement::ContrastEnhancementAlgorithm algorithm, QgsRasterMinMaxOrigin::Limits limits, const QgsRectangle &extent, int sampleSize, bool generateLookupTableFlag )
 {
   setContrastEnhancement( algorithm,
