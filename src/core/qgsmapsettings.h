@@ -681,7 +681,7 @@ class CORE_EXPORT QgsMapSettings : public QgsTemporalRangeObject
      * \return TRUE if the layer was removed, else FALSE
      * \since QGIS 3.16
      */
-    bool removeLayer( QgsMapLayer *mapLayer);
+    bool removeLayer( QgsMapLayer *mapLayer );
 
   protected:
 
