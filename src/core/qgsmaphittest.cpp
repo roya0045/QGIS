@@ -60,7 +60,7 @@ void QgsMapHitTest::run()
   const auto constLayers = mSettings.layers();
   for ( QgsMapLayer *layer : constLayers )
   {
-    if ( layer-­>type() == QgsMapLayer::VectorLayer )
+    if ( layer->type() == QgsMapLayerType::VectorLayer )
     {
       QgsVectorLayer *vl = qobject_cast<QgsVectorLayer *>( layer );
       if ( !vl || !vl->renderer() )
@@ -84,7 +84,7 @@ void QgsMapHitTest::run()
       SymbolSet &usedSymbolsRuleKey = mHitTestRuleKey[vl];
       runHitTestLayer( vl, usedSymbols, usedSymbolsRuleKey, context );
     }
-    else if ( layer-­>type() == QgsMapLayer::RasterLayer )
+    else if ( layer->type() == QgsMapLayerType::RasterLayer )
     {
       continue;
     }
