@@ -29,7 +29,6 @@
 #include <QMap>
 #include <QPair>
 #include <QVector>
-#include <QgsRectangle>
 
 #include "qgis_sip.h"
 #include "qgsmaplayer.h"
@@ -39,6 +38,7 @@
 #include "qgsrasterviewport.h"
 #include "qgsrasterminmaxorigin.h"
 #include "qgscontrastenhancement.h"
+#include "qgsrectangle.h"
 
 class QgsMapToPixel;
 class QgsRasterRenderer;
