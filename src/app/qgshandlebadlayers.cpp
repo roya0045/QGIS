@@ -554,7 +554,7 @@ void QgsHandleBadLayers::autoFind()
 
   const QList<int> constLayersToFind = layersToFind;
 
-  QProgressDialog progressDialog( QObject::tr( "Searching files" ), 0, 1, layersToFind.size(), this, Qt::Dialog );
+  //QProgressDialog progressDialog( QObject::tr( "Searching files" ), 0, 1, layersToFind.size(), this, Qt::Dialog );
 
   for ( int i : constLayersToFind )
   {
@@ -572,11 +572,11 @@ void QgsHandleBadLayers::autoFind()
     QString provider = node.namedItem( QStringLiteral( "provider" ) ).toElement().text();
     const QString fileType = mLayerList->item( i, 2 )->text();
 
-    progressDialog.setValue( i );
+    //progressDialog.setValue( i );
     QChar sentenceEnd = ( name.length() > 15 ) ? QChar( 0x2026 ) : '.';
-    progressDialog.setLabelText( QObject::tr( "Searching for file: %1 \n [ %2 of %3 ] " ).arg( name.left( 15 ) + sentenceEnd,
-                                 QString::number( i + 1 ), QString::number( layersToFind.size() ) ) );
-    progressDialog.open();
+    //progressDialog.setLabelText( QObject::tr( "Searching for file: %1 \n [ %2 of %3 ] " ).arg( name.left( 15 ) + sentenceEnd,
+    //                             QString::number( i + 1 ), QString::number( layersToFind.size() ) ) );
+    //progressDialog.open();
 
     if ( provider.toLower() == QStringLiteral( "none" ) )
     {
@@ -623,8 +623,8 @@ void QgsHandleBadLayers::autoFind()
       while ( !( ( fileutil->status() == QgsTask::Complete ) || ( fileutil->status() == QgsTask::Terminated ) ) )
       {
         QCoreApplication::processEvents();
-        if ( progressDialog.wasCanceled() )
-          fileutil->cancel();
+        // if ( progressDialog.wasCanceled() )
+        //  fileutil->cancel();
       }
       // fileutil->waitForFinished();
       if ( !( fileutil->isActive() ) )
@@ -683,8 +683,8 @@ void QgsHandleBadLayers::autoFind()
         item->setForeground( QBrush( Qt::red ) );
       }
     }
-    if ( progressDialog.wasCanceled() )
-      break;
+    //if ( progressDialog.wasCanceled() )
+    //  break;
   }
 
   QgsProject::instance()->layerTreeRegistryBridge()->setEnabled( false );
