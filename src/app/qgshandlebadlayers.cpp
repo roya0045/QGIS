@@ -622,13 +622,17 @@ void QgsHandleBadLayers::autoFind()
       manager->addTask( fileutil );
       while ( !( ( fileutil->status() == QgsTask::Complete ) || ( fileutil->status() == QgsTask::Terminated ) ) )
       {
-        QCoreApplication::processEvents();
+        // QCoreApplication::processEvents();
         if ( progressDialog.wasCanceled() )
           fileutil->cancel();
       }
       // fileutil->waitForFinished();
-      if ( !( fileutil->isActive() ) )
-        filesFound = fileutil->results();
+      if ( fileutil )
+      {
+        if ( !( fileutil->isActive() ) )
+          filesFound = fileutil->results();
+      }
+
 
       if ( filesFound.length() > 1 )
       {
