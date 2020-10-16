@@ -78,7 +78,7 @@ void QgsGCPListModel::updateModel()
   bool bTransformUpdated = false;
 
   QVector<QgsPointXY> mapCoords, pixelCoords;
-  mGCPList->createGCPVectors( mapCoords, pixelCoords );
+  mGCPList->createGCPVectors( mapCoords, pixelCoords, mProjection.toWkt() );
 
   //  // Setup table header
   QStringList itemLabels;

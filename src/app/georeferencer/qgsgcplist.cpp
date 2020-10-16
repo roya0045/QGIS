@@ -15,6 +15,9 @@
 
 #include "qgspointxy.h"
 #include "qgsgeorefdatapoint.h"
+#include "qgscoordinatereferencesystem.h"
+#include "qgscoordinatetransform.h"
+#include "qgsproject.h"
 
 #include "qgsgcplist.h"
 
@@ -30,8 +33,10 @@ QgsGCPList::QgsGCPList( const QgsGCPList &list )
   }
 }
 
-void QgsGCPList::createGCPVectors( QVector<QgsPointXY> &mapCoords, QVector<QgsPointXY> &pixelCoords )
+void QgsGCPList::createGCPVectors( QVector<QgsPointXY> &mapCoords, QVector<QgsPointXY> &pixelCoords, const QString &wktProj )
 {
+  QgsCoordinateReferenceSystem projTarget( wktProj );
+  QgsCoordinateTransform transformer;
   mapCoords   = QVector<QgsPointXY>( size() );
   pixelCoords = QVector<QgsPointXY>( size() );
   for ( int i = 0, j = 0; i < sizeAll(); i++ )
@@ -39,8 +44,16 @@ void QgsGCPList::createGCPVectors( QVector<QgsPointXY> &mapCoords, QVector<QgsPo
     QgsGeorefDataPoint *pt = at( i );
     if ( pt->isEnabled() )
     {
-      mapCoords[j] = pt->mapCoords();
+      if ( projTarget.isValid() )
+      {
+       mapCoords[j] = QgsCoordinateTransform( pt->crs(), projTarget,
+                                             QgsProject::instance() ).transform( pt->mapCoords() );
+      }
+      else 
+        mapCoords[j] = pt->mapCoords();
+       
       pixelCoords[j] = pt->pixelCoords();
+
       j++;
     }
   }

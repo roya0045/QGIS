@@ -85,7 +85,7 @@ class QgsGeoreferencerMainWindow : public QMainWindow, private Ui::QgsGeorefPlug
 
     // gcps
     void addPoint( const QgsPointXY &pixelCoords, const QgsPointXY &mapCoords,
-                   bool enable = true, bool finalize = true );
+                   const QString &wktProj, bool enable = true, bool finalize = true );
     void deleteDataPoint( QPoint pixelCoords );
     void deleteDataPoint( int index );
     void showCoordDialog( const QgsPointXY &pixelCoords );
