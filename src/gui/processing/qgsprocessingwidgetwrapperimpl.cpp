@@ -58,6 +58,8 @@
 #include "qgsrasterbandcombobox.h"
 #include "qgsprocessingoutputdestinationwidget.h"
 #include "qgscheckablecombobox.h"
+#include "qgsexpressioncontext.h"
+#include "qgsexpressioncontextutils.h"
 #include <QToolButton>
 #include <QLabel>
 #include <QHBoxLayout>
@@ -1851,10 +1853,11 @@ QgsProcessingAbstractParameterDefinitionWidget *QgsProcessingFileWidgetWrapper::
 QgsProcessingExpressionParameterDefinitionWidget::QgsProcessingExpressionParameterDefinitionWidget( QgsProcessingContext &context, const QgsProcessingParameterWidgetContext &widgetContext, const QgsProcessingParameterDefinition *definition, const QgsProcessingAlgorithm *algorithm, QWidget *parent )
   : QgsProcessingAbstractParameterDefinitionWidget( context, widgetContext, definition, algorithm, parent )
 {
+  mModel = widgetContext.model();
+
   QVBoxLayout *vlayout = new QVBoxLayout();
   vlayout->setMargin( 0 );
   vlayout->setContentsMargins( 0, 0, 0, 0 );
-
   vlayout->addWidget( new QLabel( tr( "Default value" ) ) );
 
   mDefaultLineEdit = new QgsExpressionLineEdit();
@@ -1871,10 +1874,10 @@ QgsProcessingExpressionParameterDefinitionWidget::QgsProcessingExpressionParamet
   if ( const QgsProcessingParameterExpression *expParam = dynamic_cast<const QgsProcessingParameterExpression *>( definition ) )
     initialParent = expParam->parentLayerParameterName();
 
-  if ( widgetContext.model() )
+  if ( mModel )
   {
     // populate combo box with other model input choices
-    const QMap<QString, QgsProcessingModelParameter> components = widgetContext.model()->parameterComponents();
+    const QMap<QString, QgsProcessingModelParameter> components = mModel->parameterComponents();
     for ( auto it = components.constBegin(); it != components.constEnd(); ++it )
     {
       if ( const QgsProcessingParameterFeatureSource *definition = dynamic_cast< const QgsProcessingParameterFeatureSource * >( widgetContext.model()->parameterDefinition( it.value().parameterName() ) ) )
@@ -1911,6 +1914,10 @@ QgsProcessingParameterDefinition *QgsProcessingExpressionParameterDefinitionWidg
 {
   auto param = qgis::make_unique< QgsProcessingParameterExpression >( name, description, mDefaultLineEdit->expression(), mParentLayerComboBox->currentData().toString() );
   param->setFlags( flags );
+  if ( mModel ){
+    QStringList extraVars = mModel->variables().keys();
+    param->setAdditionalExpressionContextVariables( extraVars );
+  }
   return param.release();
 }
 
@@ -2000,7 +2007,7 @@ void QgsProcessingExpressionWidgetWrapper::setParentLayerWrapperValue( const Qgs
     context = tmpContext.get();
   }
 
-  QgsVectorLayer *layer = QgsProcessingParameters::parameterAsVectorLayer( parentWrapper->parameterDefinition(), parentWrapper->parameterValue(), *context );
+  layer = QgsProcessingParameters::parameterAsVectorLayer( parentWrapper->parameterDefinition(), parentWrapper->parameterValue(), *context );
   if ( !layer )
   {
     if ( mFieldExpWidget )
@@ -2027,6 +2034,25 @@ void QgsProcessingExpressionWidgetWrapper::setParentLayerWrapperValue( const Qgs
     mFieldExpWidget->setLayer( layer );
   else if ( mExpLineEdit )
     mExpLineEdit->setLayer( layer );
+}
+
+QgsExpressionContext QgsProcessingExpressionWidgetWrapper::createExpressionContext() const
+{
+  QgsExpressionContext context = QgsExpressionContext();
+  QStringList highlightedVariables;
+  if ( layer )
+  {
+    QgsExpressionContextScope *layerScope = layer->createExpressionContextScope();
+    context.appendScope( layerScope );
+  }
+  
+  QgsExpressionContextScope *extraScope = new QgsExpressionContextScope();
+  QStringList extraVars = parameterDefinition()->additionalExpressionContextVariables();
+  for ( const QString &extraVar : extraVars )
+    extraScope->addVariable( extraVar);
+  context.appendScope( extraScope );
+  context.setHighlightedVariables( extraVars );
+  return context;
 }
 
 void QgsProcessingExpressionWidgetWrapper::setWidgetValue( const QVariant &value, QgsProcessingContext &context )

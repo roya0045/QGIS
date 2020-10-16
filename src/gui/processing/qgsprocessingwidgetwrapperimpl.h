@@ -65,6 +65,8 @@ class QgsProcessingMapLayerComboBox;
 class QgsRasterBandComboBox;
 class QgsProcessingLayerOutputDestinationWidget;
 class QgsCheckableComboBox;
+class QgsProcessingModelAlgorithm;
+class QgsExpressionContext;
 
 ///@cond PRIVATE
 
@@ -637,6 +639,7 @@ class GUI_EXPORT QgsProcessingExpressionParameterDefinitionWidget : public QgsPr
 
     QComboBox *mParentLayerComboBox = nullptr;
     QgsExpressionLineEdit *mDefaultLineEdit = nullptr;
+    QgsProcessingModelAlgorithm *mModel = nullptr;
 
 };
 
@@ -661,6 +664,9 @@ class GUI_EXPORT QgsProcessingExpressionWidgetWrapper : public QgsAbstractProces
     // QgsProcessingParameterWidgetWrapper interface
     QWidget *createWidget() override SIP_FACTORY;
     void postInitialize( const QList< QgsAbstractProcessingParameterWidgetWrapper * > &wrappers ) override;
+    
+    QgsExpressionContext createExpressionContext() const;
+    
   public slots:
     void setParentLayerWrapperValue( const QgsAbstractProcessingParameterWidgetWrapper *parentWrapper );
   protected:
@@ -679,6 +685,7 @@ class GUI_EXPORT QgsProcessingExpressionWidgetWrapper : public QgsAbstractProces
     QgsFieldExpressionWidget *mFieldExpWidget = nullptr;
     QgsExpressionLineEdit *mExpLineEdit = nullptr;
     std::unique_ptr< QgsVectorLayer > mParentLayer;
+    QgsVectorLayer *layer = nullptr;
 
     friend class TestProcessingGui;
 };
