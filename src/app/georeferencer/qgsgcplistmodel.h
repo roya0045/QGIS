@@ -18,6 +18,7 @@
 
 #include <QTreeView>
 #include <QStandardItemModel>
+#include "qgscoordinatereferencesystem.h"
 
 class QgsGeorefDataPoint;
 class QgsGeorefTransform;
@@ -33,6 +34,7 @@ class QgsGCPListModel : public QStandardItemModel
     void setGCPList( QgsGCPList *theGCPList );
     void setGeorefTransform( QgsGeorefTransform *georefTransform );
     void updateModel();
+    void setProjection( QgsCoordinateReferenceSystem projection ){ mProjection = projection; }
 
   public slots:
     void replaceDataPoint( QgsGeorefDataPoint *newDataPoint, int i );
@@ -43,6 +45,7 @@ class QgsGCPListModel : public QStandardItemModel
   private:
     QgsGCPList         *mGCPList = nullptr;
     QgsGeorefTransform *mGeorefTransform = nullptr;
+    QgsCoordinateReferenceSystem mProjection;
 };
 
 #endif

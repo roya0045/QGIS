@@ -482,11 +482,11 @@ void QgsGeoreferencerMainWindow::linkGeorefToQgis( bool link )
 }
 
 // GCPs slots
-void QgsGeoreferencerMainWindow::addPoint( const QgsPointXY &pixelCoords, const QgsPointXY &mapCoords,
+void QgsGeoreferencerMainWindow::addPoint( const QgsPointXY &pixelCoords, const QgsPointXY &mapCoords, const QString &wktProj,
     bool enable, bool finalize )
 {
   QgsGeorefDataPoint *pnt = new QgsGeorefDataPoint( mCanvas, QgisApp::instance()->mapCanvas(),
-      pixelCoords, mapCoords, enable );
+      pixelCoords, mapCoords, wktProj, enable );
   mPoints.append( pnt );
   mGCPsDirty = true;
   if ( finalize )
@@ -579,7 +579,7 @@ void QgsGeoreferencerMainWindow::showCoordDialog( const QgsPointXY &pixelCoords 
   {
     mMapCoordsDialog = new QgsMapCoordsDialog( QgisApp::instance()->mapCanvas(), pixelCoords, this );
     connect( mMapCoordsDialog, &QgsMapCoordsDialog::pointAdded, this,
-    [this]( const QgsPointXY & a, const QgsPointXY & b ) { this->addPoint( a, b ); }
+    [this]( const QgsPointXY & a, const QgsPointXY & b, const QString & crs ) { this->addPoint( a, b, crs ); }
            );
     mMapCoordsDialog->show();
   }
@@ -1212,13 +1212,14 @@ bool QgsGeoreferencerMainWindow::loadGCPs( /*bool verbose*/ )
 
     QgsPointXY mapCoords( ls.at( 0 ).toDouble(), ls.at( 1 ).toDouble() ); // map x,y
     QgsPointXY pixelCoords( ls.at( 2 ).toDouble(), ls.at( 3 ).toDouble() ); // pixel x,y
-    if ( ls.count() == 5 || ls.count() == 8 )
+	QString wktProj( ls.at( 8 ) );
+    if ( ls.count() == 5 || ls.count() == 9 )
     {
       bool enable = ls.at( 4 ).toInt();
-      addPoint( pixelCoords, mapCoords, enable, false );
+      addPoint( pixelCoords, mapCoords, wktProj, enable, false );
     }
     else
-      addPoint( pixelCoords, mapCoords, true, false );
+      addPoint( pixelCoords, mapCoords, wktProj, true, false );
 
     ++i;
   }
@@ -1245,7 +1246,7 @@ void QgsGeoreferencerMainWindow::saveGCPs()
     points << "mapX,mapY,pixelX,pixelY,enable,dX,dY,residual" << endl;
     for ( QgsGeorefDataPoint *pt : qgis::as_const( mPoints ) )
     {
-      points << QStringLiteral( "%1,%2,%3,%4,%5,%6,%7,%8" )
+      points << QStringLiteral( "%1,%2,%3,%4,%5,%6,%7,%8,%9" )
              .arg( qgsDoubleToString( pt->mapCoords().x() ),
                    qgsDoubleToString( pt->mapCoords().y() ),
                    qgsDoubleToString( pt->pixelCoords().x() ),
@@ -1253,7 +1254,8 @@ void QgsGeoreferencerMainWindow::saveGCPs()
              .arg( pt->isEnabled() )
              .arg( qgsDoubleToString( pt->residual().x() ),
                    qgsDoubleToString( pt->residual().y() ),
-                   qgsDoubleToString( std::sqrt( pt->residual().x() * pt->residual().x() + pt->residual().y() * pt->residual().y() ) ) )
+                   qgsDoubleToString( std::sqrt( pt->residual().x() * pt->residual().x() + pt->residual().y() * pt->residual().y() ) ),
+				   pt->crs().toWkt() )
              << endl;
     }
 

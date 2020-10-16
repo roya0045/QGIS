@@ -20,6 +20,7 @@
 #include "qgspointxy.h"
 #include "qgsmapcanvas.h"
 #include "qgspointlocator.h"
+#include "qgsprojectionselectionwidget.h"
 
 
 #include "ui_qgsmapcoordsdialogbase.h"
@@ -70,12 +71,14 @@ class QgsMapCoordsDialog : public QDialog, private Ui::QgsMapCoordsDialogBase
     void setPrevTool();
 
   signals:
-    void pointAdded( const QgsPointXY &, const QgsPointXY & );
+    void pointAdded( const QgsPointXY &, const QgsPointXY &, const QString & );
 
   private:
     double dmsToDD( const QString &dms );
 
     QPushButton *mPointFromCanvasPushButton = nullptr;
+    
+    QgsProjectionSelectionWidget *mProjSelect = nullptr;
 
     QgsGeorefMapToolEmitPoint *mToolEmitPoint = nullptr;
     QgsMapTool *mPrevMapTool = nullptr;

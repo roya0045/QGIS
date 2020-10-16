@@ -16,17 +16,20 @@
 
 #include "qgsmapcanvas.h"
 #include "qgsgcpcanvasitem.h"
+#include "qgscoordinatereferencesystem.h"
+
 
 #include "qgsgeorefdatapoint.h"
 
 QgsGeorefDataPoint::QgsGeorefDataPoint( QgsMapCanvas *srcCanvas, QgsMapCanvas *dstCanvas,
                                         const QgsPointXY &pixelCoords, const QgsPointXY &mapCoords,
-                                        bool enable )
+                                        const QString &wktProj, bool enable )
   : mSrcCanvas( srcCanvas )
   , mDstCanvas( dstCanvas )
   , mPixelCoords( pixelCoords )
   , mMapCoords( mapCoords )
   , mId( -1 )
+  , mProj( wktProj )
   , mEnabled( enable )
 {
   mGCPSourceItem = new QgsGCPCanvasItem( srcCanvas, this, true );
@@ -48,6 +51,7 @@ QgsGeorefDataPoint::QgsGeorefDataPoint( const QgsGeorefDataPoint &p )
   mMapCoords = p.mapCoords();
   mEnabled = p.isEnabled();
   mResidual = p.residual();
+  mProj = p.crs();
   mId = p.id();
 }
 
