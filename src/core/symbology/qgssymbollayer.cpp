@@ -106,6 +106,7 @@ void QgsSymbolLayer::initPropertyDefinitions()
     { QgsSymbolLayer::PropertyRandomSeed, QgsPropertyDefinition( "randomSeed", QgsPropertyDefinition::DataTypeNumeric, QObject::tr( "Random number seed" ), QObject::tr( "integer > 0, or 0 for completely random sequence" ), origin )},
     { QgsSymbolLayer::PropertyClipPoints, QgsPropertyDefinition( "clipPoints", QObject::tr( "Clip markers" ), QgsPropertyDefinition::Boolean, origin )},
     { QgsSymbolLayer::PropertyClipPoints, QgsPropertyDefinition( "densityArea", QObject::tr( "Density area" ), QgsPropertyDefinition::DoublePositive, origin )},
+    { QgsSymbolLayer::PropertyDashPatternOffset, QgsPropertyDefinition( "dashPatternOffset", QObject::tr( "Dash pattern offset" ), QgsPropertyDefinition::DoublePositive, origin )},
   };
 }
 
@@ -529,7 +530,21 @@ void QgsMarkerSymbolLayer::markerOffset( QgsSymbolRenderContext &context, double
   }
 
   double anchorPointCorrectionX = context.renderContext().convertToPainterUnits( width, widthUnit, widthMapUnitScale ) / 2.0;
+  if ( widthUnit == QgsUnitTypes::RenderMetersInMapUnits && context.renderContext().flags() & QgsRenderContext::RenderSymbolPreview )
+  {
+    // rendering for symbol previews -- an size in meters in map units can't be calculated, so treat the size as millimeters
+    // and clamp it to a reasonable range. It's the best we can do in this situation!
+    anchorPointCorrectionX = std::min( std::max( context.renderContext().convertToPainterUnits( width, QgsUnitTypes::RenderMillimeters ), 3.0 ), 100.0 ) / 2.0;
+  }
+
   double anchorPointCorrectionY = context.renderContext().convertToPainterUnits( height, heightUnit, heightMapUnitScale ) / 2.0;
+  if ( heightUnit == QgsUnitTypes::RenderMetersInMapUnits && context.renderContext().flags() & QgsRenderContext::RenderSymbolPreview )
+  {
+    // rendering for symbol previews -- an size in meters in map units can't be calculated, so treat the size as millimeters
+    // and clamp it to a reasonable range. It's the best we can do in this situation!
+    anchorPointCorrectionY = std::min( std::max( context.renderContext().convertToPainterUnits( height, QgsUnitTypes::RenderMillimeters ), 3.0 ), 100.0 ) / 2.0;
+  }
+
   if ( horizontalAnchorPoint == Left )
   {
     offsetX += anchorPointCorrectionX;

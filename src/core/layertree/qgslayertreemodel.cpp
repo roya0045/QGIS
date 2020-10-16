@@ -209,6 +209,7 @@ QVariant QgsLayerTreeModel::data( const QModelIndex &index, int role ) const
 
         case QgsMapLayerType::VectorLayer:
         case QgsMapLayerType::PluginLayer:
+        case QgsMapLayerType::AnnotationLayer:
           break;
       }
 
@@ -1388,6 +1389,7 @@ QgsRenderContext *QgsLayerTreeModel::createTemporaryRenderContext() const
   context->setScaleFactor( dpi / 25.4 );
   context->setRendererScale( scale );
   context->setMapToPixel( QgsMapToPixel( mupp ) );
+  context->setFlag( QgsRenderContext::RenderSymbolPreview );
   return validData ? context.release() : nullptr;
 }
 

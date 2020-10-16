@@ -401,16 +401,26 @@ void QgsGeoreferencerMainWindow::generateGDALScript()
 void QgsGeoreferencerMainWindow::setAddPointTool()
 {
   mCanvas->setMapTool( mToolAddPoint );
+  QgsMapTool *activeQgisMapTool = QgisApp::instance()->mapCanvas()->mapTool();
+  if ( activeQgisMapTool == mToolMovePointQgis )
+    QgisApp::instance()->mapCanvas()->setMapTool( mPrevQgisMapTool );
 }
 
 void QgsGeoreferencerMainWindow::setDeletePointTool()
 {
   mCanvas->setMapTool( mToolDeletePoint );
+  QgsMapTool *activeQgisMapTool = QgisApp::instance()->mapCanvas()->mapTool();
+  if ( activeQgisMapTool == mToolMovePointQgis )
+    QgisApp::instance()->mapCanvas()->setMapTool( mPrevQgisMapTool );
 }
 
 void QgsGeoreferencerMainWindow::setMovePointTool()
 {
   mCanvas->setMapTool( mToolMovePoint );
+  QgsMapTool *activeQgisMapTool = QgisApp::instance()->mapCanvas()->mapTool();
+  if ( activeQgisMapTool == mToolMovePointQgis )
+    return;
+  mPrevQgisMapTool = activeQgisMapTool;
   QgisApp::instance()->mapCanvas()->setMapTool( mToolMovePointQgis );
 }
 
@@ -681,12 +691,6 @@ void QgsGeoreferencerMainWindow::localHistogramStretch()
   mCanvas->refresh();
 }
 
-// Info slots
-void QgsGeoreferencerMainWindow::showHelp()
-{
-  QgsHelp::openHelp( QStringLiteral( "plugins/core_plugins/plugins_georeferencer.html#defining-the-transformation-settings" ) );
-}
-
 // Comfort slots
 void QgsGeoreferencerMainWindow::jumpToGCP( uint theGCPIndex )
 {
@@ -904,10 +908,6 @@ void QgsGeoreferencerMainWindow::createActions()
   mActionFullHistogramStretch->setIcon( QgsApplication::getThemeIcon( QStringLiteral( "/mActionFullHistogramStretch.svg" ) ) );
   connect( mActionFullHistogramStretch, &QAction::triggered, this, &QgsGeoreferencerMainWindow::fullHistogramStretch );
   mActionFullHistogramStretch->setEnabled( false );
-
-  // Help actions
-  mActionHelp = new QAction( tr( "Help" ), this );
-  connect( mActionHelp, &QAction::triggered, this, &QgsGeoreferencerMainWindow::showHelp );
 
   mActionQuit->setShortcuts( QList<QKeySequence>() << QKeySequence( Qt::CTRL + Qt::Key_Q )
                              << QKeySequence( Qt::Key_Escape ) );
@@ -1566,8 +1566,10 @@ bool QgsGeoreferencerMainWindow::writePDFReportFile( const QString &fileName, co
   QFont tableHeaderFont;
   tableHeaderFont.setPointSize( 9 );
   tableHeaderFont.setBold( true );
+  QgsTextFormat tableHeaderFormat = QgsTextFormat::fromQFont( tableHeaderFont );
   QFont tableContentFont;
   tableContentFont.setPointSize( 9 );
+  QgsTextFormat tableContentFormat = QgsTextFormat::fromQFont( tableContentFont );
 
   QgsSettings s;
   double leftMargin = s.value( QStringLiteral( "/Plugin-GeoReferencer/Config/LeftMarginPDF" ), "2.0" ).toDouble();
@@ -1648,8 +1650,8 @@ bool QgsGeoreferencerMainWindow::writePDFReportFile( const QString &fileName, co
     calculateMeanError( meanError );
 
     parameterTable = new QgsLayoutItemTextTable( &layout );
-    parameterTable->setHeaderFont( tableHeaderFont );
-    parameterTable->setContentFont( tableContentFont );
+    parameterTable->setHeaderTextFormat( tableHeaderFormat );
+    parameterTable->setContentTextFormat( tableContentFormat );
 
     QgsLayoutTableColumns columns;
     columns << QgsLayoutTableColumn( tr( "Translation x" ) )
@@ -1691,8 +1693,8 @@ bool QgsGeoreferencerMainWindow::writePDFReportFile( const QString &fileName, co
   resPlotItem->setConvertScaleToMapUnits( residualUnits == tr( "map units" ) );
 
   QgsLayoutItemTextTable *gcpTable = new QgsLayoutItemTextTable( &layout );
-  gcpTable->setHeaderFont( tableHeaderFont );
-  gcpTable->setContentFont( tableContentFont );
+  gcpTable->setHeaderTextFormat( tableHeaderFormat );
+  gcpTable->setContentTextFormat( tableContentFormat );
   gcpTable->setHeaderMode( QgsLayoutTable::AllFrames );
   QgsLayoutTableColumns columns;
   columns << QgsLayoutTableColumn( tr( "ID" ) )

@@ -118,6 +118,7 @@ class CORE_EXPORT QgsProject : public QObject, public QgsExpressionContextGenera
     {
       FlagDontResolveLayers = 1 << 0, //!< Don't resolve layer paths (i.e. don't load any layer content). Dramatically improves project read time if the actual data from the layers is not required.
       FlagDontLoadLayouts = 1 << 1, //!< Don't load print layouts. Improves project read time if layouts are not required, and allows projects to be safely read in background threads (since print layouts are not thread safe).
+      FlagTrustLayerMetadata = 1 << 2, //!< Trust layer metadata. Improves project read time. Do not use it if layers' extent is not fixed during the project's use by QGIS and QGIS Server.
     };
     Q_DECLARE_FLAGS( ReadFlags, ReadFlag )
 
@@ -214,6 +215,13 @@ class CORE_EXPORT QgsProject : public QObject, public QgsExpressionContextGenera
      * \since QGIS 3.14
      */
     QDateTime lastSaveDateTime() const;
+
+    /**
+     * Returns the QGIS version which the project was last saved using.
+     *
+     * \since QGIS 3.14
+     */
+    QgsProjectVersion lastSaveVersion() const;
 
     /**
      * Returns TRUE if the project has been modified since the last write()
@@ -379,7 +387,7 @@ class CORE_EXPORT QgsProject : public QObject, public QgsExpressionContextGenera
      * \param flags optional flags which control the read behavior of projects
      * \returns TRUE if project file has been read successfully
      */
-    bool read( const QString &filename, QgsProject::ReadFlags flags = nullptr );
+    bool read( const QString &filename, QgsProject::ReadFlags flags = QgsProject::ReadFlags() );
 
     /**
      * Reads the project from its currently associated file (see fileName() ).
@@ -389,7 +397,7 @@ class CORE_EXPORT QgsProject : public QObject, public QgsExpressionContextGenera
      *
      * \returns TRUE if project file has been read successfully
      */
-    bool read( QgsProject::ReadFlags flags = nullptr );
+    bool read( QgsProject::ReadFlags flags = QgsProject::ReadFlags() );
 
     /**
      * Reads the layer described in the associated DOM node.
@@ -548,7 +556,7 @@ class CORE_EXPORT QgsProject : public QObject, public QgsExpressionContextGenera
      * \note not available in Python bindings
      */
     bool createEmbeddedLayer( const QString &layerId, const QString &projectFilePath, QList<QDomNode> &brokenNodes,
-                              bool saveFlag = true, QgsProject::ReadFlags flags = nullptr ) SIP_SKIP;
+                              bool saveFlag = true, QgsProject::ReadFlags flags = QgsProject::ReadFlags() ) SIP_SKIP;
 
     /**
      * Create layer group instance defined in an arbitrary project file.
@@ -557,7 +565,7 @@ class CORE_EXPORT QgsProject : public QObject, public QgsExpressionContextGenera
      *
      * \since QGIS 2.4
      */
-    QgsLayerTreeGroup *createEmbeddedGroup( const QString &groupName, const QString &projectFilePath, const QStringList &invisibleLayers, QgsProject::ReadFlags flags = nullptr );
+    QgsLayerTreeGroup *createEmbeddedGroup( const QString &groupName, const QString &projectFilePath, const QStringList &invisibleLayers, QgsProject::ReadFlags flags = QgsProject::ReadFlags() );
 
     //! Convenience function to set topological editing
     void setTopologicalEditing( bool enabled );
@@ -1832,7 +1840,7 @@ class CORE_EXPORT QgsProject : public QObject, public QgsExpressionContextGenera
      * \param flags optional project reading flags
      * \returns TRUE if function worked; else is FALSE
     */
-    bool _getMapLayers( const QDomDocument &doc, QList<QDomNode> &brokenNodes, QgsProject::ReadFlags flags = nullptr );
+    bool _getMapLayers( const QDomDocument &doc, QList<QDomNode> &brokenNodes, QgsProject::ReadFlags flags = QgsProject::ReadFlags() );
 
     /**
      * Set error message from read/write operation
@@ -1853,29 +1861,29 @@ class CORE_EXPORT QgsProject : public QObject, public QgsExpressionContextGenera
      *
      * \note not available in Python bindings
      */
-    bool addLayer( const QDomElement &layerElem, QList<QDomNode> &brokenNodes, QgsReadWriteContext &context, QgsProject::ReadFlags flags = nullptr ) SIP_SKIP;
+    bool addLayer( const QDomElement &layerElem, QList<QDomNode> &brokenNodes, QgsReadWriteContext &context, QgsProject::ReadFlags flags = QgsProject::ReadFlags() ) SIP_SKIP;
 
     /**
      * The optional \a flags argument can be used to control layer reading behavior.
      *
      * \note not available in Python bindings
     */
-    void initializeEmbeddedSubtree( const QString &projectFilePath, QgsLayerTreeGroup *group, QgsProject::ReadFlags flags = nullptr ) SIP_SKIP;
+    void initializeEmbeddedSubtree( const QString &projectFilePath, QgsLayerTreeGroup *group, QgsProject::ReadFlags flags = QgsProject::ReadFlags() ) SIP_SKIP;
 
     /**
      * The optional \a flags argument can be used to control layer reading behavior.
      * \note not available in Python bindings
      */
-    bool loadEmbeddedNodes( QgsLayerTreeGroup *group, QgsProject::ReadFlags flags = nullptr ) SIP_SKIP;
+    bool loadEmbeddedNodes( QgsLayerTreeGroup *group, QgsProject::ReadFlags flags = QgsProject::ReadFlags() ) SIP_SKIP;
 
     //! Read .qgs file
-    bool readProjectFile( const QString &filename, QgsProject::ReadFlags flags = nullptr );
+    bool readProjectFile( const QString &filename, QgsProject::ReadFlags flags = QgsProject::ReadFlags() );
 
     //! Write .qgs file
     bool writeProjectFile( const QString &filename );
 
     //! Unzip .qgz file then read embedded .qgs file
-    bool unzip( const QString &filename, QgsProject::ReadFlags flags = nullptr );
+    bool unzip( const QString &filename, QgsProject::ReadFlags flags = QgsProject::ReadFlags() );
 
     //! Zip project
     bool zip( const QString &filename );
@@ -1939,6 +1947,7 @@ class CORE_EXPORT QgsProject : public QObject, public QgsExpressionContextGenera
     QString mSaveUser;              // last saved user.
     QString mSaveUserFull;          // last saved user full name.
     QDateTime mSaveDateTime;
+    QgsProjectVersion mSaveVersion;
 
     /**
      * Manual override for project home path - if empty, home path is automatically
@@ -2040,8 +2049,8 @@ class CORE_EXPORT QgsProjectDirtyBlocker
 
 /**
  * Returns the version string found in the given DOM document
-   \returns the version string or an empty string if none found
-   \note not available in Python bindings.
+ * \returns the version string or an empty string if none found
+ * \note not available in Python bindings.
  */
 CORE_EXPORT QgsProjectVersion getVersion( QDomDocument const &doc ) SIP_SKIP;
 

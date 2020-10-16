@@ -16,6 +16,7 @@ email                : marco.hugentobler at sourcepole dot com
 #ifndef QGSABSTRACTGEOMETRYV2
 #define QGSABSTRACTGEOMETRYV2
 
+#include <array>
 #include <functional>
 #include <QString>
 
@@ -42,6 +43,7 @@ class QDomElement;
 class QgsGeometryPartIterator;
 class QgsGeometryConstPartIterator;
 class QgsConstWkbPtr;
+class QPainterPath;
 
 typedef QVector< QgsPoint > QgsPointSequence;
 #ifndef SIP_RUN
@@ -114,12 +116,14 @@ class CORE_EXPORT QgsAbstractGeometry
 
       /**
        * Maximum angle between generating radii (lines from arc center
-       * to output vertices) */
+       * to output vertices)
+      */
       MaximumAngle = 0,
 
       /**
        * Maximum distance between an arbitrary point on the original
-       * curve and closest point on its approximation. */
+       * curve and closest point on its approximation.
+      */
       MaximumDifference
     };
     Q_ENUM( SegmentationToleranceType )
@@ -259,7 +263,7 @@ class CORE_EXPORT QgsAbstractGeometry
      * \see asJson()
      * \since QGIS 3.0
      */
-    virtual QByteArray asWkb( WkbFlags flags = nullptr ) const = 0;
+    virtual QByteArray asWkb( WkbFlags flags = QgsAbstractGeometry::WkbFlags() ) const = 0;
 
     /**
      * Returns a WKT representation of the geometry.
@@ -355,6 +359,16 @@ class CORE_EXPORT QgsAbstractGeometry
      * \param p destination QPainter
      */
     virtual void draw( QPainter &p ) const = 0;
+
+    /**
+     * Returns the geometry represented as a QPainterPath.
+     *
+     * \warning not all geometry subclasses can be represented by a QPainterPath, e.g.
+     * points and multipoint geometries will return an empty path.
+     *
+     * \since QGIS 3.16
+     */
+    virtual QPainterPath asQPainterPath() const = 0;
 
     /**
      * Returns the vertex number corresponding to a vertex \a id.
@@ -535,10 +549,10 @@ class CORE_EXPORT QgsAbstractGeometry
      * It may generate an invalid geometry (in some corner cases).
      * It can also be thought as rounding the edges and it may be useful for removing errors.
      *
-     * ### Example
+     * Example:
      *
-     * \code{.cpp}
-     * geometry->snappedToGrid(1, 1);
+     * \code{.py}
+     *   geometry.snappedToGrid(1, 1)
      * \endcode
      *
      * In this case we use a 2D grid of 1x1 to gridify.
@@ -842,10 +856,12 @@ class CORE_EXPORT QgsAbstractGeometry
         {
           const QgsAbstractGeometry *g = nullptr;  //!< Current geometry
           int index = 0;               //!< Ptr in the current geometry
+
+          bool operator==( const Level &other ) const;
         };
 
-        Level levels[3];  //!< Stack of levels - three levels should be sufficient (e.g. part index, ring index, vertex index)
-        int depth = -1;        //!< At what depth level are we right now
+        std::array<Level, 3> levels;  //!< Stack of levels - three levels should be sufficient (e.g. part index, ring index, vertex index)
+        int depth = -1;               //!< At what depth level are we right now
 
         void digDown();   //!< Prepare the stack of levels so that it points to a leaf child geometry
 
@@ -906,7 +922,7 @@ class CORE_EXPORT QgsAbstractGeometry
      * Returns Java-style iterator for traversal of parts of the geometry. This iterator
      * can safely be used to modify parts of the geometry.
      *
-     * ### Example
+     * Example
      *
      * \code{.py}
      *   # print the WKT representation of each part in a multi-point geometry
@@ -944,7 +960,7 @@ class CORE_EXPORT QgsAbstractGeometry
      * \warning The iterator returns a copy of individual vertices, and accordingly geometries cannot be
      * modified using the iterator. See transformVertices() for a safe method to modify vertices "in-place".
      *
-     * ### Example
+     * Example
      *
      * \code{.py}
      *   # print the x and y coordinate for each vertex in a LineString

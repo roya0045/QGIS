@@ -85,7 +85,7 @@ and "/home/user/projects" exists but no "2018" subfolder exists, then the functi
 .. versionadded:: 3.2
 %End
 
-    static QStringList findFile( const QString &file, const QString &basepath = QString(), int maxClimbs = 4, int searchCeiling = 4, const QString &currentDir = QString() );
+    static QStringList findFile( const QString &file, const QString &basepath = QString(), int maxClimbs = 4, int searchCeiling = 4, const QString &currentDir = QString(), QgsFeedback *feedback = 0 );
 %Docstring
 Will check ``basepath`` in an outward spiral up to ``maxClimbs`` levels to check if ``file`` exists.
 
@@ -99,6 +99,43 @@ Will check ``basepath`` in an outward spiral up to ``maxClimbs`` levels to check
 
 .. versionadded:: 3.12
 %End
+
+};
+
+
+class QgsFileSearchTask: QgsTask
+{
+%Docstring
+Background thead handler.
+
+.. versionadded:: 3.16
+%End
+
+%TypeHeaderCode
+#include "qgsfileutils.h"
+%End
+  public:
+
+    QgsFileSearchTask( const QString &file, const QString &basePath, int maxClimbs, int searchCeilling, const QString &currentDir );
+%Docstring
+Background task wrapper for findFile.
+
+.. seealso:: :py:func:`findFile`
+
+.. versionadded:: 3.16
+%End
+
+    QStringList results();
+%Docstring
+Returns the result of the process.
+
+.. versionadded:: 3.16
+%End
+
+  protected:
+
+    virtual bool run();
+
 
 };
 

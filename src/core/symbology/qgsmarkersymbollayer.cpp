@@ -149,6 +149,13 @@ void QgsSimpleMarkerSymbolLayerBase::startRender( QgsSymbolRenderContext &contex
   if ( !hasDataDefinedSize )
   {
     double scaledSize = context.renderContext().convertToPainterUnits( mSize, mSizeUnit, mSizeMapUnitScale );
+    if ( mSizeUnit == QgsUnitTypes::RenderMetersInMapUnits && context.renderContext().flags() & QgsRenderContext::RenderSymbolPreview )
+    {
+      // rendering for symbol previews -- an size in meters in map units can't be calculated, so treat the size as millimeters
+      // and clamp it to a reasonable range. It's the best we can do in this situation!
+      scaledSize = std::min( std::max( context.renderContext().convertToPainterUnits( mSize, QgsUnitTypes::RenderMillimeters ), 3.0 ), 100.0 );
+    }
+
     double half = scaledSize / 2.0;
     transform.scale( half, half );
   }
@@ -228,6 +235,12 @@ void QgsSimpleMarkerSymbolLayerBase::renderPoint( QPointF point, QgsSymbolRender
   if ( hasDataDefinedSize || createdNewPath )
   {
     double s = context.renderContext().convertToPainterUnits( scaledSize, mSizeUnit, mSizeMapUnitScale );
+    if ( mSizeUnit == QgsUnitTypes::RenderMetersInMapUnits && context.renderContext().flags() & QgsRenderContext::RenderSymbolPreview )
+    {
+      // rendering for symbol previews -- a size in meters in map units can't be calculated, so treat the size as millimeters
+      // and clamp it to a reasonable range. It's the best we can do in this situation!
+      s = std::min( std::max( context.renderContext().convertToPainterUnits( mSize, QgsUnitTypes::RenderMillimeters ), 3.0 ), 100.0 );
+    }
     double half = s / 2.0;
     transform.scale( half, half );
   }
@@ -865,6 +878,13 @@ void QgsSimpleMarkerSymbolLayer::startRender( QgsSymbolRenderContext &context )
 bool QgsSimpleMarkerSymbolLayer::prepareCache( QgsSymbolRenderContext &context )
 {
   double scaledSize = context.renderContext().convertToPainterUnits( mSize, mSizeUnit, mSizeMapUnitScale );
+  if ( mSizeUnit == QgsUnitTypes::RenderMetersInMapUnits && context.renderContext().flags() & QgsRenderContext::RenderSymbolPreview )
+  {
+    // rendering for symbol previews -- a size in meters in map units can't be calculated, so treat the size as millimeters
+    // and clamp it to a reasonable range. It's the best we can do in this situation!
+    scaledSize = std::min( std::max( context.renderContext().convertToPainterUnits( mSize, QgsUnitTypes::RenderMillimeters ), 3.0 ), 100.0 );
+  }
+
   // take into account angle (which is not data-defined otherwise cache wouldn't be used)
   if ( !qgsDoubleNear( mAngle, 0.0 ) )
   {
@@ -1886,6 +1906,7 @@ void QgsSvgMarkerSymbolLayer::resolvePaths( QgsStringMap &properties, const QgsP
 
 void QgsSvgMarkerSymbolLayer::setPath( const QString &path )
 {
+  mDefaultAspectRatio = 0;
   mPath = path;
   QColor defaultFillColor, defaultStrokeColor;
   double strokeWidth, fillOpacity, strokeOpacity;
@@ -1992,7 +2013,7 @@ void QgsSvgMarkerSymbolLayer::renderPoint( QPointF point, QgsSymbolRenderContext
     return;
   }
 
-  p->save();
+  QgsScopedQPainterState painterState( p );
 
   bool hasDataDefinedAspectRatio = false;
   double aspectRatio = calculateAspectRatio( context, scaledSize, hasDataDefinedAspectRatio );
@@ -2072,10 +2093,9 @@ void QgsSvgMarkerSymbolLayer::renderPoint( QPointF point, QgsSymbolRenderContext
                    ( context.renderContext().flags() & QgsRenderContext::RenderBlocking ) );
     if ( pct.width() > 1 )
     {
-      p->save();
+      QgsScopedQPainterState painterPictureState( p );
       _fixQPictureDPI( p );
       p->drawPicture( 0, 0, pct );
-      p->restore();
       hwRatio = static_cast< double >( pct.height() ) / static_cast< double >( pct.width() );
     }
   }
@@ -2098,14 +2118,8 @@ void QgsSvgMarkerSymbolLayer::renderPoint( QPointF point, QgsSymbolRenderContext
     p->drawRect( QRectF( -wSize / 2.0, -hSize / 2.0, wSize, hSize ) );
   }
 
-  p->restore();
-
-  if ( context.renderContext().flags() & QgsRenderContext::Antialiasing )
-  {
-    // workaround issue with nested QPictures forgetting antialiasing flag - see https://github.com/qgis/QGIS/issues/22909
-    p->setRenderHint( QPainter::Antialiasing );
-  }
-
+  // workaround issue with nested QPictures forgetting antialiasing flag - see https://github.com/qgis/QGIS/issues/22909
+  context.renderContext().setPainterFlagsUsingContext( p );
 }
 
 double QgsSvgMarkerSymbolLayer::calculateSize( QgsSymbolRenderContext &context, bool &hasDataDefinedSize ) const
@@ -2747,7 +2761,7 @@ void QgsRasterMarkerSymbolLayer::renderPoint( QPointF point, QgsSymbolRenderCont
     calculateOffsetAndRotation( context, scaledSize, scaledSize * ( height / width ), outputOffset, angle );
   }
 
-  p->save();
+  QgsScopedQPainterState painterState( p );
   p->translate( point + outputOffset );
 
   bool rotated = !qgsDoubleNear( angle, 0 );
@@ -2771,8 +2785,6 @@ void QgsRasterMarkerSymbolLayer::renderPoint( QPointF point, QgsSymbolRenderCont
 
     p->drawImage( -img.width() / 2.0, -img.height() / 2.0, img );
   }
-
-  p->restore();
 }
 
 double QgsRasterMarkerSymbolLayer::calculateSize( QgsSymbolRenderContext &context, bool &hasDataDefinedSize ) const
@@ -3243,7 +3255,7 @@ void QgsFontMarkerSymbolLayer::renderPoint( QPointF point, QgsSymbolRenderContex
     }
   }
 
-  p->save();
+  QgsScopedQPainterState painterState( p );
   p->setBrush( mBrush );
   if ( !qgsDoubleNear( penWidth, 0.0 ) )
   {
@@ -3305,8 +3317,6 @@ void QgsFontMarkerSymbolLayer::renderPoint( QPointF point, QgsSymbolRenderContex
     path.addText( -chrOffset.x(), -chrOffset.y(), mFont, charToRender );
     p->drawPath( transform.map( path ) );
   }
-
-  p->restore();
 }
 
 QgsStringMap QgsFontMarkerSymbolLayer::properties() const

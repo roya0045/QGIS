@@ -86,6 +86,8 @@ QgsLayoutLegendWidget::QgsLayoutLegendWidget( QgsLayoutItemLegend *legend, QgsMa
   connect( mEqualColumnWidthCheckBox, &QCheckBox::toggled, this, &QgsLayoutLegendWidget::mEqualColumnWidthCheckBox_toggled );
   connect( mSymbolWidthSpinBox, static_cast < void ( QDoubleSpinBox::* )( double ) > ( &QDoubleSpinBox::valueChanged ), this, &QgsLayoutLegendWidget::mSymbolWidthSpinBox_valueChanged );
   connect( mSymbolHeightSpinBox, static_cast < void ( QDoubleSpinBox::* )( double ) > ( &QDoubleSpinBox::valueChanged ), this, &QgsLayoutLegendWidget::mSymbolHeightSpinBox_valueChanged );
+  connect( mMaxSymbolSizeSpinBox, static_cast < void ( QDoubleSpinBox::* )( double ) > ( &QDoubleSpinBox::valueChanged ), this, &QgsLayoutLegendWidget::mMaxSymbolSizeSpinBox_valueChanged );
+  connect( mMinSymbolSizeSpinBox, static_cast < void ( QDoubleSpinBox::* )( double ) > ( &QDoubleSpinBox::valueChanged ), this, &QgsLayoutLegendWidget::mMinSymbolSizeSpinBox_valueChanged );
   connect( mWmsLegendWidthSpinBox, static_cast < void ( QDoubleSpinBox::* )( double ) > ( &QDoubleSpinBox::valueChanged ), this, &QgsLayoutLegendWidget::mWmsLegendWidthSpinBox_valueChanged );
   connect( mWmsLegendHeightSpinBox, static_cast < void ( QDoubleSpinBox::* )( double ) > ( &QDoubleSpinBox::valueChanged ), this, &QgsLayoutLegendWidget::mWmsLegendHeightSpinBox_valueChanged );
   connect( mTitleSpaceBottomSpinBox, static_cast < void ( QDoubleSpinBox::* )( double ) > ( &QDoubleSpinBox::valueChanged ), this, &QgsLayoutLegendWidget::mTitleSpaceBottomSpinBox_valueChanged );
@@ -230,6 +232,8 @@ void QgsLayoutLegendWidget::setGuiElements()
   mEqualColumnWidthCheckBox->setChecked( mLegend->equalColumnWidth() );
   mSymbolWidthSpinBox->setValue( mLegend->symbolWidth() );
   mSymbolHeightSpinBox->setValue( mLegend->symbolHeight() );
+  mMaxSymbolSizeSpinBox->setValue( mLegend->maximumSymbolSize() );
+  mMinSymbolSizeSpinBox->setValue( mLegend->minimumSymbolSize() );
   mWmsLegendWidthSpinBox->setValue( mLegend->wmsLegendWidth() );
   mWmsLegendHeightSpinBox->setValue( mLegend->wmsLegendHeight() );
   mTitleSpaceBottomSpinBox->setValue( mLegend->style( QgsLegendStyle::Title ).margin( QgsLegendStyle::Bottom ) );
@@ -397,6 +401,30 @@ void QgsLayoutLegendWidget::mSymbolWidthSpinBox_valueChanged( double d )
   {
     mLegend->beginCommand( tr( "Resize Symbol Width" ), QgsLayoutItem::UndoLegendSymbolWidth );
     mLegend->setSymbolWidth( d );
+    mLegend->adjustBoxSize();
+    mLegend->update();
+    mLegend->endCommand();
+  }
+}
+
+void QgsLayoutLegendWidget::mMaxSymbolSizeSpinBox_valueChanged( double d )
+{
+  if ( mLegend )
+  {
+    mLegend->beginCommand( tr( "Change Legend Maximum Symbol Size" ), QgsLayoutItem::UndoLegendMaxSymbolSize );
+    mLegend->setMaximumSymbolSize( d );
+    mLegend->adjustBoxSize();
+    mLegend->update();
+    mLegend->endCommand();
+  }
+}
+
+void QgsLayoutLegendWidget::mMinSymbolSizeSpinBox_valueChanged( double d )
+{
+  if ( mLegend )
+  {
+    mLegend->beginCommand( tr( "Change Legend Minimum Symbol Size" ), QgsLayoutItem::UndoLegendMinSymbolSize );
+    mLegend->setMinimumSymbolSize( d );
     mLegend->adjustBoxSize();
     mLegend->update();
     mLegend->endCommand();
@@ -1012,25 +1040,24 @@ void QgsLayoutLegendWidget::resetLayerNodeToDefaults()
 
 void QgsLayoutLegendWidget::mCountToolButton_clicked( bool checked )
 {
-  QgsDebugMsgLevel( QStringLiteral( "Entered." ), 4 );
   if ( !mLegend )
   {
     return;
   }
 
-  //get current item
-  QModelIndex currentIndex = mItemTreeView->currentIndex();
-  if ( !currentIndex.isValid() )
-  {
-    return;
-  }
-
-  QgsLayerTreeNode *currentNode = mItemTreeView->currentNode();
-  if ( !QgsLayerTree::isLayer( currentNode ) )
+  const QList< QModelIndex > selectedIndexes = mItemTreeView->selectionModel()->selectedIndexes();
+  if ( selectedIndexes.empty() )
     return;
 
   mLegend->beginCommand( tr( "Update Legend" ) );
-  currentNode->setCustomProperty( QStringLiteral( "showFeatureCount" ), checked ? 1 : 0 );
+  for ( const QModelIndex &index : selectedIndexes )
+  {
+    QgsLayerTreeNode *currentNode = mItemTreeView->layerTreeModel()->index2node( index );
+    if ( !QgsLayerTree::isLayer( currentNode ) )
+      continue;
+
+    currentNode->setCustomProperty( QStringLiteral( "showFeatureCount" ), checked ? 1 : 0 );
+  }
   mLegend->updateFilterByMap();
   mLegend->adjustBoxSize();
   mLegend->endCommand();
@@ -1132,7 +1159,7 @@ void QgsLayoutLegendWidget::mLayerExpressionButton_clicked()
     layerNode->setLabelExpression( expressiondialog.expressionText() );
 
   mLegend->beginCommand( tr( "Update Legend" ) );
-  mLegend->updateLegend();
+  mLegend->refresh();
   mLegend->adjustBoxSize();
   mLegend->endCommand();
 }
@@ -1222,6 +1249,8 @@ void QgsLayoutLegendWidget::blockAllSignals( bool b )
   mEqualColumnWidthCheckBox->blockSignals( b );
   mSymbolWidthSpinBox->blockSignals( b );
   mSymbolHeightSpinBox->blockSignals( b );
+  mMaxSymbolSizeSpinBox->blockSignals( b );
+  mMinSymbolSizeSpinBox->blockSignals( b );
   mGroupSpaceSpinBox->blockSignals( b );
   mSpaceBelowGroupHeadingSpinBox->blockSignals( b );
   mGroupSideSpinBox->blockSignals( b );

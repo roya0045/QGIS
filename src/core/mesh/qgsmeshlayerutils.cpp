@@ -22,6 +22,7 @@
 #include "qgsmeshlayerutils.h"
 #include "qgsmeshtimesettings.h"
 #include "qgstriangularmesh.h"
+#include "qgslogger.h"
 #include "qgsmeshdataprovider.h"
 #include "qgsmesh3daveraging.h"
 #include "qgsmeshlayer.h"
@@ -67,17 +68,17 @@ QgsMeshDataBlock QgsMeshLayerUtils::datasetValues(
   if ( !meshLayer )
     return block;
 
-  const QgsMeshDataProvider *provider = meshLayer->dataProvider();
-  if ( !provider )
+
+  if ( !meshLayer->datasetCount( index ) )
     return block;
 
   if ( !index.isValid() )
     return block;
 
-  const QgsMeshDatasetGroupMetadata meta = meshLayer->dataProvider()->datasetGroupMetadata( index.group() );
+  const QgsMeshDatasetGroupMetadata meta = meshLayer->datasetGroupMetadata( index.group() );
   if ( meta.dataType() != QgsMeshDatasetGroupMetadata::DataType::DataOnVolumes )
   {
-    block = provider->datasetValues( index, valueIndex, count );
+    block = meshLayer->datasetValues( index, valueIndex, count );
     if ( block.isValid() )
       return block;
   }
@@ -87,7 +88,7 @@ QgsMeshDataBlock QgsMeshLayerUtils::datasetValues(
     if ( !averagingMethod )
       return block;
 
-    QgsMesh3dDataBlock block3d = provider->dataset3dValues( index, valueIndex, count );
+    QgsMesh3dDataBlock block3d = meshLayer->dataset3dValues( index, valueIndex, count );
     if ( !block3d.isValid() )
       return block;
 
@@ -114,7 +115,7 @@ QVector<QgsVector> QgsMeshLayerUtils::griddedVectorValues( const QgsMeshLayer *m
   if ( !triangularMesh || !nativeMesh )
     return vectors;
 
-  QgsMeshDatasetGroupMetadata meta = meshLayer->dataProvider()->datasetGroupMetadata( index );
+  QgsMeshDatasetGroupMetadata meta = meshLayer->datasetGroupMetadata( index );
   if ( !meta.isVector() )
     return vectors;
 
@@ -123,13 +124,22 @@ QVector<QgsVector> QgsMeshLayerUtils::griddedVectorValues( const QgsMeshLayer *m
   int datacount = vectorDataOnVertices ? nativeMesh->vertices.count() : nativeMesh->faces.count();
   const QgsMeshDataBlock vals = QgsMeshLayerUtils::datasetValues( meshLayer, index, 0, datacount );
 
-  const QgsMeshDataBlock isFacesActive = meshLayer->dataProvider()->areFacesActive( index, 0, nativeMesh->faceCount() );
+  const QgsMeshDataBlock isFacesActive = meshLayer->areFacesActive( index, 0, nativeMesh->faceCount() );
   const QgsMeshDatasetGroupMetadata::DataType dataType = meta.dataType();
 
   if ( dataType == QgsMeshDatasetGroupMetadata::DataOnEdges )
     return vectors;
 
-  vectors.reserve( size.height()*size.width() );
+  try
+  {
+    vectors.reserve( size.height()*size.width() );
+  }
+  catch ( ... )
+  {
+    QgsDebugMsgLevel( "Unable to store the arrow grid in memory", 1 );
+    return QVector<QgsVector>();
+  }
+
   for ( int iy = 0; iy < size.height(); ++iy )
   {
     double y = minCorner.y() + iy * ySpacing;
@@ -314,6 +324,7 @@ QVector<double> QgsMeshLayerUtils::interpolateFromFacesData(
   QgsMeshRendererScalarSettings::DataResamplingMethod method )
 {
   assert( nativeMesh );
+  Q_UNUSED( method );
   assert( method == QgsMeshRendererScalarSettings::NeighbourAverage );
 
   // assuming that native vertex count = triangular vertex count
@@ -366,9 +377,11 @@ QVector<double> QgsMeshLayerUtils::resampleFromVerticesToFaces(
   QgsMeshRendererScalarSettings::DataResamplingMethod method )
 {
   assert( nativeMesh );
+  Q_UNUSED( method );
   assert( method == QgsMeshRendererScalarSettings::NeighbourAverage );
 
   // assuming that native vertex count = triangular vertex count
+  Q_UNUSED( triangularMesh );
   assert( nativeMesh->vertices.size() == triangularMesh->vertices().size() );
 
   QVector<double> ret( nativeMesh->faceCount(), std::numeric_limits<double>::quiet_NaN() );
@@ -405,7 +418,7 @@ QVector<double> QgsMeshLayerUtils::calculateMagnitudeOnVertices( const QgsMeshLa
   if ( !triangularMesh || !nativeMesh )
     return ret;
 
-  const QgsMeshDatasetGroupMetadata metadata = meshLayer->dataProvider()->datasetGroupMetadata( index );
+  const QgsMeshDatasetGroupMetadata metadata = meshLayer->datasetGroupMetadata( index );
   bool scalarDataOnVertices = metadata.dataType() == QgsMeshDatasetGroupMetadata::DataOnVertices;
 
   // populate scalar values

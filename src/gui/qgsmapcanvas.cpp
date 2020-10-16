@@ -889,7 +889,7 @@ void QgsMapCanvas::showContextMenu( QgsMapMouseEvent *event )
     }
   }
   copyCoordinateMenu->addSeparator();
-  QAction *setCustomCrsAction = new QAction( QStringLiteral( "Set Custom CRS…" ), mMenu );
+  QAction *setCustomCrsAction = new QAction( tr( "Set Custom CRS…" ), mMenu );
   connect( setCustomCrsAction, &QAction::triggered, this, [ = ]
   {
     QgsProjectionSelectionDialog selector( this );
@@ -905,6 +905,8 @@ void QgsMapCanvas::showContextMenu( QgsMapMouseEvent *event )
 
   if ( mMapTool )
     mMapTool->populateContextMenu( mMenu );
+
+  emit contextMenuAboutToShow( mMenu, event );
 
   mMenu->exec( event->globalPos() );
 }
@@ -1016,14 +1018,12 @@ void QgsMapCanvas::saveAsImage( const QString &fileName, QPixmap *theQPixmap, co
       continue;
     }
 
-    painter.save();
+    QgsScopedQPainterState painterState( &painter );
 
     QPointF itemScenePos = item->scenePos();
     painter.translate( itemScenePos.x(), itemScenePos.y() );
 
     item->paint( &painter, &option );
-
-    painter.restore();
   }
 
   painter.end();
@@ -2030,6 +2030,11 @@ void QgsMapCanvas::unsetMapTool( QgsMapTool *tool )
   }
 }
 
+void QgsMapCanvas::setProject( QgsProject *project )
+{
+  mProject = project;
+}
+
 void QgsMapCanvas::setCanvasColor( const QColor &color )
 {
   if ( canvasColor() == color )
@@ -2245,6 +2250,11 @@ void QgsMapCanvas::projectThemesChanged()
 QgsMapTool *QgsMapCanvas::mapTool()
 {
   return mMapTool;
+}
+
+QgsProject *QgsMapCanvas::project()
+{
+  return mProject;
 }
 
 void QgsMapCanvas::panActionEnd( QPoint releasePoint )

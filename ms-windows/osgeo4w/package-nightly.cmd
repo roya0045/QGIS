@@ -22,16 +22,17 @@ set PACKAGENAME=%3
 set ARCH=%4
 set SHA=%5
 set SITE=%6
-if "%VERSION%"=="" goto usage
-if "%PACKAGE%"=="" goto usage
-if "%PACKAGENAME%"=="" goto usage
-if "%ARCH%"=="" goto usage
-if not "%SHA%"=="" set SHA=-%SHA%
-if "%SITE%"=="" set SITE=qgis.org
-if "%TARGET%"=="" set TARGET=Nightly
-if "%BUILDNAME%"=="" set BUILDNAME=%PACKAGENAME%-%VERSION%%SHA%-%TARGET%-VC14-%ARCH%
+if not defined VERSION goto usage
+if not defined PACKAGE goto usage
+if not defined PACKAGENAME goto usage
+if not defined ARCH goto usage
 
-if "%BUILDDIR%"=="" set BUILDDIR=%CD%\build-%PACKAGENAME%-%ARCH%
+if defined SHA set SHA=-%SHA%
+if not defined SITE set SITE=qgis.org
+if not defined TARGET set TARGET=Nightly
+if not defined BUILDNAME set BUILDNAME=%PACKAGENAME%-%VERSION%%SHA%-%TARGET%-VC16-%ARCH%
+
+if not defined BUILDDIR set BUILDDIR=%CD%\build-%PACKAGENAME%-%ARCH%
 if not exist "%BUILDDIR%" mkdir %BUILDDIR%
 if not exist "%BUILDDIR%" (echo could not create build directory %BUILDDIR% & goto error)
 
@@ -106,15 +107,17 @@ touch %SRCDIR%\CMakeLists.txt
 
 echo CMAKE: %DATE% %TIME%
 
-if "%CMAKEGEN%"=="" set CMAKEGEN=Ninja
-if "%OSGEO4W_CXXFLAGS%"=="" set OSGEO4W_CXXFLAGS=/MD /Z7 /MP /Od /D NDEBUG
+if not defined CMAKEGEN set CMAKEGEN=-G Ninja
+if not defined CC set CC=cl.exe
+if not defined CXX set CXX=cl.exe
+if not defined OSGEO4W_CXXFLAGS set OSGEO4W_CXXFLAGS=/MD /Z7 /MP /Od /D NDEBUG
 
 for %%i in (%PYTHONHOME%) do set PYVER=%%~ni
 
-cmake -G "%CMAKEGEN%" ^
+cmake %CMAKEGEN% ^
 	-D CMAKE_CXX_COMPILER="%CXX:\=/%" ^
 	-D CMAKE_C_COMPILER="%CC:\=/%" ^
-	-D CMAKE_LINKER="%CMAKE_COMPILER_PATH:\=/%/link.exe" ^
+	-D CMAKE_LINKER=link.exe ^
 	-D CMAKE_CXX_FLAGS_RELWITHDEBINFO="%OSGEO4W_CXXFLAGS%" ^
 	-D CMAKE_PDB_OUTPUT_DIRECTORY_RELWITHDEBINFO=%BUILDDIR%\apps\%PACKAGENAME%\pdb ^
 	-D BUILDNAME="%BUILDNAME%" ^
@@ -200,8 +203,9 @@ for %%g IN (%GRASS_VERSIONS%) do (
 PATH %path%;%BUILDDIR%\output\plugins
 set QT_PLUGIN_PATH=%BUILDDIR%\output\plugins;%OSGEO4W_ROOT%\apps\qt5\plugins
 
+if exist ..\testfailure del ..\testfailure
 cmake --build %BUILDDIR% --target %TARGET%Test --config %BUILDCONF%
-if errorlevel 1 echo TESTS WERE NOT SUCCESSFUL.
+if errorlevel 1 (echo TESTS WERE NOT SUCCESSFUL. & echo %errorlevel% >..\testfailure)
 
 set TEMP=%oldtemp%
 set TMP=%oldtmp%
@@ -254,7 +258,7 @@ for %%g IN (%GRASS_VERSIONS%) do (
 sed -e 's/@package@/%PACKAGENAME%/g' -e 's/@version@/%VERSION%/g' python.bat.tmpl >%OSGEO4W_ROOT%\bin\python-%PACKAGENAME%.bat.tmpl
 if errorlevel 1 (echo creation of python wrapper template failed & goto error)
 
-sed -e 's/@package@/%PACKAGENAME%/g' -e 's/@version@/%VERSION%/g' process.bat.tmpl >%OSGEO4W_ROOT%\bin\qgis_process-%PACKAGENAME%.bat.tmpl
+sed -e 's/@package@/%PACKAGENAME%/g' -e 's/@version@/%VERSION%/g' -e 's/^call py3_env.bat/call gdal-dev-py3-env.bat/' process.bat.tmpl >%OSGEO4W_ROOT%\bin\qgis_process-%PACKAGENAME%.bat.tmpl
 if errorlevel 1 (echo creation of qgis process wrapper template failed & goto error)
 
 touch exclude

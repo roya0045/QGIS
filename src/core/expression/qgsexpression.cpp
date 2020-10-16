@@ -250,7 +250,7 @@ QSet<int> QgsExpression::referencedAttributeIndexes( const QgsFields &fields ) c
   {
     if ( fieldName == QgsFeatureRequest::ALL_ATTRIBUTES )
     {
-      referencedIndexes = fields.allAttributesList().toSet();
+      referencedIndexes = qgis::listToSet( fields.allAttributesList() );
       break;
     }
     const int idx = fields.lookupField( fieldName );
@@ -736,6 +736,7 @@ void QgsExpression::initVariableHelp()
   sVariableHelpTexts()->insert( QStringLiteral( "layout_page" ), QCoreApplication::translate( "variable_help", "Current page number in composition." ) );
   sVariableHelpTexts()->insert( QStringLiteral( "layout_pageheight" ), QCoreApplication::translate( "variable_help", "Composition page height in mm." ) );
   sVariableHelpTexts()->insert( QStringLiteral( "layout_pagewidth" ), QCoreApplication::translate( "variable_help", "Composition page width in mm." ) );
+  sVariableHelpTexts()->insert( QStringLiteral( "layout_pageoffsets" ), QCoreApplication::translate( "variable_help", "Array of Y coordinate of the top of each page." ) );
   sVariableHelpTexts()->insert( QStringLiteral( "layout_dpi" ), QCoreApplication::translate( "variable_help", "Composition resolution (DPI)." ) );
 
   //atlas variables
@@ -750,7 +751,7 @@ void QgsExpression::initVariableHelp()
   sVariableHelpTexts()->insert( QStringLiteral( "atlas_geometry" ), QCoreApplication::translate( "variable_help", "Current atlas feature geometry." ) );
 
   //layout item variables
-  sVariableHelpTexts()->insert( QStringLiteral( "item_id" ), QCoreApplication::translate( "variable_help", "Layout item user ID (not necessarily unique)." ) );
+  sVariableHelpTexts()->insert( QStringLiteral( "item_id" ), QCoreApplication::translate( "variable_help", "Layout item user-assigned ID (not necessarily unique)." ) );
   sVariableHelpTexts()->insert( QStringLiteral( "item_uuid" ), QCoreApplication::translate( "variable_help", "layout item unique ID." ) );
   sVariableHelpTexts()->insert( QStringLiteral( "item_left" ), QCoreApplication::translate( "variable_help", "Left position of layout item (in mm)." ) );
   sVariableHelpTexts()->insert( QStringLiteral( "item_top" ), QCoreApplication::translate( "variable_help", "Top position of layout item (in mm)." ) );
@@ -793,6 +794,7 @@ void QgsExpression::initVariableHelp()
   sVariableHelpTexts()->insert( QStringLiteral( "row_number" ), QCoreApplication::translate( "variable_help", "Stores the number of the current row." ) );
   sVariableHelpTexts()->insert( QStringLiteral( "grid_number" ), QCoreApplication::translate( "variable_help", "Current grid annotation value." ) );
   sVariableHelpTexts()->insert( QStringLiteral( "grid_axis" ), QCoreApplication::translate( "variable_help", "Current grid annotation axis (e.g., 'x' for longitude, 'y' for latitude)." ) );
+  sVariableHelpTexts()->insert( QStringLiteral( "column_number" ), QCoreApplication::translate( "variable_help", "Stores the number of the current column." ) );
 
   // map canvas item variables
   sVariableHelpTexts()->insert( QStringLiteral( "canvas_cursor_point" ), QCoreApplication::translate( "variable_help", "Last cursor position on the canvas in the project's geographical coordinates." ) );

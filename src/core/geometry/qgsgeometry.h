@@ -47,6 +47,7 @@ class QgsMapToPixel;
 class QPainter;
 class QgsPolygon;
 class QgsLineString;
+class QgsCurve;
 class QgsFeedback;
 
 /**
@@ -376,7 +377,7 @@ class CORE_EXPORT QgsGeometry
      *
      * \since QGIS 1.5
      */
-    bool isGeosValid( QgsGeometry::ValidityFlags flags = nullptr ) const;
+    bool isGeosValid( QgsGeometry::ValidityFlags flags = QgsGeometry::ValidityFlags() ) const;
 
     /**
      * Determines whether the geometry is simple (according to OGC definition),
@@ -663,9 +664,9 @@ class CORE_EXPORT QgsGeometry
      *
      * This function takes into account the following factors:
      *
-     * 1. If the given vertex index is at the end of a linestring,
+     * # If the given vertex index is at the end of a linestring,
      *    the adjacent index will be -1 (for "no adjacent vertex")
-     * 2. If the given vertex index is at the end of a linear ring
+     * # If the given vertex index is at the end of a linear ring
      *    (such as in a polygon), the adjacent index will take into
      *    account the first vertex is equal to the last vertex (and will
      *    skip equal vertex positions).
@@ -893,14 +894,36 @@ class CORE_EXPORT QgsGeometry
     /**
      * Splits this geometry according to a given line.
      * \param splitLine the line that splits the geometry
-     * \param[out] newGeometries list of new geometries that have been created with the split
+     * \param[out] newGeometries list of new geometries that have been created with the ``splitLine``. If the geometry is 3D, a linear interpolation of the z value is performed on the geometry at split points, see example.
      * \param topological TRUE if topological editing is enabled
      * \param[out] topologyTestPoints points that need to be tested for topological completeness in the dataset
      * \param splitFeature Set to True if you want to split a feature, otherwise set to False to split parts
      * fix this bug?
      * \returns OperationResult a result code: success or reason of failure
+     *
+     * Example:
+     * \code{.py}
+     *  geometry = QgsGeometry.fromWkt('CompoundCurveZ ((2749546.2003820720128715 1262904.45356595050543547 100, 2749557.82053794478997588 1262920.05570670193992555 200))')
+     *  split_line = [QgsPoint(2749544.19, 1262914.79), QgsPoint(2749557.64, 1262897.30)]
+     *  result, new_geometries, point_xy = geometry.splitGeometry(split_line, False)
+     *  print(geometry.asWkt(2))
+     *  > LineStringZ (2749549.12 1262908.38 125.14, 2749557.82 1262920.06 200)
+     * \endcode
      */
     OperationResult splitGeometry( const QgsPointSequence &splitLine, QVector<QgsGeometry> &newGeometries SIP_OUT, bool topological, QgsPointSequence &topologyTestPoints SIP_OUT, bool splitFeature = true );
+
+    /**
+     * Splits this geometry according to a given curve.
+     * \param curve the curve that splits the geometry
+     * \param[out] newGeometries list of new geometries that have been created with the ``splitLine``. If the geometry is 3D, a linear interpolation of the z value is performed on the geometry at split points, see example.
+     * \param preserveCircular whether if circular strings are preserved after splitting
+     * \param topological TRUE if topological editing is enabled
+     * \param[out] topologyTestPoints points that need to be tested for topological completeness in the dataset
+     * \param splitFeature Set to True if you want to split a feature, otherwise set to False to split parts
+     * \returns OperationResult a result code: success or reason of failure
+     * \since QGIS 3.16
+     */
+    OperationResult splitGeometry( const QgsCurve *curve,  QVector<QgsGeometry> &newGeometries SIP_OUT, bool preserveCircular, bool topological, QgsPointSequence &topologyTestPoints SIP_OUT, bool splitFeature = true );
 
     /**
      * Replaces a part of this geometry with another line
@@ -934,6 +957,10 @@ class CORE_EXPORT QgsGeometry
      * Returns the oriented minimum bounding box for the geometry, which is the smallest (by area)
      * rotated rectangle which fully encompasses the geometry. The area, angle (clockwise in degrees from North),
      * width and height of the rotated bounding box will also be returned.
+     *
+     * If an error was encountered while creating the result, more information can be retrieved
+     * by calling lastError() on the returned geometry.
+     *
      * \see boundingBox()
      * \since QGIS 3.0
      */
@@ -942,6 +969,10 @@ class CORE_EXPORT QgsGeometry
     /**
      * Returns the oriented minimum bounding box for the geometry, which is the smallest (by area)
      * rotated rectangle which fully encompasses the geometry.
+     *
+     * If an error was encountered while creating the result, more information can be retrieved
+     * by calling lastError() on the returned geometry.
+     *
      * \since QGIS 3.0
      */
     QgsGeometry orientedMinimumBoundingBox() const SIP_SKIP;
@@ -1269,7 +1300,7 @@ class CORE_EXPORT QgsGeometry
      * If the input is a NULL geometry, the output will also be a NULL geometry.
      *
      * If an error was encountered while creating the result, more information can be retrieved
-     * by calling `error()` on the returned geometry.
+     * by calling lastError() on the returned geometry.
      *
      * \note for line based geometries, the center point of the line is returned,
      * and for point based geometries, the point itself is returned
@@ -1286,7 +1317,7 @@ class CORE_EXPORT QgsGeometry
      * If the input is a NULL geometry, the output will also be a NULL geometry.
      *
      * If an error was encountered while creating the result, more information can be retrieved
-     * by calling `error()` on the returned geometry.
+     * by calling lastError() on the returned geometry.
      *
      * \see centroid()
      * \see poleOfInaccessibility()
@@ -1313,7 +1344,7 @@ class CORE_EXPORT QgsGeometry
      * If the input is a NULL geometry, the output will also be a NULL geometry.
      *
      * If an error was encountered while creating the result, more information can be retrieved
-     * by calling `error()` on the returned geometry.
+     * by calling lastError() on the returned geometry.
      */
     QgsGeometry convexHull() const;
 
@@ -1360,7 +1391,7 @@ class CORE_EXPORT QgsGeometry
      * If the input is a NULL geometry, the output will also be a NULL geometry.
      *
      * If an error was encountered while creating the result, more information can be retrieved
-     * by calling `error()` on the returned geometry.
+     * by calling lastError() on the returned geometry.
      *
      * \since QGIS 3.0
      */
@@ -1413,7 +1444,7 @@ class CORE_EXPORT QgsGeometry
      * If the input is a NULL geometry, the output will also be a NULL geometry.
      *
      * If an error was encountered while creating the result, more information can be retrieved
-     * by calling `error()` on the returned geometry.
+     * by calling lastError() on the returned geometry.
      */
     QgsGeometry intersection( const QgsGeometry &geometry ) const;
 
@@ -1433,7 +1464,7 @@ class CORE_EXPORT QgsGeometry
      * If the input is a NULL geometry, the output will also be a NULL geometry.
      *
      * If an error was encountered while creating the result, more information can be retrieved
-     * by calling `error()` on the returned geometry.
+     * by calling lastError() on the returned geometry.
      *
      * \note this operation is not called union since its a reserved word in C++.
      */
@@ -1455,7 +1486,7 @@ class CORE_EXPORT QgsGeometry
      * If the input is a NULL geometry, the output will also be a NULL geometry.
      *
      * If an error was encountered while creating the result, more information can be retrieved
-     * by calling `error()` on the returned geometry.
+     * by calling lastError() on the returned geometry.
      */
     QgsGeometry difference( const QgsGeometry &geometry ) const;
 
@@ -1465,7 +1496,7 @@ class CORE_EXPORT QgsGeometry
      * If the input is a NULL geometry, the output will also be a NULL geometry.
      *
      * If an error was encountered while creating the result, more information can be retrieved
-     * by calling `error()` on the returned geometry.
+     * by calling lastError() on the returned geometry.
      */
     QgsGeometry symDifference( const QgsGeometry &geometry ) const;
 
@@ -1475,22 +1506,27 @@ class CORE_EXPORT QgsGeometry
 #ifndef SIP_RUN
 
     /**
-     * Returns a list of \a count random points generated inside a (multi)polygon geometry.
+     * Returns a list of \a count random points generated inside a (multi)polygon geometry
+     * (if \a acceptPoint is specified, and restrictive, the number of points returned may
+     * be less than \a count).
      *
      * Optionally, a specific random \a seed can be used when generating points. If \a seed
      * is 0, then a completely random sequence of points will be generated.
      *
      * If the source geometry is not a (multi)polygon, an empty list will be returned.
      *
-     * The \a acceptPoint function is used to filter result candidates. If the function returns
-     * FALSE, then the point will not be accepted and another candidate generated.
-     *
      * The optional \a feedback argument can be used to provide cancellation support during
      * the point generation.
      *
+     * The \a acceptPoint function is used to filter result candidates. If the function returns
+     * FALSE, then the point will not be accepted and another candidate generated.
+     *
+     * When \a acceptPoint is specified, \a maxTriesPerPoint defines how many attempts to make
+     * before giving up generating a point.
+     *
      * \since QGIS 3.10
      */
-    QVector< QgsPointXY > randomPointsInPolygon( int count, const std::function< bool( const QgsPointXY & ) > &acceptPoint, unsigned long seed = 0, QgsFeedback *feedback = nullptr ) const;
+    QVector< QgsPointXY > randomPointsInPolygon( int count, const std::function< bool( const QgsPointXY & ) > &acceptPoint, unsigned long seed = 0, QgsFeedback *feedback = nullptr, int maxTriesPerPoint = 0 ) const;
 
     /**
      * Returns a list of \a count random points generated inside a (multi)polygon geometry.
@@ -1536,7 +1572,7 @@ class CORE_EXPORT QgsGeometry
     }
     else
     {
-      const sipMappedType *qvector_type = sipFindMappedType( "QVector<QgsPointXY>" );
+      const sipTypeDef *qvector_type = sipFindType( "QVector<QgsPointXY>" );
       sipRes = sipConvertFromNewType( new QVector< QgsPointXY >( sipCpp->randomPointsInPolygon( a0, a1 ) ), qvector_type, Py_None );
     }
     % End
@@ -1552,7 +1588,7 @@ class CORE_EXPORT QgsGeometry
      *
      * \since QGIS 3.0
      */
-    QByteArray asWkb( QgsAbstractGeometry::WkbFlags flags = nullptr ) const;
+    QByteArray asWkb( QgsAbstractGeometry::WkbFlags flags = QgsAbstractGeometry::WkbFlags() ) const;
 
     /**
      * Exports the geometry to WKT
@@ -1709,7 +1745,7 @@ class CORE_EXPORT QgsGeometry
     }
     else
     {
-      const sipMappedType *qvector_type = sipFindMappedType( "QVector< QgsPointXY >" );
+      const sipTypeDef *qvector_type = sipFindType( "QVector< QgsPointXY >" );
       sipRes = sipConvertFromNewType( new QgsPolylineXY( sipCpp->asPolyline() ), qvector_type, Py_None );
     }
     % End
@@ -1753,7 +1789,7 @@ class CORE_EXPORT QgsGeometry
     }
     else
     {
-      const sipMappedType *qvector_type = sipFindMappedType( "QVector<QVector<QgsPointXY>>" );
+      const sipTypeDef *qvector_type = sipFindType( "QVector<QVector<QgsPointXY>>" );
       sipRes = sipConvertFromNewType( new QgsPolygonXY( sipCpp->asPolygon() ), qvector_type, Py_None );
     }
     % End
@@ -1795,7 +1831,7 @@ class CORE_EXPORT QgsGeometry
     }
     else
     {
-      const sipMappedType *qvector_type = sipFindMappedType( "QVector< QgsPointXY >" );
+      const sipTypeDef *qvector_type = sipFindType( "QVector< QgsPointXY >" );
       sipRes = sipConvertFromNewType( new QgsPolylineXY( sipCpp->asMultiPoint() ), qvector_type, Py_None );
     }
     % End
@@ -1839,7 +1875,7 @@ class CORE_EXPORT QgsGeometry
     }
     else
     {
-      const sipMappedType *qvector_type = sipFindMappedType( "QVector<QVector<QgsPointXY>>" );
+      const sipTypeDef *qvector_type = sipFindType( "QVector<QVector<QgsPointXY>>" );
       sipRes = sipConvertFromNewType( new QgsMultiPolylineXY( sipCpp->asMultiPolyline() ), qvector_type, Py_None );
     }
     % End
@@ -1883,7 +1919,7 @@ class CORE_EXPORT QgsGeometry
     }
     else
     {
-      const sipMappedType *qvector_type = sipFindMappedType( "QVector<QVector<QVector<QgsPointXY>>>" );
+      const sipTypeDef *qvector_type = sipFindType( "QVector<QVector<QVector<QgsPointXY>>>" );
       sipRes = sipConvertFromNewType( new QgsMultiPolygonXY( sipCpp->asMultiPolygon() ), qvector_type, Py_None );
     }
     % End
@@ -1903,9 +1939,15 @@ class CORE_EXPORT QgsGeometry
     QPointF asQPointF() const;
 
     /**
-     * Returns contents of the geometry as a QPolygonF. If geometry is a linestring,
-     * then the result will be an open QPolygonF. If the geometry is a polygon,
-     * then the result will be a closed QPolygonF of the geometry's exterior ring.
+     * Returns contents of the geometry as a QPolygonF.
+     *
+     * If geometry is a linestring, then the result will be an open QPolygonF.
+     * If the geometry is a polygon, then the result will be a closed QPolygonF
+     * of the geometry's exterior ring.
+     *
+     * If the geometry is a multi-part geometry, then only the first part will
+     * be considered when converting to a QPolygonF.
+     *
      * \since QGIS 2.7
      */
     QPolygonF asQPolygonF() const;
@@ -1980,7 +2022,7 @@ class CORE_EXPORT QgsGeometry
      * It preserves Z values, but M values will be dropped.
      *
      * If an error was encountered during the process, more information can be retrieved
-     * by calling `error()` on the returned geometry.
+     * by calling lastError() on the returned geometry.
      *
      * \returns new valid QgsGeometry or null geometry on error
      *
@@ -2070,7 +2112,7 @@ class CORE_EXPORT QgsGeometry
      *
      * \since QGIS 1.5
      */
-    void validateGeometry( QVector<QgsGeometry::Error> &errors SIP_OUT, ValidationMethod method = ValidatorQgisInternal, QgsGeometry::ValidityFlags flags = nullptr ) const;
+    void validateGeometry( QVector<QgsGeometry::Error> &errors SIP_OUT, ValidationMethod method = ValidatorQgisInternal, QgsGeometry::ValidityFlags flags = QgsGeometry::ValidityFlags() ) const;
 
     /**
      * Compute the unary union on a list of \a geometries. May be faster than an iterative union on a set of geometries.

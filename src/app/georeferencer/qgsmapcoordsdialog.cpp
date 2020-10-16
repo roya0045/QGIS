@@ -40,9 +40,10 @@ QgsMapCoordsDialog::QgsMapCoordsDialog( QgsMapCanvas *qgisCanvas, const QgsPoint
   mPointFromCanvasPushButton = new QPushButton( QgsApplication::getThemeIcon( "georeferencer/mPushButtonPencil.png" ), tr( "From Map Canvas" ) );
   mPointFromCanvasPushButton->setCheckable( true );
   buttonBox->addButton( mPointFromCanvasPushButton, QDialogButtonBox::ActionRole );
-    
+
   mProjSelect = new QgsProjectionSelectionWidget( this );
   mProjSelect->setCrs( QgsProject::instance()->crs() );
+  mPointFromCanvasPushButton->setFocus();
 
   // User can input either DD or DMS coords (from QGIS mapcanvas we take DD coords)
   QgsDMSAndDDValidator *validator = new QgsDMSAndDDValidator( this );
@@ -114,7 +115,9 @@ void QgsMapCoordsDialog::maybeSetXY( const QgsPointXY &xy, Qt::MouseButton butto
     leYCoord->setText( qgsDoubleToString( mapCoordPoint.y() ) );
   }
 
-  parentWidget()->showNormal();
+  // only restore window if it was minimized
+  if ( parentWidget()->windowState().testFlag( Qt::WindowMinimized ) )
+    parentWidget()->showNormal();
   parentWidget()->activateWindow();
   parentWidget()->raise();
 

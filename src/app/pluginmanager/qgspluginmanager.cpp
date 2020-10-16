@@ -1006,11 +1006,15 @@ void QgsPluginManager::showPluginDetails( QStandardItem *item )
     QString localDir = metadata->value( QStringLiteral( "library" ) );
     if ( QFileInfo( localDir ).isFile() )
     {
-      localDir = QFileInfo( localDir ).absolutePath();
+      localDir = QFileInfo( localDir ).canonicalFilePath();
+    }
+    else
+    {
+      localDir = QDir( localDir ).canonicalPath();
     }
     html += QStringLiteral( "<tr><td class='key'>%1 </td><td title='%2'><a href='%3'>%4</a></td></tr>"
                           ).arg( tr( "Installed version" ),
-                                 metadata->value( QStringLiteral( "library" ) ),
+                                 QDir::toNativeSeparators( localDir ),
                                  QUrl::fromLocalFile( localDir ).toString(),
                                  ver );
   }
@@ -1522,7 +1526,8 @@ void QgsPluginManager::buttonInstallFromZip_clicked()
   QMessageBox msgbox;
   if ( showInstallFromZipWarning )
   {
-    msgbox.setText( tr( "Security warning: installing a plugin from an untrusted source can lead to data loss and/or leak. Continue?" ) );
+    msgbox.setWindowTitle( tr( "Security warning" ) );
+    msgbox.setText( tr( "Installing a plugin from an untrusted source can harm your computer. Only continue if you received the plugin from a source you trust. Continue?" ) );
     msgbox.setIcon( QMessageBox::Icon::Warning );
     msgbox.addButton( QMessageBox::Yes );
     msgbox.addButton( QMessageBox::No );

@@ -49,12 +49,12 @@ class QgsTransaction;
 #include "qgsdatasourceuri.h"
 
 /**
-  \class QgsSpatiaLiteProvider
-  \brief Data provider for SQLite/SpatiaLite layers.
-
-  This provider implements the
-  interface defined in the QgsDataProvider class to provide access to spatial
-  data residing in a SQLite/SpatiaLite enabled database.
+ * \class QgsSpatiaLiteProvider
+ * \brief Data provider for SQLite/SpatiaLite layers.
+ *
+ * This provider implements the
+ * interface defined in the QgsDataProvider class to provide access to spatial
+ * data residing in a SQLite/SpatiaLite enabled database.
   */
 class QgsSpatiaLiteProvider final: public QgsVectorDataProvider
 {
@@ -116,7 +116,7 @@ class QgsSpatiaLiteProvider final: public QgsVectorDataProvider
 
     bool isValid() const override;
     bool isSaveAndLoadStyleToDatabaseSupported() const override { return true; }
-    bool addFeatures( QgsFeatureList &flist, QgsFeatureSink::Flags flags = nullptr ) override;
+    bool addFeatures( QgsFeatureList &flist, QgsFeatureSink::Flags flags = QgsFeatureSink::Flags() ) override;
     bool deleteFeatures( const QgsFeatureIds &id ) override;
     bool truncate() override;
     bool addAttributes( const QList<QgsField> &attributes ) override;

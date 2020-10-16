@@ -913,6 +913,7 @@ namespace QgsWms
         if ( projectSettings )
         {
           layerElem.setAttribute( QStringLiteral( "visible" ), treeNode->isVisible() );
+          layerElem.setAttribute( QStringLiteral( "visibilityChecked" ), treeNode->itemVisibilityChecked() );
           layerElem.setAttribute( QStringLiteral( "expanded" ), treeNode->isExpanded() );
         }
 
@@ -988,7 +989,7 @@ namespace QgsWms
         {
           QgsLayerTreeLayer *treeLayer = static_cast<QgsLayerTreeLayer *>( treeNode );
           QgsMapLayer *l = treeLayer->layer();
-          if ( restrictedLayers.contains( l->name() ) ) //unpublished layer
+          if ( !l || restrictedLayers.contains( l->name() ) ) //unpublished layer
           {
             continue;
           }
@@ -1258,7 +1259,7 @@ namespace QgsWms
                 uniqueValues.unite( vl->uniqueValues( endFieldIndex ) );
               }
               // sort unique values
-              QList<QVariant> values = uniqueValues.toList();
+              QList<QVariant> values = qgis::setToList( uniqueValues );
               std::sort( values.begin(), values.end() );
 
               QDomElement dimElem = doc.createElement( QStringLiteral( "Dimension" ) );
@@ -1771,7 +1772,7 @@ namespace QgsWms
       }
 
       QStringList outputCrsList = QgsServerProjectUtils::wmsOutputCrsList( *project );
-      appendCrsElementsToLayer( doc, groupElem, combinedCRSSet.toList(), outputCrsList );
+      appendCrsElementsToLayer( doc, groupElem, qgis::setToList( combinedCRSSet ), outputCrsList );
 
       QgsCoordinateReferenceSystem groupCRS = project->crs();
       if ( considerMapExtent )
@@ -1782,7 +1783,7 @@ namespace QgsWms
           combinedBBox = mapRect;
         }
       }
-      appendLayerBoundingBoxes( doc, groupElem, combinedBBox, groupCRS, combinedCRSSet.toList(), outputCrsList, project );
+      appendLayerBoundingBoxes( doc, groupElem, combinedBBox, groupCRS, qgis::setToList( combinedCRSSet ), outputCrsList, project );
 
     }
 
@@ -1982,6 +1983,7 @@ namespace QgsWms
         case QgsMapLayerType::MeshLayer:
         case QgsMapLayerType::VectorTileLayer:
         case QgsMapLayerType::PluginLayer:
+        case QgsMapLayerType::AnnotationLayer:
           break;
       }
     }

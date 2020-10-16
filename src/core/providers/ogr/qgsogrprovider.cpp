@@ -55,7 +55,7 @@ email                : sherman at mrcc.com
 #include <ogr_srs_api.h>
 #include <cpl_string.h>
 
-// Temporary solution until GDAL Unique suppport is available
+// Temporary solution until GDAL Unique support is available
 #include "qgssqliteutils.h"
 #include <sqlite3.h>
 // end temporary
@@ -564,6 +564,15 @@ QgsOgrProvider::QgsOgrProvider( QString const &uri, const ProviderOptions &optio
     CSLDestroy( papszTokens );
   }
 
+  // Older versions of GDAL incorrectly report that shapefiles support
+  // DateTime.
+#if GDAL_VERSION_NUM < GDAL_COMPUTE_VERSION(3,2,0)
+  if ( mGDALDriverName == QLatin1String( "ESRI Shapefile" ) )
+  {
+    supportsDateTime = false;
+  }
+#endif
+
   if ( supportsDate )
   {
     nativeTypes
@@ -832,7 +841,7 @@ void QgsOgrProvider::addSubLayerDetailsToSubLayerList( int i, QgsOgrLayer *layer
   QString geometryColumnName;
   OGRwkbGeometryType layerGeomType = wkbUnknown;
   const bool slowGeomTypeRetrieval =
-    mGDALDriverName == QLatin1String( "OAPIF" ) || mGDALDriverName == QLatin1String( "WFS3" );
+    mGDALDriverName == QLatin1String( "OAPIF" ) || mGDALDriverName == QLatin1String( "WFS3" ) || mGDALDriverName == QLatin1String( "PGeo" );
   if ( !slowGeomTypeRetrieval )
   {
     QgsOgrFeatureDefn &fdef = layer->GetLayerDefn();
@@ -1116,7 +1125,7 @@ void QgsOgrProvider::loadFields()
       uniqueFieldNames = QgsSqliteUtils::uniqueFields( dsPtr.get(), mOgrLayer->name(), errMsg );
       if ( ! errMsg.isEmpty() )
       {
-        QgsMessageLog::logMessage( tr( "GPKG error searching for unique constraints on fields for table %1" ).arg( QString( mOgrLayer->name() ) ), tr( "OGR" ) );
+        QgsMessageLog::logMessage( tr( "GPKG error searching for unique constraints on fields for table %1. (%2)" ).arg( QString( mOgrLayer->name() ), errMsg ), tr( "OGR" ) );
       }
     }
   }
@@ -1245,6 +1254,14 @@ void QgsOgrProvider::loadFields()
 #endif
                           width, prec, QString(), varSubType
                         );
+
+#if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3,2,0)
+    const QString alias = textEncoding()->toUnicode( OGR_Fld_GetAlternativeNameRef( fldDef ) );
+    if ( !alias.isEmpty() )
+    {
+      newField.setAlias( alias );
+    }
+#endif
 
     // check if field is nullable
     bool nullable = OGR_Fld_IsNullable( fldDef );
@@ -1452,13 +1469,72 @@ QVariant QgsOgrProvider::defaultValue( int fieldId ) const
   else if ( defaultVal == QStringLiteral( "CURRENT_TIME" ) )
     resultVar = QTime::currentTime();
 
+  // Get next sequence value for sqlite in case we are inside a transaction
+  if ( mOgrOrigLayer &&
+       mTransaction &&
+       mDefaultValues.value( fieldId, QString() ) == tr( "Autogenerate" ) &&
+       providerProperty( EvaluateDefaultValues, false ).toBool() &&
+       ( mGDALDriverName == QLatin1String( "GPKG" ) ||
+         mGDALDriverName == QLatin1String( "SQLite" ) ) &&
+       mFirstFieldIsFid &&
+       fieldId == 0 )
+  {
+    QgsOgrLayerUniquePtr resultLayer = mOgrOrigLayer->ExecuteSQL( QByteArray( "SELECT seq FROM sqlite_sequence WHERE name = " ) +  QgsSqliteUtils::quotedValue( mOgrOrigLayer->name() ).toUtf8() );
+    if ( resultLayer )
+    {
+      gdal::ogr_feature_unique_ptr f;
+      if ( f.reset( resultLayer->GetNextFeature() ), f )
+      {
+        bool ok { true };
+        const QVariant res = QgsOgrUtils::getOgrFeatureAttribute( f.get(),
+                             fields().at( 0 ),
+                             0, textEncoding(), &ok );
+        if ( ok )
+        {
+          long long nextVal { res.toLongLong( &ok ) };
+          if ( ok )
+          {
+            // Increment
+            resultVar = ++nextVal;
+            mOgrOrigLayer->ExecuteSQLNoReturn( QByteArray( "UPDATE sqlite_sequence SET seq = seq + 1 WHERE name = " ) +  QgsSqliteUtils::quotedValue( mOgrOrigLayer->name() ).toUtf8() );
+          }
+        }
+
+        if ( ! ok )
+        {
+          QgsMessageLog::logMessage( tr( "Error retrieving next sequence value for %1" ).arg( QString::fromUtf8( mOgrOrigLayer->name() ) ), tr( "OGR" ) );
+        }
+      }
+      else  // no sequence!
+      {
+        resultVar = 1;
+        mOgrOrigLayer->ExecuteSQLNoReturn( QByteArray( "INSERT INTO sqlite_sequence (name, seq) VALUES( " +
+                                           QgsSqliteUtils::quotedValue( mOgrOrigLayer->name() ).toUtf8() ) + ", 1)" );
+      }
+    }
+    else
+    {
+      QgsMessageLog::logMessage( tr( "Error retrieving default value for %1" ).arg( mLayerName ), tr( "OGR" ) );
+    }
+  }
+
   ( void )mAttributeFields.at( fieldId ).convertCompatible( resultVar );
   return resultVar;
 }
 
 QString QgsOgrProvider::defaultValueClause( int fieldIndex ) const
 {
-  return mDefaultValues.value( fieldIndex, QString() );
+  // Return empty clause to force defaultValue calls for sqlite in case we are inside a transaction
+  if ( mTransaction &&
+       mDefaultValues.value( fieldIndex, QString() ) == tr( "Autogenerate" ) &&
+       providerProperty( EvaluateDefaultValues, false ).toBool() &&
+       ( mGDALDriverName == QLatin1String( "GPKG" ) ||
+         mGDALDriverName == QLatin1String( "SQLite" ) ) &&
+       mFirstFieldIsFid &&
+       fieldIndex == 0 )
+    return QString();
+  else
+    return mDefaultValues.value( fieldIndex, QString() );
 }
 
 bool QgsOgrProvider::skipConstraintCheck( int fieldIndex, QgsFieldConstraints::Constraint constraint, const QVariant &value ) const
@@ -1886,7 +1962,8 @@ bool QgsOgrProvider::addAttributeOGRLevel( const QgsField &field, bool &ignoreEr
 
   gdal::ogr_field_def_unique_ptr fielddefn( OGR_Fld_Create( textEncoding()->fromUnicode( field.name() ).constData(), type ) );
   int width = field.length();
-  if ( field.precision() )
+  // Increase width by 1 for OFTReal to make room for the decimal point
+  if ( type == OFTReal && field.precision() )
     width += 1;
   OGR_Fld_SetWidth( fielddefn.get(), width );
   OGR_Fld_SetPrecision( fielddefn.get(), field.precision() );
@@ -1998,7 +2075,7 @@ bool QgsOgrProvider::deleteAttributes( const QgsAttributeIds &attributes )
     return false;
 
   bool res = true;
-  QList<int> attrsLst = attributes.toList();
+  QList<int> attrsLst = qgis::setToList( attributes );
   // sort in descending order
   std::sort( attrsLst.begin(), attrsLst.end(), std::greater<int>() );
   const auto constAttrsLst = attrsLst;
@@ -2657,7 +2734,7 @@ void QgsOgrProvider::computeCapabilities()
     }
 
     // Whilst the OGR documentation (e.g. at
-    // http://www.gdal.org/ogr/classOGRLayer.html#a17) states "The capability
+    // https://gdal.org/doxygen/classOGRLayer.html#aeedbda1a62f9b89b8e5f24332cf22286) states "The capability
     // codes that can be tested are represented as strings, but #defined
     // constants exists to ensure correct spelling", we always use strings
     // here.  This is because older versions of OGR don't always have all
@@ -3345,23 +3422,55 @@ QVariantMap QgsOgrProviderMetadata::decodeUri( const QString &uri )
 {
   QString path = uri;
   QString layerName;
+  QString subset;
+  QString geometryType;
+
   int layerId = -1;
 
-  int pipeIndex = path.indexOf( '|' );
-  if ( pipeIndex != -1 )
+  if ( path.contains( '|' ) )
   {
-    if ( path.indexOf( QLatin1String( "|layername=" ) ) != -1 )
+    const QRegularExpression geometryTypeRegex( QStringLiteral( "\\|geometrytype=([a-zA-Z0-9]*)" ) );
+    const QRegularExpression layerNameRegex( QStringLiteral( "\\|layername=([^|]*)" ) );
+    const QRegularExpression layerIdRegex( QStringLiteral( "\\|layerid=([^|]*)" ) );
+    const QRegularExpression subsetRegex( QStringLiteral( "\\|subset=(.*)$" ) );
+
+
+    // we first try to split off the geometry type component, if that's present. That's a known quantity which
+    // will never be more than a-z characters
+    QRegularExpressionMatch match = geometryTypeRegex.match( path );
+    if ( match.hasMatch() )
     {
-      QRegularExpression regex( QStringLiteral( "\\|layername=([^|]*)" ) );
-      layerName = regex.match( path ).captured( 1 );
-    }
-    else if ( path.indexOf( QLatin1String( "|layerid=" ) ) )
-    {
-      QRegularExpression regex( QStringLiteral( "\\|layerid=([^|]*)" ) );
-      layerId = regex.match( path ).captured( 1 ).toInt();
+      geometryType = match.captured( 1 );
+      path = path.remove( match.capturedStart( 0 ), match.capturedLength( 0 ) );
     }
 
-    path = path.left( pipeIndex );
+    // next, we try to find and strip out the layerid/layername component. (This logic is based on the assumption
+    // that a layer name doesn't contain a | character!)
+    // we prefer layer names over layer ids, since they are persistent..
+    match = layerNameRegex.match( path );
+    if ( match.hasMatch() )
+    {
+      layerName = match.captured( 1 );
+      path = path.remove( match.capturedStart( 0 ), match.capturedLength( 0 ) );
+    }
+
+    match = layerIdRegex.match( path );
+    if ( match.hasMatch() )
+    {
+      layerId = match.captured( 1 ).toInt();
+      path = path.remove( match.capturedStart( 0 ), match.capturedLength( 0 ) );
+    }
+
+    // lastly, try to parse out the subset component. This is the biggest unknown, because it's
+    // quite possible that a subset string will contain a | character. If we've already parsed
+    // out all the other known |xxx=yyy tags, then we can safely assume that everything from "|subset=" to the
+    // end of the path is part of the subset filter
+    match = subsetRegex.match( path );
+    if ( match.hasMatch() )
+    {
+      subset = match.captured( 1 );
+      path = path.remove( match.capturedStart( 0 ), match.capturedLength( 0 ) );
+    }
   }
 
   // Handles DB connections extracting database name if possible
@@ -3393,16 +3502,25 @@ QVariantMap QgsOgrProviderMetadata::decodeUri( const QString &uri )
   QVariantMap uriComponents;
   uriComponents.insert( QStringLiteral( "path" ), path );
   uriComponents.insert( QStringLiteral( "layerName" ), layerName );
-  uriComponents.insert( QStringLiteral( "layerId" ), layerId > -1 ? layerId : QVariant() ) ;
+  uriComponents.insert( QStringLiteral( "layerId" ), layerId > -1 && layerName.isEmpty() ? layerId : QVariant() ) ;
+  if ( !subset.isEmpty() )
+    uriComponents.insert( QStringLiteral( "subset" ), subset );
+  if ( !geometryType.isEmpty() )
+    uriComponents.insert( QStringLiteral( "geometryType" ), geometryType );
   return uriComponents;
 }
 
 QString QgsOgrProviderMetadata::encodeUri( const QVariantMap &parts )
 {
-  QString path = parts.value( QStringLiteral( "path" ) ).toString();
-  QString layerName = parts.value( QStringLiteral( "layerName" ) ).toString();
-  QString layerId = parts.value( QStringLiteral( "layerId" ) ).toString();
-  return path + ( !layerName.isEmpty() ? QStringLiteral( "|layername=%1" ).arg( layerName ) : !layerId.isEmpty() ? QStringLiteral( "|layerid=%1" ).arg( layerId ) : QString() );
+  const QString path = parts.value( QStringLiteral( "path" ) ).toString();
+  const QString layerName = parts.value( QStringLiteral( "layerName" ) ).toString();
+  const QString layerId = parts.value( QStringLiteral( "layerId" ) ).toString();
+  const QString subset = parts.value( QStringLiteral( "subset" ) ).toString();
+  const QString geometryType = parts.value( QStringLiteral( "geometryType" ) ).toString();
+  return path
+         + ( !layerName.isEmpty() ? QStringLiteral( "|layername=%1" ).arg( layerName ) : !layerId.isEmpty() ? QStringLiteral( "|layerid=%1" ).arg( layerId ) : QString() )
+         + ( !geometryType.isEmpty() ? QStringLiteral( "|geometrytype=%1" ).arg( geometryType ) : QString() )
+         + ( !subset.isEmpty() ? QStringLiteral( "|subset=%1" ).arg( subset ) : QString() );
 }
 
 QString QgsOgrProviderUtils::fileVectorFilters()
@@ -3903,7 +4021,7 @@ QVariant QgsOgrProvider::minimumValue( int index ) const
 
   if ( originalField.type() == QVariant::DateTime )
   {
-    // ensure that we treat times as local time, to match behaviour when iterating features
+    // ensure that we treat times as local time, to match behavior when iterating features
     QDateTime temp = res.toDateTime();
     temp.setTimeSpec( Qt::LocalTime );
     res = temp;
@@ -3959,7 +4077,7 @@ QVariant QgsOgrProvider::maximumValue( int index ) const
 
   if ( originalField.type() == QVariant::DateTime )
   {
-    // ensure that we treat times as local time, to match behaviour when iterating features
+    // ensure that we treat times as local time, to match behavior when iterating features
     QDateTime temp = res.toDateTime();
     temp.setTimeSpec( Qt::LocalTime );
     res = temp;
@@ -4020,8 +4138,10 @@ GDALDatasetH QgsOgrProviderUtils::GDALOpenWrapper( const char *pszPath, bool bUp
   }
 
   QString filePath( QString::fromUtf8( pszPath ) );
+
+  bool bIsGpkg = QFileInfo( filePath ).suffix().compare( QLatin1String( "gpkg" ), Qt::CaseInsensitive ) == 0;
   bool bIsLocalGpkg = false;
-  if ( QFileInfo( filePath ).suffix().compare( QLatin1String( "gpkg" ), Qt::CaseInsensitive ) == 0 &&
+  if ( bIsGpkg &&
        IsLocalFile( filePath ) &&
        !CPLGetConfigOption( "OGR_SQLITE_JOURNAL", nullptr ) &&
        QgsSettings().value( QStringLiteral( "qgis/walForSqlite3" ), true ).toBool() )
@@ -4033,6 +4153,12 @@ GDALDatasetH QgsOgrProviderUtils::GDALOpenWrapper( const char *pszPath, bool bUp
     // on network shares
     CPLSetThreadLocalConfigOption( "OGR_SQLITE_JOURNAL", "WAL" );
     bIsLocalGpkg = true;
+  }
+  else if ( bIsGpkg )
+  {
+    // If WAL isn't set, we explicitly disable it, as it is persistent and it
+    // may have been set on a previous connection.
+    CPLSetThreadLocalConfigOption( "OGR_SQLITE_JOURNAL", "DELETE" );
   }
 
   bool modify_OGR_GPKG_FOREIGN_KEY_CHECK = !CPLGetConfigOption( "OGR_GPKG_FOREIGN_KEY_CHECK", nullptr );
@@ -4076,7 +4202,7 @@ static bool IsLocalFile( const QString &path )
   // Start with the OS specific methods since the QT >= 5.4 method just
   // return a string and not an enumerated type.
 #if defined(Q_OS_WIN)
-  if ( dirName.startsWith( "\\\\" ) )
+  if ( dirName.startsWith( "\\\\" ) || dirName.startsWith( "//" ) )
     return false;
   if ( dirName.length() >= 3 && dirName[1] == ':' &&
        ( dirName[2] == '\\' || dirName[2] == '/' ) )
@@ -6855,4 +6981,3 @@ void QgsOgrProviderMetadata::saveConnection( const QgsAbstractProviderConnection
 }
 
 ///@endcond
-

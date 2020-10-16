@@ -832,6 +832,7 @@ class GUI_EXPORT QgsProcessingLayoutWidgetWrapper : public QgsAbstractProcessing
 
     void setWidgetValue( const QVariant &value, QgsProcessingContext &context ) override;
     QVariant widgetValue() const override;
+    void setWidgetContext( const QgsProcessingParameterWidgetContext &context ) override;
 
     QStringList compatibleParameterTypes() const override;
 
@@ -841,7 +842,7 @@ class GUI_EXPORT QgsProcessingLayoutWidgetWrapper : public QgsAbstractProcessing
   private:
 
     QgsLayoutComboBox *mComboBox = nullptr;
-    QLineEdit *mLineEdit = nullptr;
+    QComboBox *mPlainComboBox = nullptr;
 
     friend class TestProcessingGui;
 };

@@ -99,6 +99,7 @@
 #include "qgsauxiliarystorage.h"
 #include "qgsgeometryoptions.h"
 #include "qgsexpressioncontextutils.h"
+#include "qgsruntimeprofiler.h"
 
 #include "diagram/qgsdiagram.h"
 
@@ -185,7 +186,7 @@ QgsVectorLayer::QgsVectorLayer( const QString &vectorLayerPath,
     mAttributeAliasMap.insert( field.name(), QString() );
   }
 
-  if ( mValid )
+  if ( isValid() )
   {
     mTemporalProperties->setDefaultsFromDataProviderTemporalCapabilities( mDataProvider->temporalCapabilities() );
     if ( !mTemporalProperties->isActive() )
@@ -215,7 +216,7 @@ QgsVectorLayer::~QgsVectorLayer()
 {
   emit willBeDeleted();
 
-  mValid = false;
+  setValid( false );
 
   delete mDataProvider;
   delete mEditBuffer;
@@ -641,7 +642,7 @@ QgsMapLayerTemporalProperties *QgsVectorLayer::temporalProperties()
 
 void QgsVectorLayer::setProviderEncoding( const QString &encoding )
 {
-  if ( mValid && mDataProvider && mDataProvider->encoding() != encoding )
+  if ( isValid() && mDataProvider && mDataProvider->encoding() != encoding )
   {
     mDataProvider->setEncoding( encoding );
     updateFields();
@@ -668,7 +669,7 @@ QgsWkbTypes::Type QgsVectorLayer::wkbType() const
 
 QgsRectangle QgsVectorLayer::boundingBoxOfSelected() const
 {
-  if ( !mValid || !isSpatial() || mSelectedFeatureIds.isEmpty() || !mDataProvider ) //no selected features
+  if ( !isValid() || !isSpatial() || mSelectedFeatureIds.isEmpty() || !mDataProvider ) //no selected features
   {
     return QgsRectangle( 0, 0, 0, 0 );
   }
@@ -771,7 +772,7 @@ QgsVectorLayerFeatureCounter *QgsVectorLayer::countSymbolFeatures( bool storeSym
   mSymbolFeatureCountMap.clear();
   mSymbolFeatureIdMap.clear();
 
-  if ( !mValid )
+  if ( !isValid() )
   {
     QgsDebugMsgLevel( QStringLiteral( "invoked with invalid layer" ), 3 );
     return mFeatureCounter;
@@ -787,7 +788,7 @@ QgsVectorLayerFeatureCounter *QgsVectorLayer::countSymbolFeatures( bool storeSym
     return mFeatureCounter;
   }
 
-  if ( !mFeatureCounter || ( mFeatureCounter && ( storeSymbolFids && mSymbolFeatureIdMap.isEmpty() ) ) )
+  if ( !mFeatureCounter || ( storeSymbolFids && mSymbolFeatureIdMap.isEmpty() ) )
   {
     mFeatureCounter = new QgsVectorLayerFeatureCounter( this, QgsExpressionContext(), storeSymbolFids );
     connect( mFeatureCounter, &QgsTask::taskCompleted, this, &QgsVectorLayer::onFeatureCounterCompleted, Qt::UniqueConnection );
@@ -862,7 +863,7 @@ QgsRectangle QgsVectorLayer::extent() const
   if ( mValidExtent )
     return QgsMapLayer::extent();
 
-  if ( !mValid || !mDataProvider )
+  if ( !isValid() || !mDataProvider )
   {
     QgsDebugMsgLevel( QStringLiteral( "invoked with invalid layer or null mDataProvider" ), 3 );
     return rect;
@@ -932,7 +933,7 @@ QgsRectangle QgsVectorLayer::sourceExtent() const
 
 QString QgsVectorLayer::subsetString() const
 {
-  if ( !mValid || !mDataProvider )
+  if ( !isValid() || !mDataProvider )
   {
     QgsDebugMsgLevel( QStringLiteral( "invoked with invalid layer or null mDataProvider" ), 3 );
     return customProperty( QStringLiteral( "storedSubsetString" ) ).toString();
@@ -942,7 +943,7 @@ QString QgsVectorLayer::subsetString() const
 
 bool QgsVectorLayer::setSubsetString( const QString &subset )
 {
-  if ( !mValid || !mDataProvider )
+  if ( !isValid() || !mDataProvider )
   {
     QgsDebugMsgLevel( QStringLiteral( "invoked with invalid layer or null mDataProvider or while editing" ), 3 );
     setCustomProperty( QStringLiteral( "storedSubsetString" ), subset );
@@ -975,7 +976,7 @@ bool QgsVectorLayer::setSubsetString( const QString &subset )
 
 bool QgsVectorLayer::simplifyDrawingCanbeApplied( const QgsRenderContext &renderContext, QgsVectorSimplifyMethod::SimplifyHint simplifyHint ) const
 {
-  if ( mValid && mDataProvider && !mEditBuffer && ( isSpatial() && geometryType() != QgsWkbTypes::PointGeometry ) && ( mSimplifyMethod.simplifyHints() & simplifyHint ) && renderContext.useRenderingOptimization() )
+  if ( isValid() && mDataProvider && !mEditBuffer && ( isSpatial() && geometryType() != QgsWkbTypes::PointGeometry ) && ( mSimplifyMethod.simplifyHints() & simplifyHint ) && renderContext.useRenderingOptimization() )
   {
     double maximumSimplificationScale = mSimplifyMethod.maximumScale();
 
@@ -992,7 +993,7 @@ QgsConditionalLayerStyles *QgsVectorLayer::conditionalStyles() const
 
 QgsFeatureIterator QgsVectorLayer::getFeatures( const QgsFeatureRequest &request ) const
 {
-  if ( !mValid || !mDataProvider )
+  if ( !isValid() || !mDataProvider )
     return QgsFeatureIterator();
 
   return QgsFeatureIterator( new QgsVectorLayerFeatureIterator( new QgsVectorLayerFeatureSource( this ), true, request ) );
@@ -1010,7 +1011,7 @@ QgsGeometry QgsVectorLayer::getGeometry( QgsFeatureId fid ) const
 
 bool QgsVectorLayer::addFeature( QgsFeature &feature, Flags )
 {
-  if ( !mValid || !mEditBuffer || !mDataProvider )
+  if ( !isValid() || !mEditBuffer || !mDataProvider )
     return false;
 
 
@@ -1094,7 +1095,7 @@ bool QgsVectorLayer::updateFeature( QgsFeature &updatedFeature, bool skipDefault
 
 bool QgsVectorLayer::insertVertex( double x, double y, QgsFeatureId atFeatureId, int beforeVertex )
 {
-  if ( !mValid || !mEditBuffer || !mDataProvider )
+  if ( !isValid() || !mEditBuffer || !mDataProvider )
     return false;
 
   QgsVectorLayerEditUtils utils( this );
@@ -1107,7 +1108,7 @@ bool QgsVectorLayer::insertVertex( double x, double y, QgsFeatureId atFeatureId,
 
 bool QgsVectorLayer::insertVertex( const QgsPoint &point, QgsFeatureId atFeatureId, int beforeVertex )
 {
-  if ( !mValid || !mEditBuffer || !mDataProvider )
+  if ( !isValid() || !mEditBuffer || !mDataProvider )
     return false;
 
   QgsVectorLayerEditUtils utils( this );
@@ -1120,7 +1121,7 @@ bool QgsVectorLayer::insertVertex( const QgsPoint &point, QgsFeatureId atFeature
 
 bool QgsVectorLayer::moveVertex( double x, double y, QgsFeatureId atFeatureId, int atVertex )
 {
-  if ( !mValid || !mEditBuffer || !mDataProvider )
+  if ( !isValid() || !mEditBuffer || !mDataProvider )
     return false;
 
   QgsVectorLayerEditUtils utils( this );
@@ -1133,7 +1134,7 @@ bool QgsVectorLayer::moveVertex( double x, double y, QgsFeatureId atFeatureId, i
 
 bool QgsVectorLayer::moveVertex( const QgsPoint &p, QgsFeatureId atFeatureId, int atVertex )
 {
-  if ( !mValid || !mEditBuffer || !mDataProvider )
+  if ( !isValid() || !mEditBuffer || !mDataProvider )
     return false;
 
   QgsVectorLayerEditUtils utils( this );
@@ -1146,7 +1147,7 @@ bool QgsVectorLayer::moveVertex( const QgsPoint &p, QgsFeatureId atFeatureId, in
 
 QgsVectorLayer::EditResult QgsVectorLayer::deleteVertex( QgsFeatureId featureId, int vertex )
 {
-  if ( !mValid || !mEditBuffer || !mDataProvider )
+  if ( !isValid() || !mEditBuffer || !mDataProvider )
     return QgsVectorLayer::InvalidLayer;
 
   QgsVectorLayerEditUtils utils( this );
@@ -1160,7 +1161,7 @@ QgsVectorLayer::EditResult QgsVectorLayer::deleteVertex( QgsFeatureId featureId,
 
 bool QgsVectorLayer::deleteSelectedFeatures( int *deletedCount, QgsVectorLayer::DeleteContext *context )
 {
-  if ( !mValid || !mDataProvider || !( mDataProvider->capabilities() & QgsVectorDataProvider::DeleteFeatures ) )
+  if ( !isValid() || !mDataProvider || !( mDataProvider->capabilities() & QgsVectorDataProvider::DeleteFeatures ) )
   {
     return false;
   }
@@ -1199,7 +1200,7 @@ static const QgsPointSequence vectorPointXY2pointSequence( const QVector<QgsPoin
   while ( it != points.constEnd() )
   {
     pts.append( QgsPoint( *it ) );
-    it++;
+    ++it;
   }
   return pts;
 }
@@ -1210,7 +1211,7 @@ QgsGeometry::OperationResult QgsVectorLayer::addRing( const QVector<QgsPointXY> 
 
 QgsGeometry::OperationResult QgsVectorLayer::addRing( const QgsPointSequence &ring, QgsFeatureId *featureId )
 {
-  if ( !mValid || !mEditBuffer || !mDataProvider )
+  if ( !isValid() || !mEditBuffer || !mDataProvider )
     return QgsGeometry::OperationResult::LayerNotEditable;
 
   QgsVectorLayerEditUtils utils( this );
@@ -1233,7 +1234,7 @@ QgsGeometry::OperationResult QgsVectorLayer::addRing( const QgsPointSequence &ri
 
 QgsGeometry::OperationResult QgsVectorLayer::addRing( QgsCurve *ring, QgsFeatureId *featureId )
 {
-  if ( !mValid || !mEditBuffer || !mDataProvider )
+  if ( !isValid() || !mEditBuffer || !mDataProvider )
   {
     delete ring;
     return QgsGeometry::OperationResult::LayerNotEditable;
@@ -1287,7 +1288,7 @@ QgsGeometry::OperationResult QgsVectorLayer::addPart( const QVector<QgsPointXY> 
 
 QgsGeometry::OperationResult QgsVectorLayer::addPart( const QgsPointSequence &points )
 {
-  if ( !mValid || !mEditBuffer || !mDataProvider )
+  if ( !isValid() || !mEditBuffer || !mDataProvider )
     return QgsGeometry::OperationResult::LayerNotEditable;
 
   //number of selected features must be 1
@@ -1313,7 +1314,7 @@ QgsGeometry::OperationResult QgsVectorLayer::addPart( const QgsPointSequence &po
 
 QgsGeometry::OperationResult QgsVectorLayer::addPart( QgsCurve *ring )
 {
-  if ( !mValid || !mEditBuffer || !mDataProvider )
+  if ( !isValid() || !mEditBuffer || !mDataProvider )
     return QgsGeometry::OperationResult::LayerNotEditable;
 
   //number of selected features must be 1
@@ -1339,7 +1340,7 @@ QgsGeometry::OperationResult QgsVectorLayer::addPart( QgsCurve *ring )
 
 int QgsVectorLayer::translateFeature( QgsFeatureId featureId, double dx, double dy )
 {
-  if ( !mValid || !mEditBuffer || !mDataProvider )
+  if ( !isValid() || !mEditBuffer || !mDataProvider )
     return QgsGeometry::OperationResult::LayerNotEditable;
 
   QgsVectorLayerEditUtils utils( this );
@@ -1356,7 +1357,7 @@ QgsGeometry::OperationResult QgsVectorLayer::splitParts( const QVector<QgsPointX
 }
 QgsGeometry::OperationResult QgsVectorLayer::splitParts( const QgsPointSequence &splitLine, bool topologicalEditing )
 {
-  if ( !mValid || !mEditBuffer || !mDataProvider )
+  if ( !isValid() || !mEditBuffer || !mDataProvider )
     return QgsGeometry::OperationResult::LayerNotEditable;
 
   QgsVectorLayerEditUtils utils( this );
@@ -1369,16 +1370,22 @@ QgsGeometry::OperationResult QgsVectorLayer::splitFeatures( const QVector<QgsPoi
 
 QgsGeometry::OperationResult QgsVectorLayer::splitFeatures( const QgsPointSequence &splitLine, bool topologicalEditing )
 {
-  if ( !mValid || !mEditBuffer || !mDataProvider )
+  QgsLineString splitLineString( splitLine );
+  return splitFeatures( &splitLineString, topologicalEditing );
+}
+
+QgsGeometry::OperationResult QgsVectorLayer::splitFeatures( const QgsCurve *curve, bool preserveCircular, bool topologicalEditing )
+{
+  if ( !isValid() || !mEditBuffer || !mDataProvider )
     return QgsGeometry::OperationResult::LayerNotEditable;
 
   QgsVectorLayerEditUtils utils( this );
-  return utils.splitFeatures( splitLine, topologicalEditing );
+  return utils.splitFeatures( curve, preserveCircular, topologicalEditing );
 }
 
 int QgsVectorLayer::addTopologicalPoints( const QgsGeometry &geom )
 {
-  if ( !mValid || !mEditBuffer || !mDataProvider )
+  if ( !isValid() || !mEditBuffer || !mDataProvider )
     return -1;
 
   QgsVectorLayerEditUtils utils( this );
@@ -1392,7 +1399,7 @@ int QgsVectorLayer::addTopologicalPoints( const QgsPointXY &p )
 
 int QgsVectorLayer::addTopologicalPoints( const QgsPoint &p )
 {
-  if ( !mValid || !mEditBuffer || !mDataProvider )
+  if ( !isValid() || !mEditBuffer || !mDataProvider )
     return -1;
 
   QgsVectorLayerEditUtils utils( this );
@@ -1410,7 +1417,7 @@ void QgsVectorLayer::setLabeling( QgsAbstractVectorLayerLabeling *labeling )
 
 bool QgsVectorLayer::startEditing()
 {
-  if ( !mValid || !mDataProvider )
+  if ( !isValid() || !mDataProvider )
   {
     return false;
   }
@@ -1600,7 +1607,7 @@ bool QgsVectorLayer::readXml( const QDomNode &layer_node, QgsReadWriteContext &c
   // QGIS Server WMS Dimensions
   mServerProperties->readXml( layer_node );
 
-  return mValid;               // should be true if read successfully
+  return isValid();               // should be true if read successfully
 
 } // void QgsVectorLayer::readXml
 
@@ -1619,7 +1626,7 @@ void QgsVectorLayer::setDataSource( const QString &dataSource, const QString &ba
   setName( baseName );
   setDataProvider( provider, options );
 
-  if ( !mValid )
+  if ( !isValid() )
   {
     emit dataSourceChanged();
     return;
@@ -1629,8 +1636,12 @@ void QgsVectorLayer::setDataSource( const QString &dataSource, const QString &ba
   setCoordinateSystem();
 
   // reset style if loading default style, style is missing, or geometry type is has changed (and layer is valid)
-  if ( !renderer() || !legend() || ( mValid && geomType != geometryType() ) || loadDefaultStyleFlag )
+  if ( !renderer() || !legend() || ( isValid() && geomType != geometryType() ) || loadDefaultStyleFlag )
   {
+    std::unique_ptr< QgsScopedRuntimeProfile > profile;
+    if ( QgsApplication::profiler()->groupIsActive( QStringLiteral( "projectload" ) ) )
+      profile = qgis::make_unique< QgsScopedRuntimeProfile >( tr( "Load layer style" ), QStringLiteral( "projectload" ) );
+
     bool defaultLoadedFlag = false;
 
     if ( loadDefaultStyleFlag && isSpatial() && mDataProvider->capabilities() & QgsVectorDataProvider::CreateRenderer )
@@ -1714,10 +1725,14 @@ bool QgsVectorLayer::setDataProvider( QString const &provider, const QgsDataProv
     }
   }
 
+  std::unique_ptr< QgsScopedRuntimeProfile > profile;
+  if ( QgsApplication::profiler()->groupIsActive( QStringLiteral( "projectload" ) ) )
+    profile = qgis::make_unique< QgsScopedRuntimeProfile >( tr( "Create %1 provider" ).arg( provider ), QStringLiteral( "projectload" ) );
+
   mDataProvider = qobject_cast<QgsVectorDataProvider *>( QgsProviderRegistry::instance()->createProvider( provider, mDataSource, options ) );
   if ( !mDataProvider )
   {
-    mValid = false;
+    setValid( false );
     QgsDebugMsgLevel( QStringLiteral( "Unable to get data provider" ), 2 );
     return false;
   }
@@ -1727,13 +1742,15 @@ bool QgsVectorLayer::setDataProvider( QString const &provider, const QgsDataProv
 
   QgsDebugMsgLevel( QStringLiteral( "Instantiated the data provider plugin" ), 2 );
 
-  mValid = mDataProvider->isValid();
-  if ( !mValid )
+  setValid( mDataProvider->isValid() );
+  if ( !isValid() )
   {
     QgsDebugMsgLevel( QStringLiteral( "Invalid provider plugin %1" ).arg( QString( mDataSource.toUtf8() ) ), 2 );
     return false;
   }
 
+  if ( profile )
+    profile->switchTask( tr( "Read layer metadata" ) );
   if ( mDataProvider->capabilities() & QgsVectorDataProvider::ReadLayerMetadata )
   {
     setMetadata( mDataProvider->layerMetadata() );
@@ -1746,6 +1763,8 @@ bool QgsVectorLayer::setDataProvider( QString const &provider, const QgsDataProv
   // get and store the feature type
   mWkbType = mDataProvider->wkbType();
 
+  if ( profile )
+    profile->switchTask( tr( "Read layer fields" ) );
   updateFields();
 
   if ( mProviderKey == QLatin1String( "postgres" ) )
@@ -1947,8 +1966,20 @@ QString QgsVectorLayer::encodedSource( const QString &source, const QgsReadWrite
         // syntax: provider:url_encoded_source_URI(:name(:encoding)?)?
         theURIParts = value.split( ':' );
         theURIParts[1] = QUrl::fromPercentEncoding( theURIParts[1].toUtf8() );
-        theURIParts[1] = context.pathResolver().writePath( theURIParts[1] );
-        theURIParts[1] = QUrl::toPercentEncoding( theURIParts[1] );
+
+        if ( theURIParts[0] == QLatin1String( "delimitedtext" ) )
+        {
+          QUrl urlSource = QUrl( theURIParts[1] );
+          QUrl urlDest = QUrl::fromLocalFile( context.pathResolver().writePath( urlSource.toLocalFile() ) );
+          urlDest.setQuery( urlSource.query() );
+          theURIParts[1] = QUrl::toPercentEncoding( urlDest.toString(), QByteArray( "" ), QByteArray( ":" ) );
+        }
+        else
+        {
+          theURIParts[1] = context.pathResolver().writePath( theURIParts[1] );
+          theURIParts[1] = QUrl::toPercentEncoding( theURIParts[1] );
+        }
+
         queryItems[i].second =  theURIParts.join( QStringLiteral( ":" ) ) ;
       }
     }
@@ -2021,7 +2052,28 @@ QString QgsVectorLayer::decodedSource( const QString &source, const QString &pro
         // syntax: provider:url_encoded_source_URI(:name(:encoding)?)?
         theURIParts = value.split( ':' );
         theURIParts[1] = QUrl::fromPercentEncoding( theURIParts[1].toUtf8() );
-        theURIParts[1] = context.pathResolver().readPath( theURIParts[1] );
+
+        if ( theURIParts[0] == QStringLiteral( "delimitedtext" ) )
+        {
+          QUrl urlSource = QUrl( theURIParts[1] );
+
+          if ( !theURIParts[1].startsWith( QLatin1String( "file:" ) ) )
+          {
+            QUrl file = QUrl::fromLocalFile( theURIParts[1].left( theURIParts[1].indexOf( '?' ) ) );
+            urlSource.setScheme( QStringLiteral( "file" ) );
+            urlSource.setPath( file.path() );
+          }
+
+          QUrl urlDest = QUrl::fromLocalFile( context.pathResolver().readPath( urlSource.toLocalFile() ) );
+          urlDest.setQuery( urlSource.query() );
+
+          theURIParts[1] = urlDest.toString();
+        }
+        else
+        {
+          theURIParts[1] = context.pathResolver().readPath( theURIParts[1] );
+        }
+
         theURIParts[1] = QUrl::toPercentEncoding( theURIParts[1] );
         queryItems[i].second =  theURIParts.join( QStringLiteral( ":" ) ) ;
       }
@@ -3170,7 +3222,7 @@ bool QgsVectorLayer::deleteAttributes( const QList<int> &attrs )
   bool deleted = false;
 
   // Remove multiple occurrences of same attribute
-  QList<int> attrList = attrs.toSet().toList();
+  QList<int> attrList = qgis::setToList( qgis::listToSet( attrs ) );
 
   std::sort( attrList.begin(), attrList.end(), std::greater<int>() );
 
@@ -3326,7 +3378,7 @@ QgsFeatureSource::FeatureAvailability QgsVectorLayer::hasFeatures() const
     return QgsFeatureSource::FeatureAvailability::FeaturesAvailable;
 }
 
-bool QgsVectorLayer::commitChanges()
+bool QgsVectorLayer::commitChanges( bool stopEditing )
 {
   mCommitErrors.clear();
 
@@ -3342,7 +3394,7 @@ bool QgsVectorLayer::commitChanges()
     return false;
   }
 
-  emit beforeCommitChanges();
+  emit beforeCommitChanges( stopEditing );
 
   if ( !mAllowCommit )
     return false;
@@ -3351,10 +3403,15 @@ bool QgsVectorLayer::commitChanges()
 
   if ( success )
   {
-    delete mEditBuffer;
-    mEditBuffer = nullptr;
+    if ( stopEditing )
+    {
+      delete mEditBuffer;
+      mEditBuffer = nullptr;
+    }
     undoStack()->clear();
-    emit editingStopped();
+    emit afterCommitChanges();
+    if ( stopEditing )
+      emit editingStopped();
   }
   else
   {
@@ -4045,7 +4102,7 @@ QSet<QVariant> QgsVectorLayer::uniqueValues( int index, int limit ) const
         }
       }
 
-      return val.values().toSet();
+      return qgis::listToSet( val.values() );
     }
   }
 
@@ -4868,11 +4925,11 @@ bool QgsVectorLayer::readSldTextSymbolizer( const QDomNode &node, QgsPalLayerSet
       }
       else if ( it.key() == QLatin1String( "group" ) && it.value() == QLatin1String( "yes" ) )
       {
-        settings.mergeLines = true;
+        settings.lineSettings().setMergeLines( true );
       }
       else if ( it.key() == QLatin1String( "labelAllGroup" ) && it.value() == QLatin1String( "true" ) )
       {
-        settings.mergeLines = true;
+        settings.lineSettings().setMergeLines( true );
       }
     }
   }
@@ -5322,6 +5379,12 @@ void QgsVectorLayer::emitDataChanged()
   mDataChangedFired = false;
 }
 
+void QgsVectorLayer::onAfterCommitChangesDependency()
+{
+  mDataChangedFired = true;
+  reload();
+}
+
 bool QgsVectorLayer::setDependencies( const QSet<QgsMapLayerDependency> &oDeps )
 {
   QSet<QgsMapLayerDependency> deps;
@@ -5345,6 +5408,7 @@ bool QgsVectorLayer::setDependencies( const QSet<QgsMapLayerDependency> &oDeps )
     disconnect( lyr, &QgsVectorLayer::geometryChanged, this, &QgsVectorLayer::emitDataChanged );
     disconnect( lyr, &QgsVectorLayer::dataChanged, this, &QgsVectorLayer::emitDataChanged );
     disconnect( lyr, &QgsVectorLayer::repaintRequested, this, &QgsVectorLayer::triggerRepaint );
+    disconnect( lyr, &QgsVectorLayer::afterCommitChanges, this, &QgsVectorLayer::onAfterCommitChangesDependency );
   }
 
   // assign new dependencies
@@ -5365,6 +5429,7 @@ bool QgsVectorLayer::setDependencies( const QSet<QgsMapLayerDependency> &oDeps )
     connect( lyr, &QgsVectorLayer::geometryChanged, this, &QgsVectorLayer::emitDataChanged );
     connect( lyr, &QgsVectorLayer::dataChanged, this, &QgsVectorLayer::emitDataChanged );
     connect( lyr, &QgsVectorLayer::repaintRequested, this, &QgsVectorLayer::triggerRepaint );
+    connect( lyr, &QgsVectorLayer::afterCommitChanges, this, &QgsVectorLayer::onAfterCommitChangesDependency );
   }
 
   // if new layers are present, emit a data change

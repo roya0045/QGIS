@@ -620,7 +620,7 @@ class CORE_EXPORT QgsSymbol
     //! Symbol opacity (in the range 0 - 1)
     qreal mOpacity = 1.0;
 
-    RenderHints mRenderHints = nullptr;
+    RenderHints mRenderHints;
     bool mClipFeaturesToExtent = true;
     bool mForceRHR = false;
 
@@ -1138,6 +1138,14 @@ class CORE_EXPORT QgsLineSymbol : public QgsSymbol
      * \see width()
      */
     void setWidth( double width );
+
+    /**
+     * Sets the width units for the whole symbol (including all symbol layers).
+     * \param unit size units
+     * \since QGIS 3.16
+     */
+    void setWidthUnit( QgsUnitTypes::RenderUnit unit );
+
 
     /**
      * Returns the estimated width for the whole symbol, which is the maximum width of

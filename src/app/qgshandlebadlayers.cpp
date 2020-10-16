@@ -425,8 +425,21 @@ void QgsHandleBadLayers::apply()
       QgsMapLayer *mapLayer = QgsProject::instance()->mapLayer( layerId );
       if ( mapLayer )
       {
+        QString subsetString;
+        QgsVectorLayer *vlayer = qobject_cast< QgsVectorLayer *>( mapLayer );
+        if ( vlayer )
+        {
+          // store the previous layer subset string, so we can restore after fixing the data source
+          subsetString = vlayer->subsetString();
+        }
+
         mapLayer->setDataSource( datasource, name, provider, options );
         dataSourceChanged = mapLayer->isValid();
+
+        if ( dataSourceChanged && vlayer && !subsetString.isEmpty() )
+        {
+          vlayer->setSubsetString( subsetString );
+        }
       }
     }
 
@@ -589,7 +602,7 @@ void QgsHandleBadLayers::autoFind()
 
     // Try first to change the datasource of the existing layers, this will
     // maintain the current status (checked/unchecked) and group
-    if ( QgsProject::instance()->mapLayer( layerId ) )
+    if ( !datasource.isEmpty() && QgsProject::instance()->mapLayer( layerId ) )
     {
       QgsDataProvider::ProviderOptions options;
       QgsMapLayer *mapLayer = QgsProject::instance()->mapLayer( layerId );
@@ -602,7 +615,25 @@ void QgsHandleBadLayers::autoFind()
 
     if ( !dataSourceChanged )
     {
-      QStringList filesFound = QgsFileUtils::findFile( fileName, basepath, 5 );
+      QStringList filesFound;
+      QgsTaskManager *manager = QgsApplication::taskManager();
+      QgsFileSearchTask *fileutil = new QgsFileSearchTask( fileName,  basepath, 4, 4, QgsProject::instance()->absolutePath() );
+      fileutil->setDescription( "Searching for " + fileName );
+      manager->addTask( fileutil );
+      while ( !( ( fileutil->status() == QgsTask::Complete ) || ( fileutil->status() == QgsTask::Terminated ) ) )
+      {
+        // QCoreApplication::processEvents();
+        if ( progressDialog.wasCanceled() )
+          fileutil->cancel();
+      }
+      // fileutil->waitForFinished();
+      if ( fileutil )
+      {
+        if ( !( fileutil->isActive() ) )
+          filesFound = fileutil->results();
+      }
+
+
       if ( filesFound.length() > 1 )
       {
         bool ok;
@@ -656,10 +687,13 @@ void QgsHandleBadLayers::autoFind()
         item->setForeground( QBrush( Qt::red ) );
       }
     }
-
+    if ( progressDialog.wasCanceled() )
+      break;
   }
 
   QgsProject::instance()->layerTreeRegistryBridge()->setEnabled( false );
 
 }
+
+
 

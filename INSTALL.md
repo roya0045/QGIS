@@ -48,7 +48,7 @@ Following a summary of the required dependencies for building:
 
 Required build tools:
 
-* CMake >= 3.0.0
+* CMake >= 3.10.0
 * Flex >= 2.5.6
 * Bison >= 2.4
 * Python 3
@@ -433,22 +433,19 @@ To enable debug prints for the current user, execute:
 
 ## 4.1. Building with Microsoft Visual Studio
 
-This section describes how to build QGIS using Visual Studio (MSVC) 2015 on Windows.
+This section describes how to build QGIS using Visual Studio (MSVC) 2019 on Windows.
 This is currently also how the binary QGIS packages are made (earlier versions used MinGW).
 
 This section describes the setup required to allow Visual Studio to be used to
 build QGIS.
 
-### 4.1.1. Visual Studio 2015 Community Edition
+### 4.1.1. Visual Studio 2019 Community Edition
 
 The free (as in free beer) Community installer is available under:
 
-> http://download.microsoft.com/download/D/2/3/D23F4D0F-BA2D-4600-8725-6CCECEA05196/vs_community_ENU.exe
+> https://download.visualstudio.microsoft.com/download/pr/68d6b204-9df0-4fcc-abcc-08ee0eff9cb2/b029547488a9383b0c8d8a9c813e246feb3ec19e0fe55020d4878fde5f0983fe/vs_Community.exe
 
-Select "Custom" install and add the following packages:
-
-* "Common Tools for Visual C++ 2015" under "Visual C++"
-* "Tools (1.4.1) and Windows 10 SDK (10.0.14393)" under "Universal Windows App Development Tools".
+Select "Desktop Development with C++", "Windows Driver Kit" and "MSVC v142 - VS 2019 C++ x64/x86 Spectre-mitigated libs (v14.23)"
 
 ### 4.1.2. Other tools and dependencies
 
@@ -459,7 +456,7 @@ Download and install following packages:
 |CMake |https://cmake.org/files/v3.12/cmake-3.12.3-win64-x64.msi|
 |GNU flex, GNU bison and GIT |http://cygwin.com/setup-x86.exe (32bit) or http://cygwin.com/setup-x86_64.exe (64bit)|
 |OSGeo4W |http://download.osgeo.org/osgeo4w/osgeo4w-setup-x86.exe (32bit) or http://download.osgeo.org/osgeo4w/osgeo4w-setup-x86_64.exe (64bit)|
-|ninja |https://github.com/ninja-build/ninja/releases/download/v1.7.2/ninja-win.zip|
+|ninja |https://github.com/ninja-build/ninja/releases/download/v1.10.0/ninja-win.zip|
 
 For the QGIS build you need to install following packages from cygwin:
 
@@ -604,48 +601,20 @@ Running QGIS from within MSVC:
 
 ### 4.1.6. Packaging
 
-To create a standalone installer there is a perl script named 'creatensis.pl'
+To create a standalone installer there is a perl script named 'createmsi.pl'
 in 'qgis/ms-windows/osgeo4w'.  It downloads all required packages from OSGeo4W
-and repackages them into an installer using NSIS.
+and repackages them into an installer using WiX.
 
-The script can be run on both Windows and Linux.
-
-On Debian/Ubuntu you can just install the 'nsis' package.
-
-NSIS for Windows can be downloaded at:
-
-> http://nsis.sourceforge.net
+The script can be run on both Windows and Linux (via wine and mono).
 
 And Perl for Windows (including other requirements like 'wget', 'unzip', 'tar'
 and 'bzip2') is available at:
 
 > http://cygwin.com
 
-### 4.1.7. Packaging your own build of QGIS
+### 4.1.7. OSGeo4W packaging
 
-Assuming you have completed the above packaging step, if you want to include
-your own hand built QGIS executables, you need to copy them in from your
-windows installation into the ms-windows file tree created by the creatensis
-script.
-
-```cmd
-    cd ms-windows/
-    rm -rf osgeo4w/unpacked/apps/qgis/*
-    cp -r /tmp/qgis1.7.0/* osgeo4w/unpacked/apps/qgis/
-```
-
-Now create a package.
-
-```cmd
-    ./quickpackage.sh
-```
-
-After this you should now have a nsis installer containing your own build
-of QGIS and all dependencies needed to run it on a windows machine.
-
-### 4.1.8. Osgeo4w packaging
-
-The actual packaging process is currently not documented, for now please take a
+The actual packaging process is documented in code.  Please take a
 look at:
 
 > ms-windows/osgeo4w/package.cmd

@@ -81,7 +81,7 @@ class CORE_EXPORT QgsProcessingFeatureSourceDefinition
      * the default geometry check method (as dictated by QgsProcessingContext) for this source.
      */
     QgsProcessingFeatureSourceDefinition( const QString &source = QString(), bool selectedFeaturesOnly = false, long long featureLimit = -1,
-                                          QgsProcessingFeatureSourceDefinition::Flags flags = nullptr, QgsFeatureRequest::InvalidGeometryCheck geometryCheck = QgsFeatureRequest::GeometryAbortOnInvalid )
+                                          QgsProcessingFeatureSourceDefinition::Flags flags = QgsProcessingFeatureSourceDefinition::Flags(), QgsFeatureRequest::InvalidGeometryCheck geometryCheck = QgsFeatureRequest::GeometryAbortOnInvalid )
       : source( QgsProperty::fromValue( source ) )
       , selectedFeaturesOnly( selectedFeaturesOnly )
       , featureLimit( featureLimit )
@@ -103,7 +103,7 @@ class CORE_EXPORT QgsProcessingFeatureSourceDefinition
      * the default geometry check method (as dictated by QgsProcessingContext) for this source.
      */
     QgsProcessingFeatureSourceDefinition( const QgsProperty &source, bool selectedFeaturesOnly = false, long long featureLimit = -1,
-                                          QgsProcessingFeatureSourceDefinition::Flags flags = nullptr, QgsFeatureRequest::InvalidGeometryCheck geometryCheck = QgsFeatureRequest::GeometryAbortOnInvalid )
+                                          QgsProcessingFeatureSourceDefinition::Flags flags = QgsProcessingFeatureSourceDefinition::Flags(), QgsFeatureRequest::InvalidGeometryCheck geometryCheck = QgsFeatureRequest::GeometryAbortOnInvalid )
       : source( source )
       , selectedFeaturesOnly( selectedFeaturesOnly )
       , featureLimit( featureLimit )
@@ -134,7 +134,7 @@ class CORE_EXPORT QgsProcessingFeatureSourceDefinition
      *
      * \since QGIS 3.14
      */
-    Flags flags = nullptr;
+    Flags flags = Flags();
 
     /**
      * Geometry check method to apply to this source. This setting is only
@@ -162,7 +162,7 @@ class CORE_EXPORT QgsProcessingFeatureSourceDefinition
      */
     bool loadVariant( const QVariantMap &map );
 
-    bool operator==( const QgsProcessingFeatureSourceDefinition &other )
+    bool operator==( const QgsProcessingFeatureSourceDefinition &other ) const
     {
       return source == other.source
              && selectedFeaturesOnly == other.selectedFeaturesOnly
@@ -171,7 +171,7 @@ class CORE_EXPORT QgsProcessingFeatureSourceDefinition
              && geometryCheck == other.geometryCheck;
     }
 
-    bool operator!=( const QgsProcessingFeatureSourceDefinition &other )
+    bool operator!=( const QgsProcessingFeatureSourceDefinition &other ) const
     {
       return !( *this == other );
     }
@@ -933,11 +933,15 @@ class CORE_EXPORT QgsProcessingParameters
      * argument will be set to a string which can be used to retrieve the layer corresponding
      * to the sink, e.g. via calling QgsProcessingUtils::mapLayerFromString().
      *
+     * The \a createOptions argument is used to pass on creation options such as layer name.
+     *
+     * The \a datasourceOptions and \a layerOptions arguments is used to pass on GDAL-specific format driver options.
+     *
      * This function creates a new object and the caller takes responsibility for deleting the returned object.
      */
     static QgsFeatureSink *parameterAsSink( const QgsProcessingParameterDefinition *definition, const QVariantMap &parameters,
                                             const QgsFields &fields, QgsWkbTypes::Type geometryType, const QgsCoordinateReferenceSystem &crs,
-                                            QgsProcessingContext &context, QString &destinationIdentifier SIP_OUT, QgsFeatureSink::SinkFlags sinkFlags = nullptr ) SIP_FACTORY;
+                                            QgsProcessingContext &context, QString &destinationIdentifier SIP_OUT, QgsFeatureSink::SinkFlags sinkFlags = QgsFeatureSink::SinkFlags(), const QVariantMap &createOptions = QVariantMap(), const QStringList &datasourceOptions = QStringList(), const QStringList &layerOptions = QStringList() ) SIP_FACTORY;
 
     /**
      * Evaluates the parameter with matching \a definition and \a value to a feature sink.
@@ -950,13 +954,17 @@ class CORE_EXPORT QgsProcessingParameters
      * argument will be set to a string which can be used to retrieve the layer corresponding
      * to the sink, e.g. via calling QgsProcessingUtils::mapLayerFromString().
      *
+     * The \a createOptions argument is used to pass on creation options such as layer name.
+     *
+     * The \a datasourceOptions and \a layerOptions arguments is used to pass on GDAL-specific format driver options.
+     *
      * This function creates a new object and the caller takes responsibility for deleting the returned object.
      * \throws QgsProcessingException
      * \since QGIS 3.4
      */
     static QgsFeatureSink *parameterAsSink( const QgsProcessingParameterDefinition *definition, const QVariant &value,
                                             const QgsFields &fields, QgsWkbTypes::Type geometryType, const QgsCoordinateReferenceSystem &crs,
-                                            QgsProcessingContext &context, QString &destinationIdentifier SIP_OUT, QgsFeatureSink::SinkFlags sinkFlags = nullptr ) SIP_THROW( QgsProcessingException ) SIP_FACTORY;
+                                            QgsProcessingContext &context, QString &destinationIdentifier SIP_OUT, QgsFeatureSink::SinkFlags sinkFlags = QgsFeatureSink::SinkFlags(), const QVariantMap &createOptions = QVariantMap(), const QStringList &datasourceOptions = QStringList(), const QStringList &layerOptions = QStringList() ) SIP_THROW( QgsProcessingException ) SIP_FACTORY;
 
     /**
      * Evaluates the parameter with matching \a definition to a feature source.

@@ -642,7 +642,8 @@ class CORE_EXPORT QgsShapeburstFillSymbolLayer : public QgsFillSymbolLayer
 
 /**
  * \ingroup core
- * Base class for polygon renderers generating texture images*/
+ * Base class for polygon renderers generating texture images
+*/
 class CORE_EXPORT QgsImageFillSymbolLayer: public QgsFillSymbolLayer
 {
   public:
@@ -709,6 +710,13 @@ class CORE_EXPORT QgsImageFillSymbolLayer: public QgsFillSymbolLayer
     std::unique_ptr< QgsLineSymbol > mStroke;
 
     virtual void applyDataDefinedSettings( QgsSymbolRenderContext &context ) { Q_UNUSED( context ) }
+
+    /**
+     * Returns TRUE if the image brush should be transformed using the render context's texture origin.
+     *
+     * \since QGIS 3.16
+     */
+    virtual bool applyBrushTransformFromContext() const;
 
   private:
 #ifdef SIP_RUN
@@ -922,7 +930,7 @@ class CORE_EXPORT QgsRasterFillSymbolLayer: public QgsImageFillSymbolLayer
   protected:
 
     void applyDataDefinedSettings( QgsSymbolRenderContext &context ) override;
-
+    bool applyBrushTransformFromContext() const override;
   private:
 
     //! Path to the image file
@@ -1974,13 +1982,15 @@ class CORE_EXPORT QgsCentroidFillSymbolLayer : public QgsFillSymbolLayer
     /**
      * Sets whether a point is drawn for all parts or only on the biggest part of multi-part features.
      * \see pointOnAllParts()
-     * \since QGIS 2.16 */
+     * \since QGIS 2.16
+    */
     void setPointOnAllParts( bool pointOnAllParts ) { mPointOnAllParts = pointOnAllParts; }
 
     /**
      * Returns whether a point is drawn for all parts or only on the biggest part of multi-part features.
      * \see setPointOnAllParts()
-     * \since QGIS 2.16 */
+     * \since QGIS 2.16
+    */
     bool pointOnAllParts() const { return mPointOnAllParts; }
 
     /**

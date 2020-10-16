@@ -31,7 +31,7 @@ class QgsCoordinateTransform;
 class QgsCoordinateReferenceSystem;
 
 /**
-  \brief Data provider for MDAL layers.
+ * \brief Data provider for MDAL layers.
 */
 class QgsMdalProvider : public QgsMeshDataProvider
 {
@@ -84,6 +84,12 @@ class QgsMdalProvider : public QgsMeshDataProvider
                               const QVector<QgsMeshDataBlock> &datasetValues,
                               const QVector<QgsMeshDataBlock> &datasetActive,
                               const QVector<double> &times
+                            ) override;
+
+    bool persistDatasetGroup( const QString &outputFilePath,
+                              const QString &outputDriver,
+                              QgsMeshDatasetSourceInterface *source,
+                              int datasetGroupIndex
                             ) override;
 
     /**

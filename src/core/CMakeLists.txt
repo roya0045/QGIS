@@ -125,7 +125,14 @@ SET(QGIS_CORE_SRCS
   auth/qgsauthmethodregistry.cpp
 
   annotations/qgsannotation.cpp
+  annotations/qgsannotationitemregistry.cpp
+  annotations/qgsannotationlayer.cpp
+  annotations/qgsannotationlayerrenderer.cpp
+  annotations/qgsannotationlineitem.cpp
+  annotations/qgsannotationmarkeritem.cpp
   annotations/qgsannotationmanager.cpp
+  annotations/qgsannotationpointtextitem.cpp
+  annotations/qgsannotationpolygonitem.cpp
   annotations/qgshtmlannotation.cpp
   annotations/qgssvgannotation.cpp
   annotations/qgstextannotation.cpp
@@ -311,6 +318,8 @@ SET(QGIS_CORE_SRCS
   qgslocalec.cpp
   qgslocalizeddatapathregistry.cpp
   qgslogger.cpp
+  qgsmapclippingregion.cpp
+  qgsmapclippingutils.cpp
   qgsmapdecoration.cpp
   qgsmaphittest.cpp
   qgsmaplayer.cpp
@@ -407,6 +416,7 @@ SET(QGIS_CORE_SRCS
   qgssqliteexpressioncompiler.cpp
   qgssqlstatement.cpp
   qgssqliteutils.cpp
+  qgssourcecache.cpp
   qgsspatialiteutils.cpp
   qgsstatisticalsummary.cpp
   qgsstoredexpressionmanager.cpp
@@ -589,6 +599,7 @@ SET(QGIS_CORE_SRCS
   mesh/qgsmeshdataprovider.cpp
   mesh/qgsmeshdataprovidertemporalcapabilities.cpp
   mesh/qgsmeshdataset.cpp
+  mesh/qgsmeshdatasetgroupstore.cpp
   mesh/qgsmeshlayer.cpp
   mesh/qgsmeshlayerinterpolator.cpp
   mesh/qgsmeshlayerrenderer.cpp
@@ -601,12 +612,15 @@ SET(QGIS_CORE_SRCS
   mesh/qgsmeshtracerenderer.cpp
   mesh/qgsmeshvectorrenderer.cpp
   mesh/qgstriangularmesh.cpp
-
-
+  mesh/qgsmeshcalcnode.cpp
+  mesh/qgsmeshcalculator.cpp
+  mesh/qgsmeshcalcutils.cpp
+  mesh/qgsmeshvirtualdatasetgroup.cpp
 
   labeling/qgslabelfeature.cpp
   labeling/qgslabelingengine.cpp
   labeling/qgslabelingenginesettings.cpp
+  labeling/qgslabellinesettings.cpp
   labeling/qgslabelobstaclesettings.cpp
   labeling/qgslabelsearchtree.cpp
   labeling/qgslabelsink.cpp
@@ -652,6 +666,8 @@ SET(QGIS_CORE_SRCS
   geometry/qgswkbtypes.cpp
 
   3d/qgs3drendererregistry.cpp
+  3d/qgs3dsymbolregistry.cpp
+  3d/qgsabstract3dsymbol.cpp
   3d/qgsabstract3drenderer.cpp
 
   fieldformatter/qgscheckboxfieldformatter.cpp
@@ -693,9 +709,9 @@ SET(QGIS_CORE_SRCS
 )
 
 FILE(GLOB JSON_HELP_FILES "${CMAKE_SOURCE_DIR}/resources/function_help/json/*")
-IF(NOT USING_NINJA)
+IF(CMAKE_VERSION VERSION_LESS "3.18" AND NOT USING_NINJA AND (NOT MSVC OR USING_NMAKE))
   STRING(REPLACE "$" "$$" JSON_HELP_FILES "${JSON_HELP_FILES}")
-ENDIF(NOT USING_NINJA)
+ENDIF(CMAKE_VERSION VERSION_LESS "3.18" AND NOT USING_NINJA AND (NOT MSVC OR USING_NMAKE))
 STRING(REPLACE "\(" "\\(" JSON_HELP_FILES "${JSON_HELP_FILES}")
 STRING(REPLACE "\)" "\\)" JSON_HELP_FILES "${JSON_HELP_FILES}")
 ADD_CUSTOM_COMMAND(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/qgsexpression_texts.cpp
@@ -728,17 +744,20 @@ ENDIF (QT_MOBILITY_LOCATION_FOUND OR Qt5Positioning_FOUND)
 
 ADD_FLEX_FILES_PREFIX(QGIS_CORE_SRCS exp_ qgsexpressionlexer.ll)
 ADD_FLEX_FILES_PREFIX(QGIS_CORE_SRCS sqlstatement_ qgssqlstatementlexer.ll)
+ADD_FLEX_FILES_PREFIX(QGIS_CORE_SRCS mesh mesh/qgsmeshcalclexer.ll)
 ADD_BISON_FILES_PREFIX(QGIS_CORE_SRCS exp_ qgsexpressionparser.yy)
 ADD_BISON_FILES_PREFIX(QGIS_CORE_SRCS sqlstatement_ qgssqlstatementparser.yy)
+ADD_BISON_FILES_PREFIX(QGIS_CORE_SRCS mesh mesh/qgsmeshcalcparser.yy)
 
 IF(NOT MSVC)
-  SET_SOURCE_FILES_PROPERTIES(qgsexpressionparser.cpp qgssqlstatementparser.cpp PROPERTIES COMPILE_FLAGS -w)
+  SET_SOURCE_FILES_PROPERTIES(qgsexpressionparser.cpp qgssqlstatementparser.cpp qgsmeshcalcparser.cpp PROPERTIES COMPILE_FLAGS -w)
 ELSE(NOT MSVC)
   # -wd4702 unreachable code
   SET_SOURCE_FILES_PROPERTIES(
     geometry/qgsgeos.cpp
     pal/feature.cpp
     pal/pointset.cpp
+    ${CMAKE_BINARY_DIR}/src/core/qgsmeshcalcparser.cpp
     PROPERTIES COMPILE_FLAGS -wd4702)
 ENDIF(NOT MSVC)
 
@@ -860,6 +879,8 @@ SET(QGIS_CORE_HDRS
   qgslocalec.h
   qgslocalizeddatapathregistry.h
   qgslogger.h
+  qgsmapclippingregion.h
+  qgsmapclippingutils.h
   qgsmapdecoration.h
   qgsmaphittest.h
   qgsmaplayer.h
@@ -963,6 +984,7 @@ SET(QGIS_CORE_HDRS
   qgsspatialindexkdbush.h
   qgsspatialindexkdbushdata.h
   qgsspatialindexutils.h
+  qgssourcecache.h
   qgsspatialiteutils.h
   qgssqlexpressioncompiler.h
   qgssqliteutils.h
@@ -1027,10 +1049,20 @@ SET(QGIS_CORE_HDRS
   qobjectuniqueptr.h
 
   3d/qgs3drendererregistry.h
+  3d/qgs3dsymbolregistry.h
+  3d/qgsabstract3dsymbol.h
   3d/qgsabstract3drenderer.h
 
   annotations/qgsannotation.h
+  annotations/qgsannotationitem.h
+  annotations/qgsannotationitemregistry.h
+  annotations/qgsannotationlayer.h
+  annotations/qgsannotationlayerrenderer.h
+  annotations/qgsannotationlineitem.h
+  annotations/qgsannotationmarkeritem.h
   annotations/qgsannotationmanager.h
+  annotations/qgsannotationpointtextitem.h
+  annotations/qgsannotationpolygonitem.h
   annotations/qgsannotationregistry.h
   annotations/qgshtmlannotation.h
   annotations/qgssvgannotation.h
@@ -1137,6 +1169,7 @@ SET(QGIS_CORE_HDRS
   labeling/qgslabeling.h
   labeling/qgslabelingengine.h
   labeling/qgslabelingenginesettings.h
+  labeling/qgslabellinesettings.h
   labeling/qgslabelobstaclesettings.h
   labeling/qgslabelsearchtree.h
   labeling/qgslabelthinningsettings.h
@@ -1229,6 +1262,7 @@ SET(QGIS_CORE_HDRS
   mesh/qgsmeshdataprovider.h
   mesh/qgsmeshdataprovidertemporalcapabilities.h
   mesh/qgsmeshdataset.h
+  mesh/qgsmeshdatasetgroupstore.h
   mesh/qgsmeshlayer.h
   mesh/qgsmeshlayerinterpolator.h
   mesh/qgsmeshlayerrenderer.h
@@ -1241,6 +1275,10 @@ SET(QGIS_CORE_HDRS
   mesh/qgsmeshtracerenderer.h
   mesh/qgsmeshvectorrenderer.h
   mesh/qgstriangularmesh.h
+  mesh/qgsmeshcalcnode.h
+  mesh/qgsmeshcalculator.h
+  mesh/qgsmeshcalcutils.h
+  mesh/qgsmeshvirtualdatasetgroup.h
 
   metadata/qgsabstractmetadatabase.h
   metadata/qgslayermetadata.h

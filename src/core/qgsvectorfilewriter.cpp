@@ -419,7 +419,7 @@ void QgsVectorFileWriter::init( QString vectorFileName,
   }
 
   // consider spatial reference system of the layer
-  if ( driverName == QLatin1String( "KML" ) || driverName == QLatin1String( "GPX" ) )
+  if ( driverName == QLatin1String( "KML" ) || driverName == QLatin1String( "LIBKML" ) || driverName == QLatin1String( "GPX" ) )
   {
     if ( srs.authid() != QStringLiteral( "EPSG:4326" ) )
     {
@@ -2296,6 +2296,11 @@ bool QgsVectorFileWriter::addFeatures( QgsFeatureList &features, QgsFeatureSink:
   return result;
 }
 
+QString QgsVectorFileWriter::lastError() const
+{
+  return mErrorMessage;
+}
+
 bool QgsVectorFileWriter::addFeatureWithStyle( QgsFeature &feature, QgsFeatureRenderer *renderer, QgsUnitTypes::DistanceUnit outputUnit )
 {
   // create the feature
@@ -2411,6 +2416,18 @@ gdal::ogr_feature_unique_ptr QgsVectorFileWriter::createFeature( const QgsFeatur
     {
       field = mFieldValueConverter->fieldDefinition( field );
       attrValue = mFieldValueConverter->convert( fldIdx, attrValue );
+    }
+
+    // Check type compatibility before passing attribute value to OGR
+    QString errorMessage;
+    if ( ! field.convertCompatible( attrValue, &errorMessage ) )
+    {
+      mErrorMessage = QObject::tr( "Error converting value (%1) for attribute field %2: %3" )
+                      .arg( feature.attribute( fldIdx ).toString(),
+                            mFields.at( fldIdx ).name(), errorMessage );
+      QgsMessageLog::logMessage( mErrorMessage, QObject::tr( "OGR" ) );
+      mError = ErrFeatureWriteFailed;
+      return nullptr;
     }
 
     switch ( field.type() )
@@ -3294,7 +3311,7 @@ QStringList QgsVectorFileWriter::supportedFormatExtensions( const VectorFormatOp
     }
   }
 
-  QStringList extensionList = extensions.toList();
+  QStringList extensionList = qgis::setToList( extensions );
 
   std::sort( extensionList.begin(), extensionList.end(), [options]( const QString & a, const QString & b ) -> bool
   {

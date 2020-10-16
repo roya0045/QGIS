@@ -46,7 +46,7 @@ class CORE_EXPORT QgsCompoundCurve: public QgsCurve
     bool fromWkb( QgsConstWkbPtr &wkb ) override;
     bool fromWkt( const QString &wkt ) override;
 
-    QByteArray asWkb( QgsAbstractGeometry::WkbFlags flags = nullptr ) const override;
+    QByteArray asWkb( QgsAbstractGeometry::WkbFlags flags = QgsAbstractGeometry::WkbFlags() ) const override;
     QString asWkt( int precision = 17 ) const override;
     QDomElement asGml2( QDomDocument &doc, int precision = 17, const QString &ns = "gml", QgsAbstractGeometry::AxisOrder axisOrder = QgsAbstractGeometry::AxisOrder::XY ) const override;
     QDomElement asGml3( QDomDocument &doc, int precision = 17, const QString &ns = "gml", QgsAbstractGeometry::AxisOrder axisOrder = QgsAbstractGeometry::AxisOrder::XY ) const override;
@@ -64,7 +64,8 @@ class CORE_EXPORT QgsCompoundCurve: public QgsCurve
      * Returns a new line string geometry corresponding to a segmentized approximation
      * of the curve.
      * \param tolerance segmentation tolerance
-     * \param toleranceType maximum segmentation angle or maximum difference between approximation and curve*/
+     * \param toleranceType maximum segmentation angle or maximum difference between approximation and curve
+    */
     QgsLineString *curveToLine( double tolerance = M_PI_2 / 90, SegmentationToleranceType toleranceType = MaximumAngle ) const override SIP_FACTORY;
 
     QgsCompoundCurve *snappedToGrid( double hSpacing, double vSpacing, double dSpacing = 0, double mSpacing = 0 ) const override SIP_FACTORY;
@@ -169,7 +170,8 @@ class CORE_EXPORT QgsCompoundCurve: public QgsCurve
 
     /**
      * Turns a vertex id for the compound curve into one or more ids for the subcurves
-        \returns the index of the subcurve or -1 in case of error*/
+     * \returns the index of the subcurve or -1 in case of error
+    */
     QVector< QPair<int, QgsVertexId> > curveVertexId( QgsVertexId id ) const;
 
 };
