@@ -495,6 +495,7 @@ void QgsGeoreferencerMainWindow::linkGeorefToQgis( bool link )
 void QgsGeoreferencerMainWindow::addPoint( const QgsPointXY &pixelCoords, const QgsPointXY &mapCoords, const QString &wktProj,
     bool enable, bool finalize )
 {
+  qDebug() << "add pt crs coord:"  << wktProj;
   QgsGeorefDataPoint *pnt = new QgsGeorefDataPoint( mCanvas, QgisApp::instance()->mapCanvas(),
       pixelCoords, mapCoords, wktProj, enable );
   mPoints.append( pnt );
