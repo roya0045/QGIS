@@ -72,6 +72,7 @@
 #include <QButtonGroup>
 #include <QMenu>
 #include <QFileDialog>
+#include <QDebug>
 
 ///@cond PRIVATE
 
@@ -1859,6 +1860,7 @@ QgsProcessingExpressionParameterDefinitionWidget::QgsProcessingExpressionParamet
   vlayout->setMargin( 0 );
   vlayout->setContentsMargins( 0, 0, 0, 0 );
   vlayout->addWidget( new QLabel( tr( "Default value" ) ) );
+  qDebug() << "building definition widget";
 
   mDefaultLineEdit = new QgsExpressionLineEdit();
   if ( const QgsProcessingParameterExpression *expParam = dynamic_cast<const QgsProcessingParameterExpression *>( definition ) )
@@ -1915,6 +1917,7 @@ QgsProcessingParameterDefinition *QgsProcessingExpressionParameterDefinitionWidg
   auto param = qgis::make_unique< QgsProcessingParameterExpression >( name, description, mDefaultLineEdit->expression(), mParentLayerComboBox->currentData().toString() );
   param->setFlags( flags );
   if ( mModel ){
+    qDebug() << "HAS A MODEL";
     QStringList extraVars = mModel->variables().keys();
     param->setAdditionalExpressionContextVariables( extraVars );
   }
@@ -1924,7 +1927,7 @@ QgsProcessingParameterDefinition *QgsProcessingExpressionParameterDefinitionWidg
 QgsProcessingExpressionWidgetWrapper::QgsProcessingExpressionWidgetWrapper( const QgsProcessingParameterDefinition *parameter, QgsProcessingGui::WidgetType type, QWidget *parent )
   : QgsAbstractProcessingParameterWidgetWrapper( parameter, type, parent )
 {
-
+  qDebug() << "building wrapper widget";
 }
 
 QWidget *QgsProcessingExpressionWidgetWrapper::createWidget()
@@ -2038,6 +2041,7 @@ void QgsProcessingExpressionWidgetWrapper::setParentLayerWrapperValue( const Qgs
 
 QgsExpressionContext QgsProcessingExpressionWidgetWrapper::createExpressionContext() const
 {
+  qDebug() << "Making wrapper context";
   QgsExpressionContext context = QgsExpressionContext();
   QStringList highlightedVariables;
   if ( layer )
@@ -2049,7 +2053,10 @@ QgsExpressionContext QgsProcessingExpressionWidgetWrapper::createExpressionConte
   QgsExpressionContextScope *extraScope = new QgsExpressionContextScope();
   QStringList extraVars = parameterDefinition()->additionalExpressionContextVariables();
   for ( const QString &extraVar : extraVars )
+  {
+    qDebug() << "Adding variable :"  << extraVar;
     extraScope->addVariable( extraVar);
+  }
   context.appendScope( extraScope );
   context.setHighlightedVariables( extraVars );
   return context;
