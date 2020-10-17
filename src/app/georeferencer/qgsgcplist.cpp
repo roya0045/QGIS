@@ -18,6 +18,7 @@
 #include "qgscoordinatereferencesystem.h"
 #include "qgscoordinatetransform.h"
 #include "qgsproject.h"
+#include <QDebug>
 
 #include "qgsgcplist.h"
 
@@ -35,7 +36,9 @@ QgsGCPList::QgsGCPList( const QgsGCPList &list )
 
 void QgsGCPList::createGCPVectors( QVector<QgsPointXY> &mapCoords, QVector<QgsPointXY> &pixelCoords, const QString &wktProj )
 {
+  qDebug() << "Proj target" << wktProj;
   QgsCoordinateReferenceSystem projTarget( wktProj );
+  qDebug() << projTarget.isValid();
   QgsCoordinateTransform transformer;
   mapCoords   = QVector<QgsPointXY>( size() );
   pixelCoords = QVector<QgsPointXY>( size() );
@@ -46,8 +49,11 @@ void QgsGCPList::createGCPVectors( QVector<QgsPointXY> &mapCoords, QVector<QgsPo
     {
       if ( projTarget.isValid() )
       {
+       qDebug() << "Pt CRS:" << pt->crs().toWkt();
+       qDebug() << "Og coord:"  << pt->mapCoords().toString();
        mapCoords[j] = QgsCoordinateTransform( pt->crs(), projTarget,
                                              QgsProject::instance() ).transform( pt->mapCoords() );
+        qDebug() << "trans coord:"  << mapCoords[j].toString();
       }
       else 
         mapCoords[j] = pt->mapCoords();
