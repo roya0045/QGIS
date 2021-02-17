@@ -26,6 +26,7 @@
 #include "qgsgeometry.h"
 #include "qgsgeometryengine.h"
 #include "qgsexpressioncontextutils.h"
+#include "qgsrasterlayer.h"
 
 QgsMapHitTest::QgsMapHitTest( const QgsMapSettings &settings, const QgsGeometry &polygon, const LayerFilterExpression &layerFilterExpression )
   : mSettings( settings )
@@ -205,3 +206,17 @@ void QgsMapHitTest::runHitTestLayer( QgsVectorLayer *vl, SymbolSet &usedSymbols,
   }
 }
 
+bool QgsMapHitTest::rasterVisible( QgsRasterLayer *layer ) const;
+{
+  if ( ! layer->dataProvider() )
+    return false;
+  QgsRectangle footprint = layer->dataProvider()->extent();
+  if ( mSettings.destinationCrs() != layer->crs() )
+  {
+    QgsCoordinateTransform ct( mSettings.destinationCrs(), layer->crs(), mSettings.transformContext() );
+    footprint = ct.transformBoundingBox( footprint );
+  }
+  if ( mSettings.extent().intersects( footprint ) )
+    return true;
+  return false;
+}

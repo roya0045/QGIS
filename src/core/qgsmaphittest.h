@@ -71,6 +71,13 @@ class CORE_EXPORT QgsMapHitTest
      */
     bool legendKeyVisible( const QString &ruleKey, QgsVectorLayer *layer ) const;
 
+    /**
+     * Tests whether a given legend key is visible for a specified layer.
+     * \param layer raster layer
+     * \since QGIS 3.20
+     */
+    bool rasterVisible( QgsRasterLayer *layer ) const;
+
   private:
 
     //! \note not available in Python bindings
