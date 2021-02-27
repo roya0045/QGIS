@@ -25,6 +25,7 @@
 class QgsRenderContext;
 class QgsSymbol;
 class QgsVectorLayer;
+class QgsRasterLayer;
 class QgsExpression;
 
 /**

@@ -206,14 +206,14 @@ void QgsMapHitTest::runHitTestLayer( QgsVectorLayer *vl, SymbolSet &usedSymbols,
   }
 }
 
-bool QgsMapHitTest::rasterVisible( QgsRasterLayer *layer ) const;
+bool QgsMapHitTest::rasterVisible( QgsRasterLayer *layer ) const
 {
   if ( ! layer->dataProvider() )
     return false;
   QgsRectangle footprint = layer->dataProvider()->extent();
   if ( mSettings.destinationCrs() != layer->crs() )
   {
-    QgsCoordinateTransform ct( mSettings.destinationCrs(), layer->crs(), mSettings.transformContext() );
+    QgsCoordinateTransform ct = QgsCoordinateTransform( mSettings.destinationCrs(), layer->crs(), mSettings.transformContext() );
     footprint = ct.transformBoundingBox( footprint );
   }
   if ( mSettings.extent().intersects( footprint ) )
