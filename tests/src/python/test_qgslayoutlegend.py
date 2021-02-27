@@ -19,6 +19,7 @@ from qgis.core import (QgsPrintLayout,
                        QgsLayout,
                        QgsMapSettings,
                        QgsVectorLayer,
+                       QgsRasterLayer,
                        QgsMarkerSymbol,
                        QgsSingleSymbolRenderer,
                        QgsRectangle,
@@ -750,7 +751,7 @@ class TestQgsLayoutItemLegend(unittest.TestCase, LayoutItemTestCase):
         map.setExtent(raster_layer.extent())
 
         legend = QgsLayoutItemLegend(layout)
-        legend.setTitle("Legend")
+        legend.setTitle("Unfiltered Legend")
         legend.attemptSetSceneRect(QRectF(120, 20, 80, 40))
         legend.setFrameEnabled(True)
         legend.setFrameStrokeWidth(QgsLayoutMeasurement(2))
@@ -761,7 +762,7 @@ class TestQgsLayoutItemLegend(unittest.TestCase, LayoutItemTestCase):
         legend.setLinkedMap(map)
 
         legendf = QgsLayoutItemLegend(layout)
-        legendf.setTitle("Legend")
+        legendf.setTitle("Filtered Legend")
         legendf.attemptSetSceneRect(QRectF(120, 40, 80, 80))
         legendf.setFrameEnabled(True)
         legendf.setFrameStrokeWidth(QgsLayoutMeasurement(2))
@@ -774,7 +775,7 @@ class TestQgsLayoutItemLegend(unittest.TestCase, LayoutItemTestCase):
         map.setExtent(QgsRectangle(-102.51, 41.16, -102.36, 41.30))
 
         checker = QgsLayoutChecker(
-            'composer_legend_raster_filter', layout)
+            'composer_legend_scale_map', layout)
         checker.setControlPathPrefix("composer_legend")
         result, message = checker.testLayout()
         TestQgsLayoutItemLegend.report += checker.report()
