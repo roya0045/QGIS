@@ -775,13 +775,14 @@ class TestQgsLayoutItemLegend(unittest.TestCase, LayoutItemTestCase):
         map.setExtent(QgsRectangle(-102.51, 41.16, -102.36, 41.30))
 
         checker = QgsLayoutChecker(
-            'composer_legend_scale_map', layout)
+            'composer_legend_raster_filter', layout)
         checker.setControlPathPrefix("composer_legend")
         result, message = checker.testLayout()
         TestQgsLayoutItemLegend.report += checker.report()
         self.assertTrue(result, message)
 
         QgsProject.instance().removeMapLayers([raster_layer.id()])
+
 
 if __name__ == '__main__':
     unittest.main()
