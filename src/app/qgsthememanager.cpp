@@ -97,13 +97,62 @@ QGSMAPTHMECOLLECTION
          * Returns set with only records for valid layers
          */
         QHash<QgsMapLayer *, QgsMapThemeCollection::MapThemeLayerRecord> validLayerRecords() const SIP_SKIP;
-
+QVariant QgsLegendModel::data( const QModelIndex &index, int role ) const
+{
   QgsLayerTreeNode *node = index2node( index );
   QgsLayerTreeLayer *nodeLayer = QgsLayerTree::isLayer( node ) ? QgsLayerTree::toLayer( node ) : nullptr;
   if ( !nodeLayer )
     return;
   QgsMapLayer *layer = nodeLayer->layer()
-  mapThemeVisibleLayerIds( mCurrentTheme ).contains( layer->id() )
-  if ( layer && ( role == Qt::DisplayRole || role == Qt::EditRole ) && )
+  if ( layer && ( role == Qt::DisplayRole || role == Qt::EditRole ) && mapThemeVisibleLayerIds( mCurrentTheme ).contains( layer->id() ) )
+    return QgsLayerTreeModel::data( index, role );
+  else
+    return;
+}
+
+void QgsModelGraphicsView::dragEnterEvent( QDragEnterEvent *event )
+{
+  if ( event->mimeData()->hasText() || event->mimeData()->hasFormat( QStringLiteral( "application/x-vnd.qgis.qgis.algorithmid" ) ) )
+    event->acceptProposedAction();
+  else
+    event->ignore();
+}
+
+void QgsModelGraphicsView::dropEvent( QDropEvent *event )
+{
+  const QPointF dropPoint = mapToScene( event->pos() );
+  if ( event->mimeData()->hasFormat( QStringLiteral( "application/x-vnd.qgis.qgis.algorithmid" ) ) )
   {
-return QgsLayerTreeModel::data( index, role );
+    QByteArray data = event->mimeData()->data( QStringLiteral( "application/x-vnd.qgis.qgis.algorithmid" ) );
+    QDataStream stream( &data, QIODevice::ReadOnly );
+    QString algorithmId;
+    stream >> algorithmId;
+
+    QTimer::singleShot( 0, this, [this, dropPoint, algorithmId ]
+    {
+      emit algorithmDropped( algorithmId, dropPoint );
+    } );
+    event->accept();
+  }
+  else if ( event->mimeData()->hasText() )
+  {
+    const QString itemId = event->mimeData()->text();
+    QTimer::singleShot( 0, this, [this, dropPoint, itemId ]
+    {
+      emit inputDropped( itemId, dropPoint );
+    } );
+    event->accept();
+  }
+  else
+  {
+    event->ignore();
+  }
+}
+
+void QgsModelGraphicsView::dragMoveEvent( QDragMoveEvent *event )
+{
+  if ( event->mimeData()->hasText() || event->mimeData()->hasFormat( QStringLiteral( "application/x-vnd.qgis.qgis.algorithmid" ) ) )
+    event->acceptProposedAction();
+  else
+    event->ignore();
+}
