@@ -1,24 +1,33 @@
 
 #include <qgsmapthemecollection.h>
 #include <qgslayertreemodel.h>
+#include <qgslayertreeview.h>
 
 //panel?
 // ui
 //add remove change
 //display visible layers only
 //drag &  drop?
-
-QgsThemeManager::QgsThemeManager()
+class QgsThemeManager : public QgsLayerTreeView //QgsLayerTreeProxyModel
 {
+    Q_OBJECT
+QgsThemeManager::QgsThemeManager( QWidget *parent )
+{
+
     QgsMapThemeCollection *mThemeCollection = QgsProject::instance()->mapThemeCollection();
     QgsLayerTreeModel *mModel = QgisApp::instance()->layerTreeView()->layerTreeModel();
     mCurrentTheme = mThemeCollection->mapThemes()[0];
+    QgsLayerTreeView mTreeView= QgsLayerTreeView(this);
+    mTreeView.setModel( mModel );
+
 }
 
 setCurrentTheme( const QString theme )
 {
     mCurrentTheme = theme;
 }
+
+qgslayertreeview
 
 viewCurrentTheme()
 
