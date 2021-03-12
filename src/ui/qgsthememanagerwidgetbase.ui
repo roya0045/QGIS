@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>DockWidget</class>
+ <widget class="QDockWidget" name="DockWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>263</width>
+    <height>282</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>DockWidget</string>
+  </property>
+  <widget class="QWidget" name="dockWidgetContents">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <widget class="QWidget" name="">
+    <property name="geometry">
+     <rect>
+      <x>1</x>
+      <y>-3</y>
+      <width>258</width>
+      <height>261</height>
+     </rect>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout" stretch="0,1,0">
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <item>
+        <widget class="QToolButton" name="QgsPreviousTheme">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>5</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>...</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QComboBox" name="QgsThemeList"/>
+       </item>
+       <item>
+        <widget class="QToolButton" name="QgsNextTheme">
+         <property name="text">
+          <string>...</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="QListView" name="QgsThemeView">
+       <property name="acceptDrops">
+        <bool>true</bool>
+       </property>
+       <property name="dragEnabled">
+        <bool>true</bool>
+       </property>
+       <property name="dragDropMode">
+        <enum>QAbstractItemView::DragDrop</enum>
+       </property>
+       <property name="defaultDropAction">
+        <enum>Qt::LinkAction</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_2">
+       <item>
+        <widget class="QToolButton" name="QgsAddThemeLayer">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>...</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="QgsRemoveThemeLayer">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>...</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
