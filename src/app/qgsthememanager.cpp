@@ -13,12 +13,12 @@ class QgsThemeManager : public QgsLayerTreeView //QgsLayerTreeProxyModel
     Q_OBJECT
 QgsThemeManager::QgsThemeManager( QWidget *parent )
 {
-
-    QgsMapThemeCollection *mThemeCollection = QgsProject::instance()->mapThemeCollection();
-    QgsLayerTreeModel *mModel = QgisApp::instance()->layerTreeView()->layerTreeModel();
-    mCurrentTheme = mThemeCollection->mapThemes()[0];
-    QgsLayerTreeView mTreeView= QgsLayerTreeView(this);
-    mTreeView.setModel( mModel );
+  setupUi( this );
+  QgsMapThemeCollection *mThemeCollection = QgsProject::instance()->mapThemeCollection();
+  QgsLayerTreeModel *mModel = QgisApp::instance()->layerTreeView()->layerTreeModel();
+  mCurrentTheme = mThemeCollection->mapThemes()[0];
+  QgsLayerTreeView mTreeView= QgsLayerTreeView(this);
+  mTreeView.setModel( mModel );
 
 }
 
