@@ -27,9 +27,82 @@ setCurrentTheme( const QString theme )
     mCurrentTheme = theme;
 }
 
+bool QgsLayerTreeModel::dropMimeData( const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent )
+{
+  if ( action == Qt::IgnoreAction )
+    return true;
+
+  if ( !data->hasFormat( QStringLiteral( "application/qgis.layertreemodeldata" ) ) )
+    return false;
+
+  if ( column >= columnCount( parent ) )
+    return false;
+
+  QgsLayerTreeNode *nodeParent = index2node( parent );
+  if ( !QgsLayerTree::isGroup( nodeParent ) )
+    return false;
+
+  if ( parent.isValid() && row == -1 )
+    row = 0; // if dropped directly onto group item, insert at first position
+
+  // if we are coming from another QGIS instance, we need to add the layers too
+  bool ok = false;
+  // the application pid is only provided from QGIS 3.14, so do not check to OK before defaulting to moving in the legend
+  int qgisPid = data->data( QStringLiteral( "application/qgis.application.pid" ) ).toInt( &ok );
+
+  if ( ok && qgisPid != QString::number( QCoreApplication::applicationPid() ) )
+  {
+    QByteArray encodedLayerDefinitionData = data->data( QStringLiteral( "application/qgis.layertree.layerdefinitions" ) );
+    QDomDocument layerDefinitionDoc;
+    if ( !layerDefinitionDoc.setContent( QString::fromUtf8( encodedLayerDefinitionData ) ) )
+      return false;
+    QgsReadWriteContext context;
+    QString errorMessage;
+    QgsLayerDefinition::loadLayerDefinition( layerDefinitionDoc, QgsProject::instance(), QgsLayerTree::toGroup( nodeParent ), errorMessage, context );
+    emit messageEmitted( tr( "New layers added from another QGIS instance" ) );
+  }
+  else
+  {
+    QByteArray encodedLayerTreeData = data->data( QStringLiteral( "application/qgis.layertreemodeldata" ) );
+
+    QDomDocument layerTreeDoc;
+    if ( !layerTreeDoc.setContent( QString::fromUtf8( encodedLayerTreeData ) ) )
+      return false;
+
+    QDomElement rootLayerTreeElem = layerTreeDoc.documentElement();
+    if ( rootLayerTreeElem.tagName() != QLatin1String( "layer_tree_model_data" ) )
+      return false;
+
+    QList<QgsLayerTreeNode *> nodes;
+
+    QDomElement elem = rootLayerTreeElem.firstChildElement();
+    while ( !elem.isNull() )
+    {
+      QgsLayerTreeNode *node = QgsLayerTreeNode::readXml( elem, QgsProject::instance() );
+      if ( node )
+        nodes << node;
+
+      elem = elem.nextSiblingElement();
+    }
+
+    if ( nodes.isEmpty() )
+      return false;
+
+    QgsLayerTree::toGroup( nodeParent )->insertChildNodes( row, nodes );
+  }
+  return true;
+}
+
 qgslayertreeview
 
 viewCurrentTheme()
+{
+  if ( !mThemeCollection.hasMapTheme( mCurrentTheme ) )
+    return false;
+  QList<QgsMapLayer *> themeLayers = mThemeCollection.mapThemeVisibleLayers( mCurrentTheme );
+  QStringList themeIds = mThemeCollection.mapThemeVisibleLayerIds( mCurrentTheme );
+  
+}
 
 
 QGSMAPTHMECOLLECTION
