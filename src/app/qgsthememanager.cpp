@@ -93,15 +93,75 @@ bool QgsLayerTreeModel::dropMimeData( const QMimeData *data, Qt::DropAction acti
   return true;
 }
 
-qgslayertreeview
+QStringList QgsThemeManager::mimeTypes() const
+{
+  QStringList types;
+  types << QStringLiteral( "application/qgis.thememanagerdata" );
+  return types;
+}
 
-viewCurrentTheme()
+void QgsThemeManager::dragEnterEvent(QDragEnterEvent *event)
+{
+    if (event->mimeData()->hasFormat( QStringLiteral( "application/qgis.thememanagerdata" ) ))
+        event->acceptProposedAction();
+}
+
+void QgsThemeManager::dropEvent(QDropEvent *event)
+{
+    textBrowser->setPlainText(event->mimeData()->text());
+    mimeTypeCombo->clear();
+    mimeTypeCombo->addItems(event->mimeData()->formats());
+
+    event->acceptProposedAction();
+    ..remove layer
+}
+QMimeData *QgsThemeManager::mimeData( const QModelIndexList &indexes ) const
+{
+  // Sort the indexes. Depending on how the user selected the items, the indexes may be unsorted.
+  QModelIndexList sortedIndexes = indexes;
+  std::sort( sortedIndexes.begin(), sortedIndexes.end(), std::less<QModelIndex>() );
+
+  QList<QgsLayerTreeNode *> nodesFinal = indexes2nodes( sortedIndexes, true );
+
+  if ( nodesFinal.isEmpty() )
+    return nullptr;
+
+  QMimeData *mimeData = new QMimeData();
+
+
+  mimeData->setData( QStringLiteral( "application/qgis.thememanagerdata" ), ?? );
+  mimeData->setData( QStringLiteral( "application/qgis.application.pid" ), QString::number( QCoreApplication::applicationPid() ).toUtf8() );
+
+  return mimeData;
+}
+
+void QgsThemeManager::viewCurrentTheme() const
 {
   if ( !mThemeCollection.hasMapTheme( mCurrentTheme ) )
     return false;
   QList<QgsMapLayer *> themeLayers = mThemeCollection.mapThemeVisibleLayers( mCurrentTheme );
   QStringList themeIds = mThemeCollection.mapThemeVisibleLayerIds( mCurrentTheme );
-  
+  //  filter item displayed
+}
+
+void QgsThemeManager::appendLayer( QgsMapLayer *layer )
+{
+  if ( !mThemeCollection.hasMapTheme( mCurrentTheme ) )
+    return false;
+  QgsMapThemeCollection::MapThemeRecord theme = mThemeCollection.mapThemeState( mCurrentTheme );
+  MapThemeLayerRecord newRecord( layer );
+
+  theme.addLayerRecord( newRecord );
+  mThemeCollection.update( mCurrentTheme, theme );
+}
+
+void QgsThemeManager::removeThemeLayer( QgsMapLayer *layer )
+{
+  if ( !mThemeCollection.hasMapTheme( mCurrentTheme ) )
+    return false;
+  QgsMapThemeCollection::MapThemeRecord theme = mThemeCollection.mapThemeState( mCurrentTheme );
+  theme.removeLayerRecord( QgsMapLayer *layer );
+  mThemeCollection.update( mCurrentTheme, theme );
 }
 
 
